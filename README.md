@@ -1,50 +1,170 @@
-# Welcome to your Expo app 👋
+# SureTopUp Mobile App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A React Native mobile application built with Expo, implementing the SureTopUp fintech platform for mobile recharge, data purchase, and bill payments.
 
-## Get started
+## Features
 
-1. Install dependencies
+### 🎯 Core Features
+- **Onboarding Flow**: Interactive introduction to the app with smooth animations
+- **Authentication**: Login and signup with form validation
+- **Dashboard**: Comprehensive overview with wallet balance, services, and transactions
+- **Service Grid**: Quick access to airtime recharge, data purchase, electricity bills, betting, and more
+- **Promotional Carousel**: Dynamic promotional offers and deals
+- **Transaction History**: Recent transactions with status tracking
+- **Haptic Feedback**: Enhanced user experience with tactile feedback
 
+### 🎨 Design System
+- **SureTopUp Brand Colors**: Green primary theme (#00A900) with consistent design language
+- **Dark/Light Mode**: Automatic theme switching based on system preferences
+- **Modern UI**: Clean, card-based design with smooth animations
+- **Responsive Layout**: Optimized for mobile devices with proper spacing and typography
+
+### 📱 Mobile Optimizations
+- **Expo Haptics**: Tactile feedback for user interactions
+- **Linear Gradients**: Beautiful gradient backgrounds and cards
+- **Vector Icons**: Consistent iconography using Ionicons
+- **Safe Area Handling**: Proper handling of device notches and safe areas
+
+## Project Structure
+
+```
+suretopup-mobile/
+├── app/                          # Expo Router app directory
+│   ├── _layout.tsx              # Root layout with theme provider
+│   └── (tabs)/                  # Tab navigation (placeholder)
+├── components/                   # React components
+│   ├── App.tsx                  # Main app component with navigation
+│   ├── onboarding/              # Onboarding screens
+│   ├── auth/                    # Authentication screens
+│   ├── dashboard/               # Dashboard components
+│   └── services/                # Service placeholder screens
+├── contexts/                    # React contexts
+│   └── ThemeContext.tsx         # Theme management
+├── hooks/                       # Custom hooks
+│   └── useMobileFeatures.ts     # Mobile-specific features
+├── constants/                   # App constants
+│   └── Colors.ts               # Color definitions
+└── assets/                      # Static assets
+```
+
+## Getting Started
+
+### Prerequisites
+- Node.js (v18 or higher)
+- npm or yarn
+- Expo CLI
+- iOS Simulator or Android Emulator (optional)
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd suretopup-mobile
+   ```
+
+2. **Install dependencies**
    ```bash
    npm install
    ```
 
-2. Start the app
-
+3. **Start the development server**
    ```bash
-   npx expo start
+   npm start
    ```
 
-In the output, you'll find options to open the app in a
+4. **Run on device/simulator**
+   - Press `i` for iOS simulator
+   - Press `a` for Android emulator
+   - Scan QR code with Expo Go app on your phone
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Key Components
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+### OnboardingScreen
+- Interactive slides with smooth transitions
+- Progress indicators and navigation
+- Skip functionality for quick access
 
-## Get a fresh project
+### AuthScreen
+- Login and signup forms
+- Form validation with error handling
+- Password visibility toggle
+- Social login integration (placeholder)
 
-When you're ready, run:
+### Dashboard
+- Wallet balance card with hide/show functionality
+- Service grid with 6 main services
+- Promotional carousel with auto-slide
+- Quick stats and recent transactions
 
-```bash
-npm run reset-project
-```
+### ServiceGrid
+- 3x2 grid layout for services
+- Color-coded service icons
+- "Coming Soon" badges for future features
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### PromoCarousel
+- Auto-sliding promotional content
+- Manual navigation controls
+- Dot indicators for slide position
 
-## Learn more
+## Theme System
 
-To learn more about developing your project with Expo, look at the following resources:
+The app uses a comprehensive theme system with:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+- **Primary Colors**: SureTopUp green (#00A900)
+- **Accent Colors**: Yellow (#FFD700) for highlights
+- **Semantic Colors**: Success, warning, destructive states
+- **Dark Mode**: Automatic switching with proper contrast
 
-## Join the community
+## Mobile Features
 
-Join our community of developers creating universal apps.
+### Haptic Feedback
+- Light feedback for navigation
+- Medium feedback for important actions
+- Heavy feedback for errors
+- Success feedback for completed actions
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+### Responsive Design
+- Proper safe area handling
+- Optimized for different screen sizes
+- Touch-friendly button sizes
+- Smooth animations and transitions
+
+## Development
+
+### Adding New Services
+1. Add service to `ServiceGrid.tsx` services array
+2. Create service screen component
+3. Add navigation case in `App.tsx`
+
+### Customizing Theme
+1. Update colors in `constants/Colors.ts`
+2. Modify theme context if needed
+3. Update component styles to use theme colors
+
+### Adding Animations
+- Use React Native Reanimated for complex animations
+- Implement haptic feedback for better UX
+- Add loading states and transitions
+
+## Future Enhancements
+
+- [ ] Real API integration
+- [ ] Push notifications
+- [ ] Biometric authentication
+- [ ] Offline support
+- [ ] Deep linking
+- [ ] Analytics integration
+- [ ] A/B testing framework
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License.

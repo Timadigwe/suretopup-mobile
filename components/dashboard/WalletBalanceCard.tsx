@@ -1,0 +1,135 @@
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '@/contexts/ThemeContext';
+import { Ionicons } from '@expo/vector-icons';
+
+interface WalletBalanceCardProps {
+  balance: number;
+  onAddFunds: () => void;
+}
+
+export const WalletBalanceCard: React.FC<WalletBalanceCardProps> = ({ balance, onAddFunds }) => {
+  const [showBalance, setShowBalance] = useState(true);
+  const { colors } = useTheme();
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency: 'NGN',
+      minimumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  return (
+    <LinearGradient
+      colors={[colors.primary, colors.primaryHover]}
+      style={styles.container}
+    >
+      <View style={styles.header}>
+        <View style={styles.titleContainer}>
+          <Ionicons name="wallet" size={20} color="rgba(255, 255, 255, 0.9)" />
+          <Text style={styles.title}>Wallet Balance</Text>
+        </View>
+        <TouchableOpacity
+          onPress={() => setShowBalance(!showBalance)}
+          style={styles.toggleButton}
+        >
+          <Ionicons 
+            name={showBalance ? 'eye-off' : 'eye'} 
+            size={20} 
+            color="rgba(255, 255, 255, 0.8)" 
+          />
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.balanceContainer}>
+        <Text style={styles.balance}>
+          {showBalance ? formatCurrency(balance) : '••••••'}
+        </Text>
+        <Text style={styles.balanceSubtitle}>
+          Available for transactions
+        </Text>
+      </View>
+
+      <TouchableOpacity
+        onPress={onAddFunds}
+        style={styles.addFundsButton}
+      >
+        <Ionicons name="add" size={20} color="white" />
+        <Text style={styles.addFundsText}>Add Funds</Text>
+      </TouchableOpacity>
+    </LinearGradient>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    marginHorizontal: 16,
+    marginBottom: 24,
+    padding: 24,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.9)',
+    marginLeft: 8,
+  },
+  toggleButton: {
+    padding: 4,
+  },
+  balanceContainer: {
+    marginBottom: 24,
+  },
+  balance: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 4,
+  },
+  balanceSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.8)',
+  },
+  addFundsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+  },
+  addFundsText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'white',
+    marginLeft: 8,
+  },
+});
