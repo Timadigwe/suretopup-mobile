@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -52,11 +52,13 @@ export const PromoCarousel: React.FC = () => {
   // Auto slide every 5 seconds
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % promoSlides.length);
+      const newIndex = (currentSlide + 1) % promoSlides.length;
+      setCurrentSlide(newIndex);
+      scrollToSlide(newIndex);
     }, 5000);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [currentSlide]);
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % promoSlides.length);
@@ -70,13 +72,23 @@ export const PromoCarousel: React.FC = () => {
     setCurrentSlide(index);
   };
 
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  const scrollToSlide = (index: number) => {
+    const slideWidth = width - 32; // Account for padding
+    scrollViewRef.current?.scrollTo({
+      x: index * slideWidth,
+      animated: true,
+    });
+  };
+
   return (
     <View style={styles.container}>
       <Text style={[styles.title, { color: colors.text }]}>Special Offers</Text>
-      
       <View style={styles.carouselContainer}>
         {/* Carousel */}
         <ScrollView
+          ref={scrollViewRef}
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
@@ -113,14 +125,22 @@ export const PromoCarousel: React.FC = () => {
 
         {/* Navigation Buttons */}
         <TouchableOpacity
-          onPress={prevSlide}
+          onPress={() => {
+            const newIndex = (currentSlide - 1 + promoSlides.length) % promoSlides.length;
+            setCurrentSlide(newIndex);
+            scrollToSlide(newIndex);
+          }}
           style={styles.navButton}
         >
           <Ionicons name="chevron-back" size={20} color="white" />
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={nextSlide}
+          onPress={() => {
+            const newIndex = (currentSlide + 1) % promoSlides.length;
+            setCurrentSlide(newIndex);
+            scrollToSlide(newIndex);
+          }}
           style={[styles.navButton, styles.navButtonRight]}
         >
           <Ionicons name="chevron-forward" size={20} color="white" />
@@ -131,7 +151,10 @@ export const PromoCarousel: React.FC = () => {
           {promoSlides.map((_, index) => (
             <TouchableOpacity
               key={index}
-              onPress={() => goToSlide(index)}
+              onPress={() => {
+                setCurrentSlide(index);
+                scrollToSlide(index);
+              }}
               style={[
                 styles.dot,
                 {
@@ -149,7 +172,7 @@ export const PromoCarousel: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 24,
     marginBottom: 24,
   },
   title: {

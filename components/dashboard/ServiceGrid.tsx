@@ -26,38 +26,38 @@ export const ServiceGrid: React.FC<ServiceGridProps> = ({ onServiceClick }) => {
   const services: Service[] = [
     {
       id: "airtime",
-      name: "Airtime Recharge",
+      name: "Airtime\nRecharge",
       icon: "phone-portrait",
       color: colors.primary,
     },
     {
       id: "data",
-      name: "Data Purchase",
+      name: "Data\nPurchase",
       icon: "wifi",
       color: "#3B82F6",
     },
     {
       id: "electricity",
-      name: "Electricity Bills",
+      name: "Electricity\nBills",
       icon: "flash",
       color: "#F59E0B",
       isComingSoon: true,
     },
     {
       id: "betting",
-      name: "Betting Funding",
+      name: "Betting\nFunding",
       icon: "cash",
       color: "#10B981",
     },
     {
       id: "bills",
-      name: "Bill Payments",
+      name: "Bill\nPayments",
       icon: "card",
       color: "#8B5CF6",
     },
     {
       id: "printing",
-      name: "Card Printing",
+      name: "Card\nPrinting",
       icon: "print",
       color: "#F97316",
     }
@@ -96,7 +96,7 @@ export const ServiceGrid: React.FC<ServiceGridProps> = ({ onServiceClick }) => {
               <Ionicons name={service.icon} size={24} color={service.color} />
             </View>
             
-            <Text style={[styles.serviceName, { color: colors.text }]}>
+            <Text style={[styles.serviceName, { color: colors.text }]} numberOfLines={2}>
               {service.name}
             </Text>
           </TouchableOpacity>
@@ -108,7 +108,7 @@ export const ServiceGrid: React.FC<ServiceGridProps> = ({ onServiceClick }) => {
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 24,
     marginBottom: 24,
   },
   title: {
@@ -130,6 +130,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: 12,
     position: 'relative',
+    paddingVertical: 8,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -161,9 +162,11 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   serviceName: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '500',
     textAlign: 'center',
-    lineHeight: 16,
+    lineHeight: 14,
+    flexWrap: 'wrap',
+    flexShrink: 1,
   },
 });

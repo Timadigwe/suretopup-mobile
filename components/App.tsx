@@ -3,7 +3,10 @@ import { OnboardingScreen } from './onboarding/OnboardingScreen';
 import { AuthScreen } from './auth/AuthScreen';
 import { EmailVerificationScreen } from './auth/EmailVerificationScreen';
 import { ForgotPasswordScreen } from './auth/ForgotPasswordScreen';
-import { Dashboard } from './dashboard/Dashboard';
+import { HomeScreen } from './dashboard/HomeScreen';
+import { TransactionsScreen } from './dashboard/TransactionsScreen';
+import { WalletScreen } from './dashboard/WalletScreen';
+import { ProfileScreen } from './dashboard/ProfileScreen';
 import { ServicePlaceholder } from './services/ServicePlaceholder';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -13,6 +16,10 @@ type AppScreen =
   | 'email-verification'
   | 'forgot-password'
   | 'dashboard' 
+  | 'home'
+  | 'transactions'
+  | 'wallet'
+  | 'profile'
   | 'airtime' 
   | 'data' 
   | 'electricity' 
@@ -20,8 +27,6 @@ type AppScreen =
   | 'bills' 
   | 'printing' 
   | 'add-funds' 
-  | 'transactions' 
-  | 'profile' 
   | 'notifications';
 
 export const App: React.FC = () => {
@@ -129,7 +134,19 @@ export const App: React.FC = () => {
         );
         
       case 'dashboard':
-        return <Dashboard onNavigate={handleNavigate} onLogout={handleLogout} />;
+        return <HomeScreen onNavigate={handleNavigate} onLogout={handleLogout} />;
+        
+      case 'home':
+        return <HomeScreen onNavigate={handleNavigate} onLogout={handleLogout} />;
+        
+      case 'transactions':
+        return <TransactionsScreen onNavigate={handleNavigate} />;
+        
+      case 'wallet':
+        return <WalletScreen onNavigate={handleNavigate} />;
+        
+      case 'profile':
+        return <ProfileScreen onNavigate={handleNavigate} onLogout={handleLogout} />;
         
       case 'airtime':
       case 'data':
@@ -156,7 +173,7 @@ export const App: React.FC = () => {
         );
         
       default:
-        return <Dashboard onNavigate={handleNavigate} onLogout={handleLogout} />;
+        return <HomeScreen onNavigate={handleNavigate} onLogout={handleLogout} />;
     }
   };
 

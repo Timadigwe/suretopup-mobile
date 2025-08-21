@@ -22,6 +22,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'react-native';
 import { CustomPhoneInput } from '@/components/ui/PhoneInput';
 import { Dropdown } from '@/components/ui/Dropdown';
+import { CustomModal } from '@/components/ui/CustomModal';
 import { NIGERIAN_STATES } from '@/constants/NigerianStates';
 
 interface AuthScreenProps {
@@ -75,6 +76,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onBack, onEmail
   
   // Input focus states
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalConfig, setModalConfig] = useState({
+    title: '',
+    message: '',
+    type: 'info' as 'success' | 'error' | 'warning' | 'info',
+    onPrimaryPress: () => {},
+  });
   
   const { colors } = useTheme();
   const { triggerHapticFeedback, triggerNotificationHaptic } = useMobileFeatures();
@@ -238,6 +246,16 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onBack, onEmail
     setErrors(prev => ({ ...prev, [field]: error }));
   };
 
+  const showModal = (title: string, message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info', onPrimaryPress?: () => void) => {
+    setModalConfig({
+      title,
+      message,
+      type,
+      onPrimaryPress: onPrimaryPress || (() => setModalVisible(false)),
+    });
+    setModalVisible(true);
+  };
+
   const handleSubmit = () => {
     // Validate all fields
     const newErrors = {
@@ -312,7 +330,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onBack, onEmail
           onLogin();
         } else {
           const errorMessage = getUserFriendlyError(result.message, 'login');
-          Alert.alert('Login Failed', errorMessage);
+          showModal('Login Failed', errorMessage, 'error');
         }
       });
     } else {
@@ -332,17 +350,16 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onBack, onEmail
         setIsLoading(false);
         if (result.success) {
           // Navigate to email verification with the registration data
-          console.log('Registration result:', result); // Debug log
           onEmailVerification(formData.email, result.data);
         } else {
           // Check if there are specific field validation errors
           if (result.data && handleApiValidationErrors(result.data)) {
             // Field errors were set, show a general message
-            Alert.alert('Registration Failed', 'Please correct the errors in the form and try again.');
+            showModal('Registration Failed', 'Please correct the errors in the form and try again.', 'error');
           } else {
             // Show the user-friendly error message
             const errorMessage = getUserFriendlyError(result.message, 'register');
-            Alert.alert('Registration Failed', errorMessage);
+            showModal('Registration Failed', errorMessage, 'error');
           }
         }
       });
@@ -420,20 +437,19 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onBack, onEmail
     forgotPassword(forgotPasswordData.email).then((result: { success: boolean; message: string }) => {
       setIsLoading(false);
       if (result.success) {
-        Alert.alert(
+        showModal(
           'Reset Link Sent',
           'We\'ve sent a password reset link to your email address. Please check your inbox and follow the instructions.',
-          [
-            {
-              text: 'OK',
-              onPress: () => handleBackToLogin(),
-            },
-          ]
+          'success',
+          () => {
+            setModalVisible(false);
+            handleBackToLogin();
+          }
         );
-              } else {
-          const errorMessage = getUserFriendlyError(result.message, 'forgot-password');
-          Alert.alert('Reset Failed', errorMessage);
-        }
+      } else {
+        const errorMessage = getUserFriendlyError(result.message, 'forgot-password');
+        showModal('Reset Failed', errorMessage, 'error');
+      }
     });
   };
 
@@ -762,6 +778,15 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onBack, onEmail
           </ScrollView>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
+
+      <CustomModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        type={modalConfig.type}
+        onPrimaryPress={modalConfig.onPrimaryPress}
+      />
     </LinearGradient>
   );
 };

@@ -18,6 +18,7 @@ import { useMobileFeatures } from '@/hooks/useMobileFeatures';
 import { useAuth } from '@/contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'react-native';
+import { CustomModal } from '@/components/ui/CustomModal';
 
 interface EmailVerificationScreenProps {
   onVerificationComplete: () => void;
@@ -39,6 +40,13 @@ export const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = (
   const [isResending, setIsResending] = useState(false);
   const [resendCountdown, setResendCountdown] = useState(0);
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalConfig, setModalConfig] = useState({
+    title: '',
+    message: '',
+    type: 'info' as 'success' | 'error' | 'warning' | 'info',
+    onPrimaryPress: () => {},
+  });
   
   const { colors } = useTheme();
   const { triggerHapticFeedback, triggerNotificationHaptic } = useMobileFeatures();
@@ -77,26 +85,33 @@ export const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = (
     return () => clearInterval(interval);
   }, [resendCountdown]);
 
+  const showModal = (title: string, message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info', onPrimaryPress?: () => void) => {
+    setModalConfig({
+      title,
+      message,
+      type,
+      onPrimaryPress: onPrimaryPress || (() => setModalVisible(false)),
+    });
+    setModalVisible(true);
+  };
+
   const handleVerification = async () => {
     if (!verificationCode.trim()) {
-      Alert.alert('Verification Required', 'Please enter the verification code sent to your email.');
+      showModal('Verification Required', 'Please enter the verification code sent to your email.', 'warning');
       return;
     }
 
     if (verificationCode.length !== 5) {
-      Alert.alert('Invalid Code', 'Please enter the 5-digit verification code.');
+      showModal('Invalid Code', 'Please enter the 5-digit verification code.', 'error');
       return;
     }
 
     if (!registrationData?.token) {
-      Alert.alert('Error', 'Authentication token is missing. Please try registering again.');
+      showModal('Error', 'Authentication token is missing. Please try registering again.', 'error');
       return;
     }
 
-    console.log('Registration data available:', !!registrationData);
-    console.log('Token available:', !!registrationData?.token);
-    console.log('Full bearer token:', registrationData?.token);
-    console.log('Token length:', registrationData?.token?.length);
+
 
     setIsLoading(true);
     triggerNotificationHaptic();
@@ -112,23 +127,22 @@ export const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = (
           await storeAuthDataAfterVerification(registrationData);
         }
         
-        Alert.alert(
+        showModal(
           'Email Verified!',
           'Your email has been successfully verified. You can now access all features.',
-          [
-            {
-              text: 'Continue',
-              onPress: onVerificationComplete,
-            },
-          ]
+          'success',
+          () => {
+            setModalVisible(false);
+            onVerificationComplete();
+          }
         );
       } else {
         triggerHapticFeedback('heavy');
-        Alert.alert('Verification Failed', result.message);
+        showModal('Verification Failed', result.message, 'error');
       }
     } catch (error) {
       triggerHapticFeedback('heavy');
-      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+      showModal('Error', 'An unexpected error occurred. Please try again.', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -143,21 +157,18 @@ export const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = (
     try {
       const result = await resendVerificationCode(userEmail);
       
-      console.log('Resend result:', result); // Debug log
-      
       if (result.success) {
         triggerHapticFeedback('light');
         setResendCountdown(60); // 60 seconds countdown
-        Alert.alert('Code Sent', result.message || 'A new verification code has been sent to your email.');
+        showModal('Code Sent', result.message || 'A new verification code has been sent to your email.', 'success');
       } else {
         triggerHapticFeedback('heavy');
-        Alert.alert('Resend Failed', result.message);
+        showModal('Resend Failed', result.message, 'error');
       }
-    } catch (error) {
-      console.error('Resend error:', error); // Debug log
-      triggerHapticFeedback('heavy');
-      Alert.alert('Error', 'Failed to resend verification code. Please try again.');
-    } finally {
+          } catch (error) {
+        triggerHapticFeedback('heavy');
+        showModal('Error', 'Failed to resend verification code. Please try again.', 'error');
+      } finally {
       setIsResending(false);
     }
   };
@@ -284,6 +295,15 @@ export const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = (
         </View>
         </View>
       </TouchableWithoutFeedback>
+
+      <CustomModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        type={modalConfig.type}
+        onPrimaryPress={modalConfig.onPrimaryPress}
+      />
     </LinearGradient>
   );
 };

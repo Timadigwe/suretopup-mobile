@@ -19,6 +19,7 @@ import { useMobileFeatures } from '@/hooks/useMobileFeatures';
 import { useAuth } from '@/contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'react-native';
+import { CustomModal } from '@/components/ui/CustomModal';
 
 interface ForgotPasswordScreenProps {
   onBack: () => void;
@@ -44,6 +45,13 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
   const [isResending, setIsResending] = useState(false);
   const [resendCountdown, setResendCountdown] = useState(0);
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalConfig, setModalConfig] = useState({
+    title: '',
+    message: '',
+    type: 'info' as 'success' | 'error' | 'warning' | 'info',
+    onPrimaryPress: () => {},
+  });
   
   const { colors } = useTheme();
   const { triggerHapticFeedback, triggerNotificationHaptic } = useMobileFeatures();
@@ -82,14 +90,24 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
     return () => clearInterval(interval);
   }, [resendCountdown]);
 
+  const showModal = (title: string, message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info', onPrimaryPress?: () => void) => {
+    setModalConfig({
+      title,
+      message,
+      type,
+      onPrimaryPress: onPrimaryPress || (() => setModalVisible(false)),
+    });
+    setModalVisible(true);
+  };
+
   const handleSendOtp = async () => {
     if (!email.trim()) {
-      Alert.alert('Email Required', 'Please enter your email address.');
+      showModal('Email Required', 'Please enter your email address.', 'warning');
       return;
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      Alert.alert('Invalid Email', 'Please enter a valid email address.');
+      showModal('Invalid Email', 'Please enter a valid email address.', 'error');
       return;
     }
 
@@ -103,14 +121,14 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
         triggerHapticFeedback('light');
         setCurrentStep('otp');
         setResendCountdown(60); // 60 seconds countdown
-        Alert.alert('OTP Sent', 'A verification code has been sent to your email.');
+        showModal('OTP Sent', 'A verification code has been sent to your email.', 'success');
       } else {
         triggerHapticFeedback('heavy');
-        Alert.alert('Failed', result.message);
+        showModal('Failed', result.message, 'error');
       }
     } catch (error) {
       triggerHapticFeedback('heavy');
-      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+      showModal('Error', 'An unexpected error occurred. Please try again.', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -118,12 +136,12 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
 
   const handleVerifyOtp = async () => {
     if (!otp.trim()) {
-      Alert.alert('OTP Required', 'Please enter the verification code.');
+      showModal('OTP Required', 'Please enter the verification code.', 'warning');
       return;
     }
 
     if (otp.length !== 5) {
-      Alert.alert('Invalid OTP', 'Please enter the 5-digit verification code.');
+      showModal('Invalid OTP', 'Please enter the 5-digit verification code.', 'error');
       return;
     }
 
@@ -136,14 +154,14 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
       if (result.success) {
         triggerHapticFeedback('light');
         setCurrentStep('password');
-        Alert.alert('OTP Verified', 'Please enter your new password.');
+        showModal('OTP Verified', 'Please enter your new password.', 'success');
       } else {
         triggerHapticFeedback('heavy');
-        Alert.alert('Verification Failed', result.message);
+        showModal('Verification Failed', result.message, 'error');
       }
     } catch (error) {
       triggerHapticFeedback('heavy');
-      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+      showModal('Error', 'An unexpected error occurred. Please try again.', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -151,17 +169,17 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
 
   const handleResetPassword = async () => {
     if (!newPassword.trim()) {
-      Alert.alert('Password Required', 'Please enter your new password.');
+      showModal('Password Required', 'Please enter your new password.', 'warning');
       return;
     }
 
     if (newPassword.length < 6) {
-      Alert.alert('Invalid Password', 'Password must be at least 6 characters.');
+      showModal('Invalid Password', 'Password must be at least 6 characters.', 'error');
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      Alert.alert('Passwords Don\'t Match', 'Please make sure both passwords are the same.');
+      showModal('Passwords Don\'t Match', 'Please make sure both passwords are the same.', 'error');
       return;
     }
 
@@ -173,23 +191,22 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
       
       if (result.success) {
         triggerHapticFeedback('light');
-        Alert.alert(
+        showModal(
           'Password Reset Successfully',
           'Your password has been reset successfully. You can now login with your new password.',
-          [
-            {
-              text: 'Continue',
-              onPress: onComplete,
-            },
-          ]
+          'success',
+          () => {
+            setModalVisible(false);
+            onComplete();
+          }
         );
       } else {
         triggerHapticFeedback('heavy');
-        Alert.alert('Reset Failed', result.message);
+        showModal('Reset Failed', result.message, 'error');
       }
     } catch (error) {
       triggerHapticFeedback('heavy');
-      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+      showModal('Error', 'An unexpected error occurred. Please try again.', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -207,14 +224,14 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
       if (result.success) {
         triggerHapticFeedback('light');
         setResendCountdown(60); // 60 seconds countdown
-        Alert.alert('OTP Sent', 'A new verification code has been sent to your email.');
+        showModal('OTP Sent', 'A new verification code has been sent to your email.', 'success');
       } else {
         triggerHapticFeedback('heavy');
-        Alert.alert('Resend Failed', result.message);
+        showModal('Resend Failed', result.message, 'error');
       }
     } catch (error) {
       triggerHapticFeedback('heavy');
-      Alert.alert('Error', 'Failed to resend verification code. Please try again.');
+      showModal('Error', 'Failed to resend verification code. Please try again.', 'error');
     } finally {
       setIsResending(false);
     }
@@ -545,6 +562,15 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
           {currentStep === 'password' && renderPasswordStep()}
         </ScrollView>
       </TouchableWithoutFeedback>
+
+      <CustomModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        type={modalConfig.type}
+        onPrimaryPress={modalConfig.onPrimaryPress}
+      />
     </LinearGradient>
   );
 };

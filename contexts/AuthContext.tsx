@@ -84,8 +84,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      console.log('Login request:', { email, password: '***' });
-      
       const response = await fetch('https://prod.suretopup.com.ng/api/v1/auth/login', {
         method: 'POST',
         headers: {
@@ -95,18 +93,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         body: JSON.stringify({ email, password }),
       });
 
-      console.log('Login response status:', response.status);
       const data = await response.json();
-      console.log('Login response data:', data);
 
       if (data.success) {
-        console.log('Login successful, user data:', data.data);
-        console.log('Login token:', data.data?.token);
-        console.log('Token length:', data.data?.token?.length);
         await storeAuthData(data.data);
         return { success: true, message: 'Login successful' };
       } else {
-        console.log('Login failed:', data.message);
         return { success: false, message: data.message || 'Login failed' };
       }
     } catch (error) {
@@ -131,12 +123,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
 
       const data = await response.json();
-      console.log('Registration response:', data);
 
       if (data.success) {
-        console.log('Registration successful, user data:', data.data);
-        console.log('Registration token:', data.data?.token);
-        console.log('Token length:', data.data?.token?.length);
         // Don't store auth data yet - wait for email verification
         return { 
           success: true, 
@@ -161,9 +149,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = async () => {
     setIsLoading(true);
     try {
-      console.log('Logout request - token available:', !!token);
-      console.log('Logout token:', token);
-      
       if (token) {
         const response = await fetch('https://prod.suretopup.com.ng/api/v1/auth/logout', {
           method: 'POST',
@@ -174,20 +159,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           },
         });
 
-        console.log('Logout response status:', response.status);
         const data = await response.json();
-        console.log('Logout response data:', data);
-
-        if (response.ok) {
-          console.log('Logout successful on server');
-        } else {
-          console.log('Logout failed on server:', data.message);
-        }
       }
 
       // Always clear local auth data regardless of server response
       await clearAuthData();
-      console.log('Local auth data cleared');
     } catch (error) {
       console.error('Logout error:', error);
       // Still clear local auth data even if server call fails
@@ -200,8 +176,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const forgotPassword = async (email: string) => {
     setIsLoading(true);
     try {
-      console.log('Forgot password request:', { email });
-      
       const response = await fetch('https://prod.suretopup.com.ng/api/v1/auth/forgot-password', {
         method: 'POST',
         headers: {
@@ -211,9 +185,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         body: JSON.stringify({ email }),
       });
 
-      console.log('Forgot password response status:', response.status);
       const data = await response.json();
-      console.log('Forgot password response data:', data);
 
       if (data.status === 200 || data.success) {
         return { success: true, message: data.message || 'OTP has been sent to your email.' };
@@ -232,8 +204,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const verifyForgotPasswordOtp = async (email: string, otp: string) => {
     setIsLoading(true);
     try {
-      console.log('Verify OTP request:', { email, otp });
-      
       const response = await fetch('https://prod.suretopup.com.ng/api/v1/auth/forgot-password-verify', {
         method: 'POST',
         headers: {
@@ -243,9 +213,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         body: JSON.stringify({ email, otp }),
       });
 
-      console.log('Verify OTP response status:', response.status);
       const data = await response.json();
-      console.log('Verify OTP response data:', data);
 
       if (data.status === 200 || data.success) {
         return { success: true, message: data.message || 'OTP verified successfully.' };
@@ -264,8 +232,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const resetPassword = async (email: string, otp: string, password: string, password_confirmation: string) => {
     setIsLoading(true);
     try {
-      console.log('Reset password request:', { email, otp, password: '***', password_confirmation: '***' });
-      
       const response = await fetch('https://prod.suretopup.com.ng/api/v1/auth/forgot-password-verify', {
         method: 'POST',
         headers: {
@@ -275,9 +241,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         body: JSON.stringify({ email, otp, password, password_confirmation }),
       });
 
-      console.log('Reset password response status:', response.status);
       const data = await response.json();
-      console.log('Reset password response data:', data);
 
       if (data.status === 200 || data.success) {
         return { success: true, message: data.message || 'Password has been successfully reset.' };
@@ -296,13 +260,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const verifyEmail = async (verificationCode: string, bearerToken: string) => {
     setIsLoading(true);
     try {
-      console.log('Verification request:', {
-        code: verificationCode,
-        token: bearerToken.substring(0, 20) + '...', // Log partial token for debugging
-      });
-      console.log('Full bearer token for verification:', bearerToken);
-      console.log('Bearer token length:', bearerToken.length);
-
       const response = await fetch('https://prod.suretopup.com.ng/api/v1/auth/email-verification', {
         method: 'POST',
         headers: {
@@ -313,9 +270,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         body: JSON.stringify({ verification_code: verificationCode }),
       });
 
-      console.log('Verification response status:', response.status);
       const data = await response.json();
-      console.log('Verification response data:', data);
 
       // Check for different success indicators
       if (data.success || response.status === 200) {
@@ -345,8 +300,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
 
       const data = await response.json();
-      
-      console.log('Resend API response:', data); // Debug log
 
       // Check if the response contains a success message (indicating success)
       if (data.message && data.message.toLowerCase().includes('successfully')) {

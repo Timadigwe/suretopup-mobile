@@ -28,8 +28,10 @@ export const WalletBalanceCard: React.FC<WalletBalanceCardProps> = ({ balance, o
 
   return (
     <LinearGradient
-      colors={[colors.primary, colors.primaryHover]}
+      colors={['#FFD700', '#00A900', '#FFD700']}
       style={styles.container}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
     >
       <View style={styles.header}>
         <View style={styles.titleContainer}>
