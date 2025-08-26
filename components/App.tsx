@@ -7,6 +7,8 @@ import { HomeScreen } from './dashboard/HomeScreen';
 import { TransactionsScreen } from './dashboard/TransactionsScreen';
 import { WalletScreen } from './dashboard/WalletScreen';
 import { ProfileScreen } from './dashboard/ProfileScreen';
+import { AddFundsScreen } from './dashboard/AddFundsScreen';
+import { AirtimeRechargeScreen } from './dashboard/AirtimeRechargeScreen';
 import { ServicePlaceholder } from './services/ServicePlaceholder';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -33,7 +35,7 @@ export const App: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState<AppScreen>('onboarding');
   const [userEmail, setUserEmail] = useState('');
   const [registrationData, setRegistrationData] = useState<any>(null);
-  const { user, token, isInitialized } = useAuth();
+  const { user, token, isInitialized, logout } = useAuth();
   
   // Determine if user is authenticated based on context
   const isAuthenticated = !!(user && token);
@@ -49,6 +51,13 @@ export const App: React.FC = () => {
     }
   }, [isAuthenticated, isInitialized]);
 
+  // Handle automatic logout due to token expiration
+  useEffect(() => {
+    if (isInitialized && !isAuthenticated && currentScreen !== 'onboarding' && currentScreen !== 'auth') {
+      setCurrentScreen('onboarding');
+    }
+  }, [isAuthenticated, isInitialized, currentScreen]);
+
   const handleOnboardingComplete = () => {
     setCurrentScreen('auth');
   };
@@ -57,8 +66,13 @@ export const App: React.FC = () => {
     setCurrentScreen('dashboard');
   };
 
-  const handleLogout = () => {
-    setCurrentScreen('auth');
+  const handleLogout = async () => {
+    try {
+      await logout();
+      setCurrentScreen('auth');
+    } catch (error) {
+      setCurrentScreen('auth');
+    }
   };
 
   const handleNavigate = (page: string) => {
@@ -145,10 +159,15 @@ export const App: React.FC = () => {
       case 'wallet':
         return <WalletScreen onNavigate={handleNavigate} />;
         
+      case 'add-funds':
+        return <AddFundsScreen onNavigate={handleNavigate} />;
+        
       case 'profile':
         return <ProfileScreen onNavigate={handleNavigate} onLogout={handleLogout} />;
         
       case 'airtime':
+        return <AirtimeRechargeScreen onNavigate={handleNavigate} />;
+        
       case 'data':
       case 'electricity':
       case 'betting':

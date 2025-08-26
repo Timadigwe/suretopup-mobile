@@ -465,7 +465,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onBack, onEmail
 
   const renderLogo = () => (
     <View style={styles.logoContainer}>
-      <Image source={require('@/assets/images/icon.png')} style={styles.logo} />
+      <Image source={require('@/assets/images/logo.png')} style={styles.logo} />
     </View>
   );
 
@@ -594,7 +594,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onBack, onEmail
               {/* Title */}
               <View style={styles.titleContainer}>
                 <Text style={[styles.title, { color: colors.text }]}>
-                  Forgot Password? 🔐
+                  Forgot Password? 
                 </Text>
                 <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
                   Enter your email address and we'll send you a link to reset your password
@@ -671,7 +671,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onBack, onEmail
               {/* Title */}
               <View style={styles.titleContainer}>
                 <Text style={[styles.title, { color: colors.text }]}>
-                  {isLogin ? 'Welcome Back 👋' : 'Create Your Account 🚀'}
+                  {isLogin ? 'Welcome Back' : 'Create Your Account'}
                 </Text>
                 <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
                   {isLogin 
@@ -832,15 +832,7 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 16,
     alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#00A900',
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 8,
+    justifyContent: 'center'
   },
   logoText: {
     fontSize: 32,

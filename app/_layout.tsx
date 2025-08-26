@@ -1,33 +1,30 @@
-import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
+import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
 
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { DashboardProvider } from '@/contexts/DashboardContext';
+import { WalletProvider } from '@/contexts/WalletContext';
 import { App } from '@/components/App';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+  const [loaded, error] = useFonts({
+    'SpaceMono': require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
   useEffect(() => {
+    if (error) throw error;
+  }, [error]);
+
+  useEffect(() => {
     if (loaded) {
-      // Add a small delay to show the splash screen for a moment
-      const hideSplash = async () => {
-        try {
-          await new Promise(resolve => setTimeout(resolve, 1500)); // Show splash for 1.5 seconds
-          await SplashScreen.hideAsync();
-        } catch (error) {
-          console.log('Error hiding splash screen:', error);
-        }
-      };
-      hideSplash();
+      SplashScreen.hideAsync();
     }
   }, [loaded]);
 
@@ -39,8 +36,12 @@ export default function RootLayout() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <App />
-        <StatusBar style="auto" />
+        <DashboardProvider>
+          <WalletProvider>
+            <App />
+            <StatusBar style="auto" />
+          </WalletProvider>
+        </DashboardProvider>
       </AuthProvider>
     </ThemeProvider>
   );

@@ -1,4 +1,4 @@
-package com.timadigwe.suretopup
+package com.timadigwe.SureTopUp
 
 import android.app.Application
 import android.content.res.Configuration

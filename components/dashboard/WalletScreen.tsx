@@ -141,46 +141,84 @@ export const WalletScreen: React.FC<WalletScreenProps> = ({
             Recent Activities
           </Text>
           <View style={styles.activitiesList}>
-            {recentActivities.map((activity) => (
-              <View 
-                key={activity.id} 
-                style={[styles.activityCard, { backgroundColor: colors.card }]}
-              >
-                <View style={styles.activityInfo}>
-                  <Text style={[styles.activityType, { color: colors.text }]}>
-                    {activity.type}
-                  </Text>
-                  <Text style={[styles.activityDate, { color: colors.mutedForeground }]}>
-                    {activity.date}
-                  </Text>
-                </View>
-                <View style={styles.activityAmount}>
-                  <Text style={[
-                    styles.amountText, 
-                    { color: activity.amount > 0 ? colors.primary : colors.text }
-                  ]}>
-                    {activity.amount > 0 ? '+' : ''}₦{Math.abs(activity.amount).toLocaleString()}
-                  </Text>
-                  <View style={[
-                    styles.statusBadge,
-                    { backgroundColor: activity.status === 'success' 
-                      ? colors.primary + '20' 
-                      : colors.destructive + '20'
-                    }
-                  ]}>
+            {recentActivities.map((activity, index) => {
+              // Determine icon and color based on activity type
+              const getActivityIcon = (activity: any) => {
+                const type = activity.type?.toLowerCase() || '';
+                if (type.includes('funding') || type.includes('fund')) return 'add-circle';
+                if (type.includes('withdrawal') || type.includes('withdraw')) return 'arrow-down-circle';
+                if (type.includes('transfer')) return 'swap-horizontal';
+                if (type.includes('recharge') || type.includes('airtime')) return 'call';
+                if (type.includes('data')) return 'cellular';
+                return 'card';
+              };
+
+              const getActivityColor = (index: number) => {
+                const colorOptions = [
+                  '#10B981', // Green
+                  '#3B82F6', // Blue
+                  '#8B5CF6', // Purple
+                  '#F59E0B', // Amber
+                  '#EF4444'  // Red
+                ];
+                return colorOptions[index % colorOptions.length];
+              };
+
+              const activityColor = getActivityColor(index);
+              
+              return (
+                <View 
+                  key={activity.id} 
+                  style={[styles.activityCard, { backgroundColor: colors.card }]}
+                >
+                  <View style={styles.activityInfo}>
+                    <View style={[
+                      styles.activityIconContainer, 
+                      { backgroundColor: activityColor + '15' }
+                    ]}>
+                      <Ionicons 
+                        name={getActivityIcon(activity)}
+                        size={20} 
+                        color={activityColor}
+                      />
+                    </View>
+                    <View style={styles.activityText}>
+                      <Text style={[styles.activityType, { color: colors.text }]}>
+                        {activity.type}
+                      </Text>
+                      <Text style={[styles.activityDate, { color: colors.mutedForeground }]}>
+                        {activity.date}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.activityAmount}>
                     <Text style={[
-                      styles.statusText,
-                      { color: activity.status === 'success' 
-                        ? colors.primary 
-                        : colors.destructive
+                      styles.amountText, 
+                      { color: activity.amount > 0 ? colors.success : colors.text }
+                    ]}>
+                      {activity.amount > 0 ? '+' : ''}₦{Math.abs(activity.amount).toLocaleString()}
+                    </Text>
+                    <View style={[
+                      styles.statusBadge,
+                      { backgroundColor: activity.status === 'success' 
+                        ? colors.success + '15' 
+                        : colors.destructive + '15'
                       }
                     ]}>
-                      {activity.status}
-                    </Text>
+                      <Text style={[
+                        styles.statusText,
+                        { color: activity.status === 'success' 
+                          ? colors.success 
+                          : colors.destructive
+                        }
+                      ]}>
+                        {activity.status}
+                      </Text>
+                    </View>
                   </View>
                 </View>
-              </View>
-            ))}
+              );
+            })}
           </View>
         </View>
       </ScrollView>
@@ -300,6 +338,19 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   activityInfo: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  activityIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  activityText: {
     flex: 1,
   },
   activityType: {

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AuthResponse } from '@/services/api';
+import { AuthResponse, apiService } from '@/services/api';
+import { dashboardCacheUtils } from '@/utils/dashboardCache';
 
 interface AuthContextType {
   user: AuthResponse['user'] | null;
@@ -10,12 +11,15 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
   register: (userData: any) => Promise<{ success: boolean; message: string; data?: any; userData?: any }>;
   logout: () => Promise<void>;
+  handleTokenExpiration: () => Promise<void>;
   forgotPassword: (email: string) => Promise<{ success: boolean; message: string }>;
   verifyForgotPasswordOtp: (email: string, otp: string) => Promise<{ success: boolean; message: string }>;
   resetPassword: (email: string, otp: string, password: string, password_confirmation: string) => Promise<{ success: boolean; message: string }>;
   verifyEmail: (verificationCode: string, bearerToken: string) => Promise<{ success: boolean; message: string }>;
   resendVerificationCode: (email: string) => Promise<{ success: boolean; message: string }>;
   storeAuthDataAfterVerification: (authData: AuthResponse) => Promise<void>;
+  clearAllStoredData: () => Promise<void>; // Development helper
+  onLoginSuccess: () => void; // Callback for when login is successful
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -46,11 +50,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const storedToken = await AsyncStorage.getItem('token');
         
         if (storedUser && storedToken) {
-          setUser(JSON.parse(storedUser));
+          const userData = JSON.parse(storedUser);
+          setUser(userData);
           setToken(storedToken);
+          // Set token in API service for future requests
+          apiService.setToken(storedToken);
         }
+        
+        // Set up token expiration callback
+        apiService.setTokenExpiredCallback(handleTokenExpiration);
       } catch (error) {
-        console.error('Error checking auth data:', error);
+        // Error handling without console logs
       } finally {
         setIsInitialized(true);
       }
@@ -65,8 +75,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await AsyncStorage.setItem('token', authData.token);
       setUser(authData.user);
       setToken(authData.token);
+      // Set token in API service for future requests
+      apiService.setToken(authData.token);
     } catch (error) {
-      console.error('Error storing auth data:', error);
+      // Error handling without console logs
     }
   };
 
@@ -74,35 +86,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       await AsyncStorage.removeItem('user');
       await AsyncStorage.removeItem('token');
+      // Clear wallet balance visibility state on logout
+      await AsyncStorage.removeItem('wallet_show_balance');
       setUser(null);
       setToken(null);
+      // Clear token from API service
+      apiService.clearToken();
     } catch (error) {
-      console.error('Error clearing auth data:', error);
+      // Error handling without console logs
     }
   };
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const response = await fetch('https://prod.suretopup.com.ng/api/v1/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
+      const response = await apiService.login({ email, password });
 
-      const data = await response.json();
-
-      if (data.success) {
-        await storeAuthData(data.data);
+      if (response.success && response.data) {
+        await storeAuthData(response.data);
         return { success: true, message: 'Login successful' };
       } else {
-        return { success: false, message: data.message || 'Login failed' };
+        return { success: false, message: response.message || 'Login failed' };
       }
     } catch (error) {
-      console.error('Login error:', error);
+      // Error handling without console logs
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       return { success: false, message: `Network error: ${errorMessage}` };
     } finally {
@@ -113,33 +120,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const register = async (userData: any) => {
     setIsLoading(true);
     try {
-      const response = await fetch('https://prod.suretopup.com.ng/api/v1/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify(userData),
-      });
+      const response = await apiService.register(userData);
 
-      const data = await response.json();
-
-      if (data.success) {
+      if (response.success) {
         // Don't store auth data yet - wait for email verification
         return { 
           success: true, 
           message: 'Registration successful',
-          data: data.data // Return the data for email verification screen
+          data: response.data // Return the data for email verification screen
         };
       } else {
         return { 
           success: false, 
-          message: data.message || 'Registration failed',
-          data: data // Include the full API response for validation errors
+          message: response.message || 'Registration failed',
+          data: response // Include the full API response for validation errors
         };
       }
     } catch (error) {
-      console.error('Registration error:', error);
+      // Error handling without console logs
       return { success: false, message: 'Network error. Please try again.' };
     } finally {
       setIsLoading(false);
@@ -165,7 +163,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Always clear local auth data regardless of server response
       await clearAuthData();
     } catch (error) {
-      console.error('Logout error:', error);
+      // Error handling without console logs
       // Still clear local auth data even if server call fails
       await clearAuthData();
     } finally {
@@ -176,24 +174,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const forgotPassword = async (email: string) => {
     setIsLoading(true);
     try {
-      const response = await fetch('https://prod.suretopup.com.ng/api/v1/auth/forgot-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify({ email }),
-      });
+      const response = await apiService.forgotPassword(email);
 
-      const data = await response.json();
-
-      if (data.status === 200 || data.success) {
-        return { success: true, message: data.message || 'OTP has been sent to your email.' };
+      if (response.success) {
+        return { success: true, message: response.message || 'OTP has been sent to your email.' };
       } else {
-        return { success: false, message: data.message || 'Failed to send OTP' };
+        return { success: false, message: response.message || 'Failed to send OTP' };
       }
     } catch (error) {
-      console.error('Forgot password error:', error);
+      // Error handling without console logs
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       return { success: false, message: `Network error: ${errorMessage}` };
     } finally {
@@ -221,7 +210,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return { success: false, message: data.message || 'OTP verification failed' };
       }
     } catch (error) {
-      console.error('Verify OTP error:', error);
+      // Error handling without console logs
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       return { success: false, message: `Network error: ${errorMessage}` };
     } finally {
@@ -249,7 +238,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return { success: false, message: data.message || 'Password reset failed' };
       }
     } catch (error) {
-      console.error('Reset password error:', error);
+      // Error handling without console logs
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       return { success: false, message: `Network error: ${errorMessage}` };
     } finally {
@@ -279,7 +268,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return { success: false, message: data.message || `Server error: ${response.status}` };
       }
     } catch (error) {
-      console.error('Email verification error:', error);
+      // Error handling without console logs
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       return { success: false, message: `Network error: ${errorMessage}` };
     } finally {
@@ -308,7 +297,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return { success: false, message: data.message || 'Failed to send verification code' };
       }
     } catch (error) {
-      console.error('Resend verification code error:', error);
+      // Error handling without console logs
       return { success: false, message: 'Network error. Please try again.' };
     } finally {
       setIsLoading(false);
@@ -319,6 +308,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     await storeAuthData(authData);
   };
 
+  const clearAllStoredData = async () => {
+    try {
+      await AsyncStorage.clear();
+      setUser(null);
+      setToken(null);
+      apiService.clearToken();
+    } catch (error) {
+      // Error handling without console logs
+    }
+  };
+
+  const onLoginSuccess = () => {
+    // This will be called when login is successful
+    // Components can listen to this to reset their state
+  };
+
+  const handleTokenExpiration = async () => {
+    // Clear dashboard cache as well
+    dashboardCacheUtils.reset();
+    // Clear auth data and redirect to login
+    await clearAuthData();
+  };
+
   const value: AuthContextType = {
     user,
     token,
@@ -327,12 +339,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     register,
     logout,
+    handleTokenExpiration,
     forgotPassword,
     verifyForgotPasswordOtp,
     resetPassword,
     verifyEmail,
     resendVerificationCode,
     storeAuthDataAfterVerification,
+    clearAllStoredData,
+    onLoginSuccess,
   };
 
   return (

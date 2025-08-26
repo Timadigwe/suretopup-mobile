@@ -24,7 +24,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 }) => {
   const { colors } = useTheme();
   const { triggerHapticFeedback } = useMobileFeatures();
-  const { user } = useAuth();
+  const { user, clearAllStoredData } = useAuth();
 
   const profileMenuItems = [
     {
@@ -77,7 +77,11 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         {
           text: 'Logout',
           style: 'destructive',
-          onPress: onLogout,
+          onPress: async () => {
+            await onLogout();
+            // For development: also clear all stored data
+            await clearAllStoredData();
+          },
         },
       ]
     );

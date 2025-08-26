@@ -1,44 +1,47 @@
 {
   "expo": {
-    "name": "suretopup",
-    "slug": "suretopup",
+    "name": "SureTopUp",
+    "slug": "SureTopUp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "suretopupmobile",
+    "scheme": "SureTopUp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff",
+      "resizeMode": "cover",
       "dark": {
-        "image": "./assets/images/splash-icon.png",
-        "backgroundColor": "#000000"
-      }
+        "image": "./assets/images/splash-icon.png"
+      },
+      "imageWidth": 200
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.timadigwe.suretopup"
+      "bundleIdentifier": "com.timadigwe.SureTopUp"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/images/adaptive-icon.png"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.timadigwe.suretopup"
+      "package": "com.timadigwe.SureTopUp"
     },
     "web": {
       "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "output": "static"
     },
     "plugins": [
       "expo-router"
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "56978455-463b-4c14-bb34-ea40d2168f7b"
+      }
     }
   }
 }

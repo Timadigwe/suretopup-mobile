@@ -9,6 +9,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { BottomTabNavigator } from '@/components/navigation/BottomTabNavigator';
+import { dashboardCacheUtils } from '@/utils/dashboardCache';
 
 interface TransactionsScreenProps {
   onNavigate: (page: string) => void;
@@ -18,52 +19,85 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
   onNavigate,
 }) => {
   const { colors } = useTheme();
+  
+  // Get transactions from global cache (already fetched in dashboard)
+  const cachedData = dashboardCacheUtils.getData();
+  const transactions = cachedData?.transactions || [];
 
-  const transactions = [
-    {
-      id: 1,
-      type: "Airtime Recharge",
-      amount: -500,
-      status: "success",
-      date: "Today, 2:30 PM",
-      reference: "MTN ₦500"
-    },
-    {
-      id: 2,
-      type: "Data Purchase", 
-      amount: -1500,
-      status: "success",
-      date: "Yesterday, 10:15 AM",
-      reference: "Airtel 2GB"
-    },
-    {
-      id: 3,
-      type: "Wallet Funding",
-      amount: +5000,
-      status: "success", 
-      date: "2 days ago",
-      reference: "Bank Transfer"
-    },
-    {
-      id: 4,
-      type: "Electricity Bill",
-      amount: -2500,
-      status: "pending",
-      date: "3 days ago",
-      reference: "IKEDC Bill"
-    },
-    {
-      id: 5,
-      type: "Data Purchase",
-      amount: -1000,
-      status: "success",
-      date: "1 week ago",
-      reference: "Glo 1GB"
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return 'Invalid Date';
+      }
+      return date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric',
+        year: 'numeric'
+      });
+    } catch (error) {
+      return 'Invalid Date';
     }
-  ];
+  };
+
+  const formatTime = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return 'Invalid Time';
+      }
+      return date.toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true 
+      });
+    } catch (error) {
+      return 'Invalid Time';
+    }
+  };
+
+  const getTransactionIcon = (transaction: any) => {
+    const service = transaction.service?.toLowerCase() || '';
+    const type = transaction.type?.toLowerCase() || '';
+    
+    if (service.includes('airtime') || service.includes('recharge')) return 'call';
+    if (service.includes('data')) return 'cellular';
+    if (service.includes('electricity') || service.includes('bill')) return 'flash';
+    if (service.includes('deposit') || type.includes('credit')) return 'add-circle';
+    if (service.includes('transfer')) return 'swap-horizontal';
+    if (service.includes('withdraw') || type.includes('debit')) return 'arrow-down-circle';
+    if (service.includes('deposit')) return 'arrow-up-circle';
+    return 'card';
+  };
+
+  const getTransactionColor = (index: number) => {
+    const colorOptions = [
+      '#10B981', // Green
+      '#3B82F6', // Blue
+      '#8B5CF6', // Purple
+      '#F59E0B', // Amber
+      '#EF4444'  // Red
+    ];
+    return colorOptions[index % colorOptions.length];
+  };
+
+  const getTransactionTitle = (transaction: any) => {
+    const service = transaction.service || '';
+    
+    return service || 'Transaction';
+  };
+
+  const getTransactionSubtitle = (transaction: any) => {
+    const info = transaction.info || '';
+    
+    if (info && info !== 'Wallet account - Paystack deposit') {
+      return info;
+    }
+    return '';
+  };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.card + 'F5' }]}>
         <View style={styles.headerContent}>
@@ -86,51 +120,84 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        <View style={styles.transactionsList}>
-          {transactions.map((transaction) => (
-            <View 
-              key={transaction.id} 
-              style={[styles.transactionCard, { backgroundColor: colors.card }]}
-            >
-              <View style={styles.transactionInfo}>
-                <Text style={[styles.transactionType, { color: colors.text }]}>
-                  {transaction.type}
-                </Text>
-                <Text style={[styles.transactionDate, { color: colors.mutedForeground }]}>
-                  {transaction.date}
-                </Text>
-                <Text style={[styles.transactionReference, { color: colors.mutedForeground }]}>
-                  {transaction.reference}
-                </Text>
-              </View>
-              <View style={styles.transactionAmount}>
-                <Text style={[
-                  styles.amountText, 
-                  { color: transaction.amount > 0 ? colors.primary : colors.text }
-                ]}>
-                  {transaction.amount > 0 ? '+' : ''}₦{Math.abs(transaction.amount).toLocaleString()}
-                </Text>
-                <View style={[
-                  styles.statusBadge,
-                  { backgroundColor: transaction.status === 'success' 
-                    ? colors.primary + '20' 
-                    : colors.destructive + '20'
-                  }
-                ]}>
-                  <Text style={[
-                    styles.statusText,
-                    { color: transaction.status === 'success' 
-                      ? colors.primary 
-                      : colors.destructive
-                    }
-                  ]}>
-                    {transaction.status}
-                  </Text>
+        {/* Transactions List */}
+        {transactions.length > 0 ? (
+          <View style={styles.transactionsList}>
+            {transactions.map((transaction, index) => {
+              const transactionColor = getTransactionColor(index);
+              const isCredit = transaction.type === 'Credit';
+              const amount = parseFloat(transaction.amount);
+              
+              return (
+                <View 
+                  key={transaction.id} 
+                  style={[styles.transactionCard, { backgroundColor: colors.card }]}
+                >
+                  <View style={styles.transactionInfo}>
+                    <View style={[
+                      styles.transactionIconContainer, 
+                      { backgroundColor: transactionColor + '15' }
+                    ]}>
+                      <Ionicons 
+                        name={getTransactionIcon(transaction)}
+                        size={18} 
+                        color={transactionColor}
+                      />
+                    </View>
+                    
+                    <View style={styles.transactionText}>
+                      <Text style={[styles.transactionType, { color: colors.text }]}>
+                        {getTransactionTitle(transaction)}
+                      </Text>
+                      <Text style={[styles.transactionDate, { color: colors.mutedForeground }]}>
+                        {formatDate(transaction.created_at)} • {formatTime(transaction.created_at)}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.transactionAmount}>
+                    <Text style={[
+                      styles.amountText, 
+                      { color: isCredit ? colors.success : colors.text }
+                    ]}>
+                      {isCredit ? '+' : '-'}₦{amount.toLocaleString()}
+                    </Text>
+                    
+                    <View style={[
+                      styles.statusBadge,
+                      { backgroundColor: transaction.status === 'Completed' 
+                        ? colors.success + '15' 
+                        : colors.destructive + '15'
+                      }
+                    ]}>
+                      <Text style={[
+                        styles.statusText,
+                        { color: transaction.status === 'Completed' 
+                          ? colors.success 
+                          : colors.destructive
+                        }
+                      ]}>
+                        {transaction.status}
+                      </Text>
+                    </View>
+                  </View>
                 </View>
-              </View>
+              );
+            })}
+          </View>
+        ) : (
+          <View style={styles.emptyContainer}>
+            <View style={[styles.emptyIconContainer, { backgroundColor: colors.card }]}>
+              <Ionicons name="receipt-outline" size={48} color={colors.mutedForeground} />
             </View>
-          ))}
-        </View>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>
+              No Transactions Yet
+            </Text>
+            <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
+              Your transaction history will appear here once you make your first transaction.
+            </Text>
+          </View>
+        )}
       </ScrollView>
 
       {/* Bottom Navigation */}
@@ -175,58 +242,102 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 100,
     paddingHorizontal: 24,
-    paddingTop: 16,
+    paddingTop: 24,
+    paddingBottom: 40,
   },
   transactionsList: {
-    gap: 12,
+    gap: 16,
   },
   transactionCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    padding: 12,
     borderRadius: 16,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4,
     },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
   },
   transactionInfo: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  transactionIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  transactionText: {
+    flex: 1,
   },
   transactionType: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    marginBottom: 4,
-  },
-  transactionDate: {
-    fontSize: 14,
     marginBottom: 2,
   },
-  transactionReference: {
+  transactionDate: {
     fontSize: 12,
+    fontWeight: '500',
   },
   transactionAmount: {
     alignItems: 'flex-end',
   },
   amountText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 4,
   },
   statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 10,
   },
   statusText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 80,
+  },
+  emptyIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  emptyTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  emptyText: {
+    fontSize: 16,
+    textAlign: 'center',
+    lineHeight: 24,
+    paddingHorizontal: 40,
+    fontWeight: '500',
   },
 });

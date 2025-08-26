@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,16 +6,21 @@ import {
   StyleSheet,
   ScrollView,
   Dimensions,
+  Alert,
+  RefreshControl,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useMobileFeatures } from '@/hooks/useMobileFeatures';
 import { useAuth } from '@/contexts/AuthContext';
+import { dashboardCacheUtils } from '@/utils/dashboardCache';
 import { BottomTabNavigator } from '@/components/navigation/BottomTabNavigator';
 import { WalletBalanceCard } from './WalletBalanceCard';
 import { ServiceGrid } from './ServiceGrid';
 import { PromoCarousel } from './PromoCarousel';
+import { HomeScreenSkeleton, SkeletonLoader } from '@/components/ui/SkeletonLoader';
+import { apiService, DashboardData } from '@/services/api';
 
 interface HomeScreenProps {
   onNavigate: (page: string) => void;
@@ -28,47 +33,179 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onNavigate,
   onLogout,
 }) => {
-  const [walletBalance] = useState(25750);
+  const [hasInitialLoad, setHasInitialLoad] = useState(false);
+  const [lastUserId, setLastUserId] = useState<number | null>(null);
   const { colors } = useTheme();
   const { triggerHapticFeedback } = useMobileFeatures();
-  const { user } = useAuth();
+  const { user, token, logout, onLoginSuccess } = useAuth();
+  
+  // Use cache for persistent state
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(dashboardCacheUtils.getData());
+  const [hasFetchedDashboard, setHasFetchedDashboard] = useState(dashboardCacheUtils.getHasFetched());
+  const [dashboardLoading, setDashboardLoading] = useState(false);
+  const [dashboardError, setDashboardError] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  const userName = dashboardData?.user?.fullname || (user ? `${user.firstname} ${user.lastname}` : "User");
+  const walletBalance = dashboardData?.user?.balance ? parseFloat(dashboardData.user.balance) : 0;
 
   const handleServiceClick = (serviceId: string) => {
     triggerHapticFeedback('light');
     onNavigate(serviceId);
   };
 
+  // Fetch dashboard data
+  const fetchDashboardData = async (isRefresh = false) => {
+    try {
+      if (isRefresh) {
+        setIsRefreshing(true);
+      } else {
+        setDashboardLoading(true);
+      }
+      setDashboardError(null);
+      
+      const response = await apiService.getDashboard();
+      
+      if (response.success && response.data) {
+        console.log('Dashboard Data After Refresh:', JSON.stringify(response.data, null, 2));
+        setDashboardData(response.data);
+        dashboardCacheUtils.setData(response.data);
+        setHasInitialLoad(true);
+        setHasFetchedDashboard(true);
+        dashboardCacheUtils.setHasFetched(true);
+      } else if (response.isTokenExpired) {
+        // Clear cache and let AuthContext handle the logout
+        dashboardCacheUtils.reset();
+        setDashboardData(null);
+        setHasFetchedDashboard(false);
+        setHasInitialLoad(false);
+      } else {
+        setDashboardError(response.message || 'Failed to load dashboard data');
+      }
+    } catch (error) {
+      setDashboardError('Network error. Please try again.');
+    } finally {
+      if (isRefresh) {
+        setIsRefreshing(false);
+      } else {
+        setDashboardLoading(false);
+      }
+    }
+  };
+
+  // Handle pull to refresh
+  const handleRefresh = async () => {
+    // Force refresh by clearing cache temporarily
+    const currentData = dashboardCacheUtils.getData();
+    dashboardCacheUtils.reset();
+    await fetchDashboardData(true);
+    // Restore cache if refresh fails
+    if (!dashboardData) {
+      dashboardCacheUtils.setData(currentData);
+    }
+  };
+
+  useEffect(() => {
+    // Check if user has changed (new login)
+    if (user && user.id !== lastUserId) {
+      setLastUserId(user.id);
+      setHasInitialLoad(false);
+      dashboardCacheUtils.resetForNewUser(user.id);
+      setHasFetchedDashboard(false);
+      setDashboardData(null);
+      setDashboardError(null);
+    }
+  }, [user, lastUserId]);
+
+  useEffect(() => {
+    // Only fetch data if we haven't fetched it before AND we have a user/token
+    const cachedHasFetched = dashboardCacheUtils.getHasFetched();
+    if (!cachedHasFetched && user && token) {
+      fetchDashboardData();
+    } else if (cachedHasFetched) {
+      // Restore cached data
+      const cachedData = dashboardCacheUtils.getData();
+      if (cachedData) {
+        setDashboardData(cachedData);
+        setHasFetchedDashboard(true);
+        setHasInitialLoad(true);
+      }
+    } else if (!user || !token) {
+    }
+  }, [user, token]);
+
   const handleAddFunds = () => {
     triggerHapticFeedback('light');
     onNavigate('add-funds');
   };
 
-  const recentTransactions = [
-    {
-      id: 1,
-      type: "Airtime Recharge",
-      amount: -500,
-      status: "success",
-      date: "Today, 2:30 PM",
-      reference: "MTN ₦500"
-    },
-    {
-      id: 2,
-      type: "Data Purchase", 
-      amount: -1500,
-      status: "success",
-      date: "Yesterday, 10:15 AM",
-      reference: "Airtel 2GB"
-    },
-    {
-      id: 3,
-      type: "Wallet Funding",
-      amount: +5000,
-      status: "success", 
-      date: "2 days ago",
-      reference: "Bank Transfer"
-    }
-  ];
+  const handleLogout = () => {
+    triggerHapticFeedback('medium');
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            triggerHapticFeedback('heavy');
+            await logout();
+            onLogout();
+          },
+        },
+      ]
+    );
+  };
+
+  // Show inline skeletons for dynamic data while loading
+  const showSkeleton = dashboardLoading && !hasInitialLoad;
+
+  // Show error state
+  if (dashboardError) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={[styles.header, { backgroundColor: colors.card + 'F5' }]}>
+          <View style={styles.headerContent}>
+            <View style={styles.userInfo}>
+              <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+                <Ionicons name="person-circle" size={24} color="white" />
+              </View>
+              <View style={styles.userText}>
+                <Text style={[styles.greeting, { color: colors.mutedForeground }]}>
+                  Welcome
+                </Text>
+                <Text style={[styles.userName, { color: colors.text }]}>
+                  {userName}
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle-outline" size={48} color={colors.destructive} />
+          <Text style={[styles.errorTitle, { color: colors.text }]}>Oops!</Text>
+          <Text style={[styles.errorMessage, { color: colors.mutedForeground }]}>{dashboardError}</Text>
+          <TouchableOpacity
+            style={[styles.retryButton, { backgroundColor: colors.primary }]}
+            onPress={() => {
+              setDashboardLoading(true);
+              setDashboardError(null);
+              fetchDashboardData();
+            }}
+          >
+            <Text style={[styles.retryButtonText, { color: colors.background }]}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+
 
   return (
     <View style={styles.container}>
@@ -83,9 +220,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               <Text style={[styles.greeting, { color: colors.mutedForeground }]}>
                 Welcome
               </Text>
-              <Text style={[styles.userName, { color: colors.text }]}>
-                {user?.firstname} {user?.lastname}
-              </Text>
+              {showSkeleton ? (
+                <SkeletonLoader width={120} height={18} />
+              ) : (
+                <Text style={[styles.userName, { color: colors.text }]}>
+                  {userName}
+                </Text>
+              )}
             </View>
           </View>
           <View style={styles.headerActions}>
@@ -110,12 +251,21 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+          />
+        }
       >
         {/* Wallet Balance */}
         <View style={styles.walletSection}>
           <WalletBalanceCard 
             balance={walletBalance}
             onAddFunds={handleAddFunds}
+            showSkeleton={showSkeleton}
           />
         </View>
 
@@ -136,15 +286,33 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           </Text>
           <View style={styles.statsGrid}>
             <View style={[styles.statCard, { backgroundColor: colors.card }]}>
-              <Text style={[styles.statValue, { color: colors.primary }]}>47</Text>
+              <View style={[styles.statIconContainer, { backgroundColor: '#3B82F6' + '15' }]}>
+                <Ionicons name="analytics" size={20} color="#3B82F6" />
+              </View>
+              {showSkeleton ? (
+                <SkeletonLoader width={40} height={24} style={styles.statValueSkeleton} />
+              ) : (
+                <Text style={[styles.statValue, { color: '#3B82F6' }]}>
+                  {dashboardData?.transactions?.length || 0}
+                </Text>
+              )}
               <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>
-                Transactions
+                Total Transactions
               </Text>
             </View>
             <View style={[styles.statCard, { backgroundColor: colors.card }]}>
-              <Text style={[styles.statValue, { color: colors.primary }]}>₦12,450</Text>
+              <View style={[styles.statIconContainer, { backgroundColor: '#8B5CF6' + '15' }]}>
+                <Ionicons name="wallet" size={20} color="#8B5CF6" />
+              </View>
+              {showSkeleton ? (
+                <SkeletonLoader width={80} height={24} style={styles.statValueSkeleton} />
+              ) : (
+                <Text style={[styles.statValue, { color: '#8B5CF6' }]}>
+                  ₦{dashboardData?.user?.balance || '0.00'}
+                </Text>
+              )}
               <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>
-                Total Spent
+                Current Balance
               </Text>
             </View>
           </View>
@@ -163,52 +331,126 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               <Text style={[styles.viewAllText, { color: colors.primary }]}>
                 View All
               </Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.primary} />
             </TouchableOpacity>
           </View>
           <View style={styles.transactionsList}>
-            {recentTransactions.map((transaction) => (
-              <View 
-                key={transaction.id} 
-                style={[styles.transactionCard, { backgroundColor: colors.card }]}
-              >
-                <View style={styles.transactionInfo}>
-                  <Text style={[styles.transactionType, { color: colors.text }]}>
-                    {transaction.type}
-                  </Text>
-                  <Text style={[styles.transactionDate, { color: colors.mutedForeground }]}>
-                    {transaction.date}
-                  </Text>
-                  <Text style={[styles.transactionReference, { color: colors.mutedForeground }]}>
-                    {transaction.reference}
-                  </Text>
-                </View>
-                <View style={styles.transactionAmount}>
-                  <Text style={[
-                    styles.amountText, 
-                    { color: transaction.amount > 0 ? colors.primary : colors.text }
-                  ]}>
-                    {transaction.amount > 0 ? '+' : ''}₦{Math.abs(transaction.amount).toLocaleString()}
-                  </Text>
-                  <View style={[
-                    styles.statusBadge,
-                    { backgroundColor: transaction.status === 'success' 
-                      ? colors.primary + '20' 
-                      : colors.destructive + '20'
-                    }
-                  ]}>
-                    <Text style={[
-                      styles.statusText,
-                      { color: transaction.status === 'success' 
-                        ? colors.primary 
-                        : colors.destructive
-                      }
-                    ]}>
-                      {transaction.status}
-                    </Text>
+            {showSkeleton ? (
+              // Show skeleton transaction cards
+              [1, 2, 3].map((item) => (
+                <View key={item} style={[styles.transactionCard, { backgroundColor: colors.card }]}>
+                  <View style={styles.transactionInfo}>
+                    <View style={[styles.transactionIcon, { backgroundColor: colors.primary + '20' }]} />
+                    <View style={styles.transactionText}>
+                      <SkeletonLoader width={120} height={16} style={styles.transactionTitleSkeleton} />
+                      <SkeletonLoader width={100} height={12} style={styles.transactionDateSkeleton} />
+                    </View>
+                  </View>
+                  <View style={styles.transactionAmount}>
+                    <SkeletonLoader width={60} height={18} style={styles.amountSkeleton} />
+                    <SkeletonLoader width={50} height={12} style={styles.statusSkeleton} />
                   </View>
                 </View>
+              ))
+            ) : dashboardData?.transactions && dashboardData.transactions.length > 0 ? (
+              dashboardData.transactions.slice(0, 3).map((transaction: any) => {
+                
+                // Determine icon and color based on transaction type
+                const getTransactionIcon = (transaction: any) => {
+                  const type = transaction.service?.toLowerCase() || transaction.description?.toLowerCase() || '';
+                  if (type.includes('airtime') || type.includes('recharge')) return 'call';
+                  if (type.includes('data')) return 'cellular';
+                  if (type.includes('electricity') || type.includes('bill')) return 'flash';
+                  if (type.includes('fund') || type.includes('credit')) return 'add-circle';
+                  if (type.includes('transfer')) return 'swap-horizontal';
+                  if (type.includes('withdraw')) return 'arrow-down-circle';
+                  if (type.includes('deposit')) return 'arrow-up-circle';
+                  return 'card';
+                };
+
+                const getTransactionColor = (transaction: any, index: number) => {
+                  const colorOptions = [
+                    '#10B981', // Green
+                    '#3B82F6', // Blue
+                    '#8B5CF6', // Purple
+                    '#F59E0B', // Amber
+                    '#EF4444'  // Red
+                  ];
+                  return colorOptions[index % colorOptions.length];
+                };
+
+                const transactionColor = getTransactionColor(transaction, transaction.id || 0);
+                
+                return (
+                <View 
+                  key={transaction.id} 
+                  style={[styles.transactionCard, { backgroundColor: colors.card }]}
+                >
+                  <View style={styles.transactionInfo}>
+                    <View style={[
+                      styles.transactionIconContainer, 
+                      { backgroundColor: transactionColor + '15' }
+                    ]}>
+                      <Ionicons 
+                        name={getTransactionIcon(transaction)}
+                        size={20} 
+                        color={transactionColor}
+                      />
+                    </View>
+                    <View style={styles.transactionText}>
+                      <Text style={[styles.transactionType, { color: colors.text }]}>
+                        {transaction.service || transaction.description || 'Transaction'}
+                      </Text>
+                      <Text style={[styles.transactionDate, { color: colors.mutedForeground }]}>
+                        {new Date(transaction.created_at).toLocaleDateString()} • {new Date(transaction.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.transactionAmount}>
+                    <Text style={[
+                      styles.amountText, 
+                      { color: transaction.type?.toLowerCase() === 'credit' ? colors.success : colors.text }
+                    ]}>
+                      {transaction.type?.toLowerCase() === 'credit' ? '+' : '-'}₦{transaction.amount}
+                    </Text>
+                    <View style={[
+                      styles.statusBadge,
+                      { backgroundColor: (transaction.status.toLowerCase() === 'success' || transaction.status.toLowerCase() === 'completed') 
+                        ? colors.success + '15' 
+                        : transaction.status.toLowerCase() === 'pending'
+                        ? colors.warning + '15'
+                        : colors.destructive + '15'
+                      }
+                    ]}>
+                      <Text style={[
+                        styles.statusText,
+                        { color: (transaction.status.toLowerCase() === 'success' || transaction.status.toLowerCase() === 'completed') 
+                          ? colors.success 
+                          : transaction.status.toLowerCase() === 'pending'
+                          ? colors.warning
+                          : colors.destructive
+                        }
+                      ]}>
+                        {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              );
+              })
+            ) : (
+              <View style={[styles.emptyTransactions, { backgroundColor: colors.card }]}>
+                <View style={[styles.emptyIconContainer, { backgroundColor: colors.mutedForeground + '15' }]}>
+                  <Ionicons name="receipt-outline" size={32} color={colors.mutedForeground} />
+                </View>
+                <Text style={[styles.emptyTransactionsText, { color: colors.mutedForeground }]}>
+                  No transactions yet
+                </Text>
+                <Text style={[styles.emptyTransactionsSubtext, { color: colors.mutedForeground }]}>
+                  Your recent transactions will appear here
+                </Text>
               </View>
-            ))}
+            )}
           </View>
         </View>
       </ScrollView>
@@ -312,11 +554,11 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4,
     },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
   },
   statValue: {
     fontSize: 24,
@@ -334,7 +576,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   viewAllButton: {
-    padding: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   viewAllText: {
     fontSize: 14,
@@ -352,11 +596,11 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4,
     },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
   },
   transactionInfo: {
     flex: 1,
@@ -389,5 +633,99 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 12,
     fontWeight: '600',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  errorTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  errorMessage: {
+    fontSize: 16,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 24,
+  },
+  retryButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  retryButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  emptyTransactions: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+    borderRadius: 16,
+  },
+  emptyTransactionsText: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  emptyTransactionsSubtext: {
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  statValueSkeleton: {
+    marginBottom: 4,
+  },
+  transactionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 12,
+  },
+  transactionText: {
+    flex: 1,
+  },
+  transactionTitleSkeleton: {
+    marginBottom: 4,
+  },
+  transactionDateSkeleton: {
+    marginBottom: 2,
+  },
+  transactionRefSkeleton: {
+    marginBottom: 0,
+  },
+  amountSkeleton: {
+    marginBottom: 4,
+  },
+  statusSkeleton: {
+    marginBottom: 0,
+  },
+  statIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  emptyIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  transactionIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
 });

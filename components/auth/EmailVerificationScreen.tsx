@@ -175,7 +175,7 @@ export const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = (
 
   const renderLogo = () => (
     <View style={styles.logoContainer}>
-      <Image source={require('@/assets/images/icon.png')} style={styles.logo} />
+      <Image source={require('@/assets/images/logo.png')} style={styles.logo} />
     </View>
   );
 

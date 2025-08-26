@@ -239,7 +239,7 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
 
   const renderLogo = () => (
     <View style={styles.logoContainer}>
-      <Image source={require('@/assets/images/icon.png')} style={styles.logo} />
+      <Image source={require('@/assets/images/logo.png')} style={styles.logo} />
     </View>
   );
 
@@ -344,7 +344,7 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
     <>
       <View style={styles.titleContainer}>
         <Text style={[styles.title, { color: colors.text }]}>
-          Forgot Password? 🔐
+          Forgot Password?
         </Text>
         <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
           Enter your email address and we'll send you a verification code to reset your password

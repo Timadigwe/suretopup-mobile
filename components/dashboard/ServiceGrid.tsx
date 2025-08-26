@@ -93,7 +93,7 @@ export const ServiceGrid: React.FC<ServiceGridProps> = ({ onServiceClick }) => {
               styles.iconContainer,
               { backgroundColor: `${service.color}20` }
             ]}>
-              <Ionicons name={service.icon} size={24} color={service.color} />
+              <Ionicons name={service.icon} size={22} color={service.color} />
             </View>
             
             <Text style={[styles.serviceName, { color: colors.text }]} numberOfLines={2}>
@@ -123,14 +123,15 @@ const styles = StyleSheet.create({
   },
   serviceCard: {
     width: '30%',
-    aspectRatio: 1,
+    minHeight: 100,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 16,
     borderWidth: 1,
     marginBottom: 12,
     position: 'relative',
-    paddingVertical: 8,
+    paddingVertical: 16,
+    paddingHorizontal: 4,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -154,8 +155,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   iconContainer: {
-    width: 48,
-    height: 48,
+    width: 44,
+    height: 44,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
@@ -165,8 +166,10 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '500',
     textAlign: 'center',
-    lineHeight: 14,
+    lineHeight: 18,
     flexWrap: 'wrap',
     flexShrink: 1,
+    paddingHorizontal: 2,
+    marginTop: 4,
   },
 });

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -7,15 +7,21 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useWallet } from '@/contexts/WalletContext';
 import { Ionicons } from '@expo/vector-icons';
 
 interface WalletBalanceCardProps {
   balance: number;
   onAddFunds: () => void;
+  showSkeleton?: boolean;
 }
 
-export const WalletBalanceCard: React.FC<WalletBalanceCardProps> = ({ balance, onAddFunds }) => {
-  const [showBalance, setShowBalance] = useState(true);
+export const WalletBalanceCard: React.FC<WalletBalanceCardProps> = ({ 
+  balance, 
+  onAddFunds, 
+  showSkeleton = false 
+}) => {
+  const { showBalance, setShowBalance } = useWallet();
   const { colors } = useTheme();
 
   const formatCurrency = (amount: number) => {
@@ -51,9 +57,13 @@ export const WalletBalanceCard: React.FC<WalletBalanceCardProps> = ({ balance, o
       </View>
 
       <View style={styles.balanceContainer}>
-        <Text style={styles.balance}>
-          {showBalance ? formatCurrency(balance) : '••••••'}
-        </Text>
+        {showSkeleton ? (
+          <View style={styles.balanceSkeleton} />
+        ) : (
+          <Text style={styles.balance}>
+            {showBalance ? formatCurrency(balance) : '••••••'}
+          </Text>
+        )}
         <Text style={styles.balanceSubtitle}>
           Available for transactions
         </Text>
@@ -116,6 +126,13 @@ const styles = StyleSheet.create({
   balanceSubtitle: {
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.8)',
+  },
+  balanceSkeleton: {
+    width: 150,
+    height: 32,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: 8,
+    marginBottom: 4,
   },
   addFundsButton: {
     flexDirection: 'row',

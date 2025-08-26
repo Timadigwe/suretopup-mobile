@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { WalletBalanceCard } from './WalletBalanceCard';
 import { ServiceGrid } from './ServiceGrid';
 import { PromoCarousel } from './PromoCarousel';
+import { DashboardSkeleton } from '@/components/ui/SkeletonLoader';
+import { apiService, DashboardData } from '@/services/api';
 
 interface DashboardProps {
   onNavigate: (page: string) => void;
@@ -21,12 +23,39 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, onLogout }) => {
-  const [walletBalance] = useState(25750);
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { colors } = useTheme();
   const { triggerHapticFeedback } = useMobileFeatures();
-  const { user, logout } = useAuth();
-  
-  const userName = user ? `${user.firstname} ${user.lastname}` : "User";
+  const { user, token, logout } = useAuth();
+
+  const walletBalance = dashboardData?.user?.balance ? parseFloat(dashboardData.user.balance) : 0;
+  const userName = dashboardData?.user?.fullname || (user ? `${user.firstname} ${user.lastname}` : "User");
+
+  // Fetch dashboard data
+  const fetchDashboardData = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const response = await apiService.getDashboard();
+      
+      if (response.success && response.data) {
+        setDashboardData(response.data);
+      } else {
+        setError(response.message || 'Failed to load dashboard data');
+      }
+    } catch (error) {
+      setError('Network error. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
 
   const handleServiceClick = (serviceId: string) => {
     triggerHapticFeedback('light');
@@ -60,6 +89,66 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, onLogout }) =>
       ]
     );
   };
+  
+  // Show skeleton loader while loading
+  if (isLoading) {
+    return <DashboardSkeleton />;
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={[styles.header, { 
+          backgroundColor: colors.card,
+          borderBottomColor: colors.border,
+        }]}>
+          <View style={styles.userInfo}>
+            <View style={[styles.avatar, { backgroundColor: `${colors.primary}20` }]}>
+              <Ionicons name="person" size={20} color={colors.primary} />
+            </View>
+            <View>
+              <Text style={[styles.greeting, { color: colors.mutedForeground }]}>
+                Good morning
+              </Text>
+              <Text style={[styles.userName, { color: colors.text }]}>
+                {userName}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              onPress={() => onNavigate('notifications')}
+              style={styles.headerButton}
+            >
+              <Ionicons name="notifications" size={20} color={colors.text} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => onNavigate('profile')}
+              style={styles.headerButton}
+            >
+              <Ionicons name="settings" size={20} color={colors.text} />
+            </TouchableOpacity>
+          </View>
+        </View>
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle-outline" size={48} color={colors.destructive} />
+          <Text style={[styles.errorTitle, { color: colors.text }]}>Oops!</Text>
+          <Text style={[styles.errorMessage, { color: colors.mutedForeground }]}>{error}</Text>
+          <TouchableOpacity
+            style={[styles.retryButton, { backgroundColor: colors.primary }]}
+            onPress={() => {
+              setIsLoading(true);
+              setError(null);
+              fetchDashboardData();
+            }}
+          >
+            <Text style={[styles.retryButtonText, { color: colors.background }]}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -128,18 +217,28 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, onLogout }) =>
               backgroundColor: colors.card,
               borderColor: colors.border,
             }]}>
-              <Text style={[styles.statValue, { color: colors.primary }]}>12</Text>
+              <View style={[styles.statIconContainer, { backgroundColor: '#3B82F6' + '15' }]}>
+                <Ionicons name="analytics" size={20} color="#3B82F6" />
+              </View>
+              <Text style={[styles.statValue, { color: '#3B82F6' }]}>
+                {dashboardData?.transactions?.length || 0}
+              </Text>
               <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>
-                This Month
+                Total Transactions
               </Text>
             </View>
             <View style={[styles.statCard, { 
               backgroundColor: colors.card,
               borderColor: colors.border,
             }]}>
-              <Text style={[styles.statValue, { color: colors.success }]}>₦45,200</Text>
+              <View style={[styles.statIconContainer, { backgroundColor: '#8B5CF6' + '15' }]}>
+                <Ionicons name="wallet" size={20} color="#8B5CF6" />
+              </View>
+              <Text style={[styles.statValue, { color: '#8B5CF6' }]}>
+                ₦{dashboardData?.user?.balance || '0.00'}
+              </Text>
               <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>
-                Total Spent
+                Current Balance
               </Text>
             </View>
           </View>
@@ -159,52 +258,79 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, onLogout }) =>
           </View>
           
           <View style={styles.transactionsList}>
-            {/* Sample transactions */}
-            <View style={[styles.transactionCard, { 
-              backgroundColor: colors.card,
-              borderColor: colors.border,
-            }]}>
-              <View style={styles.transactionInfo}>
-                <View style={[styles.transactionIcon, { backgroundColor: `${colors.primary}20` }]}>
-                  <View style={[styles.transactionDot, { backgroundColor: colors.primary }]} />
-                </View>
-                <View style={styles.transactionDetails}>
-                  <Text style={[styles.transactionTitle, { color: colors.text }]}>
-                    Airtime Purchase
-                  </Text>
-                  <Text style={[styles.transactionSubtitle, { color: colors.mutedForeground }]}>
-                    MTN • Today, 2:30 PM
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.transactionAmount}>
-                <Text style={[styles.amount, { color: colors.text }]}>₦500</Text>
-                <Text style={[styles.status, { color: colors.success }]}>Success</Text>
-              </View>
-            </View>
+            {dashboardData?.transactions && dashboardData.transactions.length > 0 ? (
+              dashboardData.transactions.slice(0, 2).map((transaction, index) => {
+                // Determine icon and color based on transaction type
+                const getTransactionIcon = (transaction: any) => {
+                  const type = transaction.service?.toLowerCase() || transaction.description?.toLowerCase() || '';
+                  if (type.includes('airtime') || type.includes('recharge')) return 'call';
+                  if (type.includes('data')) return 'cellular';
+                  if (type.includes('electricity') || type.includes('bill')) return 'flash';
+                  if (type.includes('fund') || type.includes('credit')) return 'add-circle';
+                  if (type.includes('transfer')) return 'swap-horizontal';
+                  if (type.includes('withdraw')) return 'arrow-down-circle';
+                  if (type.includes('deposit')) return 'arrow-up-circle';
+                  return 'card';
+                };
 
-            <View style={[styles.transactionCard, { 
-              backgroundColor: colors.card,
-              borderColor: colors.border,
-            }]}>
-              <View style={styles.transactionInfo}>
-                <View style={[styles.transactionIcon, { backgroundColor: '#3B82F620' }]}>
-                  <View style={[styles.transactionDot, { backgroundColor: '#3B82F6' }]} />
-                </View>
-                <View style={styles.transactionDetails}>
-                  <Text style={[styles.transactionTitle, { color: colors.text }]}>
-                    Data Purchase
-                  </Text>
-                  <Text style={[styles.transactionSubtitle, { color: colors.mutedForeground }]}>
-                    Airtel • Yesterday, 4:15 PM
-                  </Text>
-                </View>
+                const getTransactionColor = (index: number) => {
+                  const colorOptions = [
+                    '#10B981', // Green
+                    '#3B82F6', // Blue
+                    '#8B5CF6', // Purple
+                    '#F59E0B', // Amber
+                    '#EF4444'  // Red
+                  ];
+                  return colorOptions[index % colorOptions.length];
+                };
+
+                const transactionColor = getTransactionColor(index);
+                
+                return (
+                  <View key={transaction.id} style={[styles.transactionCard, { 
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                  }]}>
+                    <View style={styles.transactionInfo}>
+                      <View style={[styles.transactionIcon, { backgroundColor: transactionColor + '15' }]}>
+                        <Ionicons 
+                          name={getTransactionIcon(transaction)}
+                          size={20} 
+                          color={transactionColor}
+                        />
+                      </View>
+                      <View style={styles.transactionDetails}>
+                        <Text style={[styles.transactionTitle, { color: colors.text }]}>
+                          {transaction.description}
+                        </Text>
+                        <Text style={[styles.transactionSubtitle, { color: colors.mutedForeground }]}>
+                          {new Date(transaction.created_at).toLocaleDateString()} • {new Date(transaction.created_at).toLocaleTimeString()}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.transactionAmount}>
+                      <Text style={[styles.amount, { color: colors.text }]}>₦{transaction.amount}</Text>
+                      <Text style={[styles.status, { 
+                        color: transaction.status === 'success' ? colors.success : 
+                               transaction.status === 'pending' ? colors.warning : colors.destructive 
+                      }]}>
+                        {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })
+            ) : (
+              <View style={[styles.emptyTransactions, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <Ionicons name="receipt-outline" size={32} color={colors.mutedForeground} />
+                <Text style={[styles.emptyTransactionsText, { color: colors.mutedForeground }]}>
+                  No transactions yet
+                </Text>
+                <Text style={[styles.emptyTransactionsSubtext, { color: colors.mutedForeground }]}>
+                  Your recent transactions will appear here
+                </Text>
               </View>
-              <View style={styles.transactionAmount}>
-                <Text style={[styles.amount, { color: colors.text }]}>₦1,200</Text>
-                <Text style={[styles.status, { color: colors.success }]}>Success</Text>
-              </View>
-            </View>
+            )}
           </View>
         </View>
 
@@ -319,6 +445,14 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  statIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
   statValue: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -425,5 +559,49 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  errorTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  errorMessage: {
+    fontSize: 16,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 24,
+  },
+  retryButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  retryButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  emptyTransactions: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  emptyTransactionsText: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  emptyTransactionsSubtext: {
+    fontSize: 14,
+    textAlign: 'center',
   },
 });

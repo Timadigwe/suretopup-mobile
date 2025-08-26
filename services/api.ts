@@ -17,10 +17,11 @@ export interface LoginRequest {
 }
 
 export interface ApiResponse<T = any> {
-  success: boolean;
+  success?: boolean;
+  status?: string;
   message: string;
   data?: T;
-  errors?: Record<string, string[]>;
+  isTokenExpired?: boolean;
 }
 
 export interface AuthResponse {
@@ -35,11 +36,53 @@ export interface AuthResponse {
   token: string;
 }
 
+export interface DashboardUser {
+  id: number;
+  fullname: string;
+  balance: string;
+  email: string;
+  email_verified: boolean;
+}
+
+export interface Transaction {
+  id: number;
+  type: string;
+  amount: string;
+  status: string;
+  description: string;
+  created_at: string;
+}
+
+export interface DashboardData {
+  transactions: Transaction[];
+  user: DashboardUser;
+}
+
+export interface DashboardResponse {
+  success: boolean;
+  message: string;
+  data: DashboardData;
+}
+
 class ApiService {
   private baseUrl: string;
+  private token: string | null = null;
+  private onTokenExpired: (() => void) | null = null;
 
   constructor(baseUrl: string = BASE_URL) {
     this.baseUrl = baseUrl;
+  }
+
+  setToken(token: string) {
+    this.token = token;
+  }
+
+  clearToken() {
+    this.token = null;
+  }
+
+  setTokenExpiredCallback(callback: () => void) {
+    this.onTokenExpired = callback;
   }
 
   private async makeRequest<T>(
@@ -49,10 +92,15 @@ class ApiService {
     try {
       const url = `${this.baseUrl}${endpoint}`;
       
-      const defaultHeaders = {
+      const defaultHeaders: Record<string, string> = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       };
+
+      // Add authorization header if token exists
+      if (this.token) {
+        defaultHeaders['Authorization'] = `Bearer ${this.token}`;
+      }
 
       const config: RequestInit = {
         ...options,
@@ -62,12 +110,33 @@ class ApiService {
         },
       };
 
+      // Debug logging
+      console.log('API Request:', {
+        url,
+        method: config.method,
+        headers: config.headers,
+        body: config.body
+      });
+
       const response = await fetch(url, config);
       const data = await response.json();
 
+      // Check for token expiration
+      if (response.status === 401 || 
+          (data.message && data.message.toLowerCase().includes('token has expired')) ||
+          (data.message && data.message.toLowerCase().includes('token expired'))) {
+        if (this.onTokenExpired) {
+          this.onTokenExpired();
+        }
+        return {
+          success: false,
+          message: 'Token expired',
+          isTokenExpired: true
+        };
+      }
+
       return data;
     } catch (error) {
-      console.error('API Request Error:', error);
       return {
         success: false,
         message: 'Network error. Please check your connection.',
@@ -93,6 +162,145 @@ class ApiService {
     return this.makeRequest('/auth/forgot-password', {
       method: 'POST',
       body: JSON.stringify({ email }),
+    });
+  }
+
+  async getDashboard(): Promise<ApiResponse<DashboardData>> {
+    return this.makeRequest<DashboardData>('/user/dashboard', {
+      method: 'GET',
+    });
+  }
+
+  async initializeDeposit(email: string, amount: number): Promise<ApiResponse<{
+    authorization_url: string;
+    access_code: string;
+    reference: string;
+  }>> {
+    return this.makeRequest<{
+      authorization_url: string;
+      access_code: string;
+      reference: string;
+    }>('/user/deposit/initalize-deposit', {
+      method: 'POST',
+      body: JSON.stringify({
+        email,
+        amount,
+      }),
+    });
+  }
+
+  async checkPaymentStatus(reference: string): Promise<ApiResponse<{
+    transaction: {
+      userid: number;
+      service: string;
+      type: string;
+      amount: number;
+      ref: string;
+      date: string;
+      status: string;
+      info: string;
+      updated_at: string;
+      created_at: string;
+      id: number;
+    };
+    user: {
+      id: number;
+      fullname: string;
+      email: string;
+      new_balance: number;
+    };
+  }>> {
+    return this.makeRequest<{
+      transaction: {
+        userid: number;
+        service: string;
+        type: string;
+        amount: number;
+        ref: string;
+        date: string;
+        status: string;
+        info: string;
+        updated_at: string;
+        created_at: string;
+        id: number;
+      };
+      user: {
+        id: number;
+        fullname: string;
+        email: string;
+        new_balance: number;
+      };
+    }>(`/user/deposit/payment-callback?trxref=${reference}&reference=${reference}`, {
+      method: 'GET',
+    });
+  }
+
+  async buyAirtime(data: {
+    network: string;
+    amount: number;
+    phone: string;
+    tpin: string;
+  }): Promise<ApiResponse<{
+    reference: string;
+    amount: number;
+    phone: string;
+    network: string;
+    transaction_id: number;
+    new_balance: number;
+    ebills: {
+      status: string;
+      data: {
+        code: string;
+        message: string;
+        data: {
+          order_id: number;
+          status: string;
+          product_name: string;
+          service_name: string;
+          phone: string;
+          amount: number;
+          discount: string;
+          amount_charged: string;
+          initial_balance: string;
+          final_balance: string;
+          request_id: string;
+        };
+      };
+    };
+    date: string;
+  }>> {
+    console.log('buyAirtime called with data:', data);
+    return this.makeRequest<{
+      reference: string;
+      amount: number;
+      phone: string;
+      network: string;
+      transaction_id: number;
+      new_balance: number;
+      ebills: {
+        status: string;
+        data: {
+          code: string;
+          message: string;
+          data: {
+            order_id: number;
+            status: string;
+            product_name: string;
+            service_name: string;
+            phone: string;
+            amount: number;
+            discount: string;
+            amount_charged: string;
+            initial_balance: string;
+            final_balance: string;
+            request_id: string;
+          };
+        };
+      };
+      date: string;
+    }>('/user/buy-airtime', {
+      method: 'POST',
+      body: JSON.stringify(data),
     });
   }
 }
