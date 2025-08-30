@@ -325,6 +325,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const handleTokenExpiration = async () => {
+    console.log('handleTokenExpiration called - clearing auth data');
     // Clear dashboard cache as well
     dashboardCacheUtils.reset();
     // Clear auth data and redirect to login

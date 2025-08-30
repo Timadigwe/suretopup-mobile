@@ -9,6 +9,9 @@ import { WalletScreen } from './dashboard/WalletScreen';
 import { ProfileScreen } from './dashboard/ProfileScreen';
 import { AddFundsScreen } from './dashboard/AddFundsScreen';
 import { AirtimeRechargeScreen } from './dashboard/AirtimeRechargeScreen';
+import { DataPurchaseScreen } from './dashboard/DataPurchaseScreen';
+import { CardPrintingScreen } from './dashboard/CardPrintingScreen';
+import { BettingFundingScreen } from './dashboard/BettingFundingScreen';
 import { ServicePlaceholder } from './services/ServicePlaceholder';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -26,6 +29,7 @@ type AppScreen =
   | 'data' 
   | 'electricity' 
   | 'betting' 
+  | 'betting-funding'
   | 'bills' 
   | 'printing' 
   | 'add-funds' 
@@ -169,16 +173,23 @@ export const App: React.FC = () => {
         return <AirtimeRechargeScreen onNavigate={handleNavigate} />;
         
       case 'data':
+        return <DataPurchaseScreen onNavigate={handleNavigate} />;
+        
       case 'electricity':
       case 'betting':
       case 'bills':
-      case 'printing':
         return (
           <ServicePlaceholder 
             serviceName={currentScreen}
             onBack={handleBackToDashboard}
           />
         );
+        
+      case 'printing':
+        return <CardPrintingScreen onNavigate={handleNavigate} />;
+        
+      case 'betting-funding':
+        return <BettingFundingScreen onNavigate={handleNavigate} />;
         
       case 'add-funds':
       case 'transactions':

@@ -32,7 +32,15 @@
       "output": "static"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow SureTopUp to save receipt images to your photo library.",
+          "savePhotosPermission": "Allow SureTopUp to save receipt images to your photo library.",
+          "isAccessMediaLocationEnabled": true
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

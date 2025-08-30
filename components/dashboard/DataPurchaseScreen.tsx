@@ -20,7 +20,7 @@ import { apiService } from '@/services/api';
 import { CustomModal } from '@/components/ui/CustomModal';
 import { ReceiptModal } from '@/components/ui/ReceiptModal';
 
-interface AirtimeRechargeScreenProps {
+interface DataPurchaseScreenProps {
   onNavigate: (page: string) => void;
 }
 
@@ -54,23 +54,46 @@ const NETWORK_PROVIDERS = {
   },
 };
 
-export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ onNavigate }) => {
+interface DataPlan {
+  id: number;
+  variation_id: string;
+  service_name: string;
+  service_id: string;
+  data_plan: string;
+  price: string;
+  percentage_charge: string;
+  payment_price: string;
+  availability: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export const DataPurchaseScreen: React.FC<DataPurchaseScreenProps> = ({ onNavigate }) => {
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [amount, setAmount] = useState('');
   const [transactionPin, setTransactionPin] = useState('');
   const [detectedNetwork, setDetectedNetwork] = useState<string | null>(null);
   const [selectedNetwork, setSelectedNetwork] = useState<string | null>(null);
   const [showNetworkSelector, setShowNetworkSelector] = useState(false);
+  const [dataPlans, setDataPlans] = useState<DataPlan[]>([]);
+  const [filteredDataPlans, setFilteredDataPlans] = useState<DataPlan[]>([]);
+  const [isLoadingPlans, setIsLoadingPlans] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successData, setSuccessData] = useState<any>(null);
+  const [selectedPlan, setSelectedPlan] = useState<DataPlan | null>(null);
+  const [selectedDuration, setSelectedDuration] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   
   const { colors } = useTheme();
   const { triggerHapticFeedback } = useMobileFeatures();
   const { user } = useAuth();
+
+  // Fetch data plans on component mount
+  useEffect(() => {
+    fetchDataPlans();
+  }, []);
 
   // Detect network when phone number changes
   useEffect(() => {
@@ -88,12 +111,88 @@ export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ on
       setDetectedNetwork(detected);
       if (detected) {
         setSelectedNetwork(detected);
+        filterDataPlansByNetwork(detected);
       }
     } else {
       setDetectedNetwork(null);
       setSelectedNetwork(null);
+      setFilteredDataPlans([]);
     }
-  }, [phoneNumber]);
+  }, [phoneNumber, dataPlans]);
+
+  const fetchDataPlans = async () => {
+    setIsLoadingPlans(true);
+    try {
+      const response = await apiService.getDataPlans();
+      if ((response.success || response.status === 'success') && response.data) {
+        setDataPlans(response.data.dataplans);
+      } else {
+        setErrorMessage('Failed to load data plans');
+        setShowErrorModal(true);
+      }
+    } catch (error) {
+      setErrorMessage('Network error. Please try again.');
+      setShowErrorModal(true);
+    } finally {
+      setIsLoadingPlans(false);
+    }
+  };
+
+  const filterDataPlansByNetwork = (network: string) => {
+    const filtered = dataPlans.filter(plan => 
+      plan.service_id.toLowerCase() === network.toLowerCase()
+    );
+    setFilteredDataPlans(filtered);
+  };
+
+  const categorizePlansByDuration = (plans: DataPlan[]) => {
+    const categorized = {
+      daily: [] as DataPlan[],
+      weekly: [] as DataPlan[],
+      monthly: [] as DataPlan[],
+    };
+
+    plans.forEach(plan => {
+      const dataPlanText = plan.data_plan.toLowerCase();
+      
+      // Extract number of days from the plan text
+      const dayMatch = dataPlanText.match(/(\d+)\s*days?/i);
+      const dayNumber = dayMatch ? parseInt(dayMatch[1]) : null;
+      
+      if (dayNumber !== null) {
+        // Categorize based on actual number of days
+        if (dayNumber >= 1 && dayNumber <= 3) {
+          categorized.daily.push(plan);
+        } else if (dayNumber >= 4 && dayNumber <= 28) {
+          categorized.weekly.push(plan);
+        } else if (dayNumber >= 30) {
+          categorized.monthly.push(plan);
+        } else {
+          // Fallback for any other day numbers
+          categorized.monthly.push(plan);
+        }
+      } else {
+        // Fallback for plans that don't specify days clearly
+        if (dataPlanText.includes('day') || dataPlanText.includes('daily')) {
+          categorized.daily.push(plan);
+        } else if (dataPlanText.includes('week') || dataPlanText.includes('weekly')) {
+          categorized.weekly.push(plan);
+        } else if (dataPlanText.includes('month') || dataPlanText.includes('monthly')) {
+          categorized.monthly.push(plan);
+        } else {
+          // Default to monthly for plans that don't specify duration
+          categorized.monthly.push(plan);
+        }
+      }
+    });
+
+    return categorized;
+  };
+
+  const getCurrentPlans = () => {
+    const categorized = categorizePlansByDuration(filteredDataPlans);
+    return categorized[selectedDuration] || [];
+  };
 
   const validateForm = () => {
     if (!phoneNumber.trim()) {
@@ -108,21 +207,14 @@ export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ on
       return false;
     }
     
-    if (!amount.trim()) {
-      setErrorMessage('Please enter an amount');
+    if (!selectedNetwork) {
+      setErrorMessage('Please select a network provider');
       setShowErrorModal(true);
       return false;
     }
     
-    const amountValue = parseFloat(amount);
-    if (isNaN(amountValue) || amountValue <= 0) {
-      setErrorMessage('Please enter a valid amount greater than 0');
-      setShowErrorModal(true);
-      return false;
-    }
-    
-    if (amountValue < 50) {
-      setErrorMessage('Minimum airtime amount is ₦50');
+    if (!selectedPlan) {
+      setErrorMessage('Please select a data plan');
       setShowErrorModal(true);
       return false;
     }
@@ -139,16 +231,10 @@ export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ on
       return false;
     }
     
-    if (!selectedNetwork) {
-      setErrorMessage('Please select a network provider');
-      setShowErrorModal(true);
-      return false;
-    }
-    
     return true;
   };
 
-  const handleRecharge = async () => {
+  const handlePurchase = async () => {
     if (!validateForm()) return;
     
     setIsLoading(true);
@@ -157,28 +243,30 @@ export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ on
     try {
       const requestData = {
         network: selectedNetwork!,
-        amount: parseFloat(amount),
+        dataplan: selectedPlan!.variation_id,
+        amount: parseFloat(selectedPlan!.payment_price),
         phone: phoneNumber,
         tpin: transactionPin,
       };
       
-      console.log('Sending airtime request:', requestData);
+      console.log('Sending data purchase request:', requestData);
       
-      const response = await apiService.buyAirtime(requestData);
+      const response = await apiService.buyData(requestData);
       
-      console.log('Airtime recharge response:', response);
+      console.log('Data purchase response:', response);
       
       if ((response.success || response.status === 'success') && response.data) {
         setSuccessData(response.data);
         setShowSuccessModal(true);
         // Clear form on success
         setPhoneNumber('');
-        setAmount('');
         setTransactionPin('');
         setSelectedNetwork(null);
         setDetectedNetwork(null);
+        setSelectedPlan(null);
+        setFilteredDataPlans([]);
       } else {
-        setErrorMessage(response.message || 'Failed to purchase airtime');
+        setErrorMessage(response.message || 'Failed to purchase data');
         setShowErrorModal(true);
       }
     } catch (error) {
@@ -207,10 +295,12 @@ export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ on
     onNavigate('home');
   };
 
-
-
   const getNetworkInfo = (network: string) => {
     return NETWORK_PROVIDERS[network as keyof typeof NETWORK_PROVIDERS];
+  };
+
+  const formatPrice = (price: string) => {
+    return `₦${parseFloat(price).toLocaleString()}`;
   };
 
   return (
@@ -225,7 +315,7 @@ export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ on
             <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: colors.text }]}>
-            Airtime Recharge
+            Data Purchase
           </Text>
           <View style={styles.headerSpacer} />
         </View>
@@ -240,17 +330,17 @@ export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ on
         {/* Hero Section */}
         <View style={styles.heroSection}>
           <LinearGradient
-            colors={['#3B82F6', '#1D4ED8', '#1E40AF']}
+            colors={['#8B5CF6', '#7C3AED', '#6D28D9']}
             style={styles.heroCard}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           >
             <View style={styles.heroIconContainer}>
-              <Ionicons name="phone-portrait" size={32} color="white" />
+              <Ionicons name="cellular" size={32} color="white" />
             </View>
-            <Text style={styles.heroTitle}>Recharge Airtime</Text>
+            <Text style={styles.heroTitle}>Buy Data</Text>
             <Text style={styles.heroSubtitle}>
-              Buy airtime for any network instantly and securely
+              Get the best data plans for your network
             </Text>
           </LinearGradient>
         </View>
@@ -327,31 +417,113 @@ export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ on
           )}
         </View>
 
-        {/* Amount Input */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            Amount
-          </Text>
-          <LinearGradient
-            colors={[colors.card, colors.card + 'F0']}
-            style={styles.amountInputContainer}
-          >
-            <View style={styles.amountInputWrapper}>
-              <Text style={styles.currencySymbol}>₦</Text>
-              <TextInput
-                style={[styles.amountInput, { color: colors.text }]}
-                value={amount}
-                onChangeText={setAmount}
-                placeholder="0.00"
-                placeholderTextColor={colors.mutedForeground}
-                keyboardType="numeric"
-              />
+        {/* Data Plans Section */}
+        {selectedNetwork && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Available Plans
+            </Text>
+            
+            {/* Duration Toggle */}
+            <View style={styles.durationToggleContainer}>
+              {(['daily', 'weekly', 'monthly'] as const).map((duration) => {
+                const categorized = categorizePlansByDuration(filteredDataPlans);
+                const planCount = categorized[duration]?.length || 0;
+                
+                return (
+                  <TouchableOpacity
+                    key={duration}
+                    style={[
+                      styles.durationToggleButton,
+                      selectedDuration === duration && styles.durationToggleButtonActive
+                    ]}
+                    onPress={() => {
+                      setSelectedDuration(duration);
+                      setSelectedPlan(null); // Clear selection when changing duration
+                      triggerHapticFeedback('light');
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[
+                      styles.durationToggleText,
+                      { color: selectedDuration === duration ? 'white' : colors.mutedForeground }
+                    ]}>
+                      {duration.charAt(0).toUpperCase() + duration.slice(1)}
+                    </Text>
+                    {planCount > 0 && (
+                      <Text style={[
+                        styles.durationToggleCount,
+                        { color: selectedDuration === duration ? 'rgba(255, 255, 255, 0.8)' : colors.mutedForeground }
+                      ]}>
+                        ({planCount})
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
             </View>
-            <View style={styles.amountInputDecoration} />
-          </LinearGradient>
-        </View>
 
-
+            {isLoadingPlans ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={colors.primary} />
+                <Text style={[styles.loadingText, { color: colors.mutedForeground }]}>
+                  Loading data plans...
+                </Text>
+              </View>
+            ) : getCurrentPlans().length > 0 ? (
+              <View style={styles.dataPlansContainer}>
+                {getCurrentPlans().map((plan) => (
+                  <TouchableOpacity
+                    key={plan.id}
+                    style={[
+                      styles.dataPlanCard,
+                      selectedPlan?.id === plan.id && styles.dataPlanCardSelected
+                    ]}
+                    onPress={() => {
+                      setSelectedPlan(plan);
+                      triggerHapticFeedback('light');
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.dataPlanHeader}>
+                      <View style={styles.dataPlanInfo}>
+                        <Text style={[styles.dataPlanName, { color: colors.text }]}>
+                          {plan.data_plan}
+                        </Text>
+                        <Text style={[styles.dataPlanNetwork, { color: colors.mutedForeground }]}>
+                          {plan.service_name}
+                        </Text>
+                      </View>
+                      <View style={styles.dataPlanPrice}>
+                        <Text style={[styles.dataPlanPriceText, { color: colors.text }]}>
+                          {formatPrice(plan.payment_price)}
+                        </Text>
+                        <Text style={[styles.dataPlanOriginalPrice, { color: colors.mutedForeground }]}>
+                          {formatPrice(plan.price)}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.dataPlanFooter}>
+                      <Text style={[styles.dataPlanCharge, { color: colors.primary }]}>
+                        +{plan.percentage_charge}% service charge
+                      </Text>
+                      {selectedPlan?.id === plan.id && (
+                        <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.noPlansContainer}>
+                <Ionicons name="cellular-outline" size={48} color={colors.mutedForeground} />
+                <Text style={[styles.noPlansText, { color: colors.mutedForeground }]}>
+                  No {selectedDuration} plans available for {getNetworkInfo(selectedNetwork).name}
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
 
         {/* Transaction PIN */}
         <View style={styles.section}>
@@ -389,26 +561,26 @@ export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ on
               <Ionicons name="shield-checkmark" size={20} color={colors.primary} />
             </View>
             <Text style={[styles.infoTitle, { color: colors.text }]}>
-              Secure Recharge
+              Secure Data Purchase
             </Text>
           </View>
           <View style={styles.infoContent}>
             <View style={styles.infoItem}>
               <Ionicons name="checkmark-circle" size={16} color={colors.success} />
               <Text style={[styles.infoText, { color: colors.mutedForeground }]}>
-                Minimum amount: ₦50
-              </Text>
-            </View>
-            <View style={styles.infoItem}>
-              <Ionicons name="checkmark-circle" size={16} color={colors.success} />
-              <Text style={[styles.infoText, { color: colors.mutedForeground }]}>
-                Instant delivery to phone
+                Instant activation
               </Text>
             </View>
             <View style={styles.infoItem}>
               <Ionicons name="checkmark-circle" size={16} color={colors.success} />
               <Text style={[styles.infoText, { color: colors.mutedForeground }]}>
                 All networks supported
+              </Text>
+            </View>
+            <View style={styles.infoItem}>
+              <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+              <Text style={[styles.infoText, { color: colors.mutedForeground }]}>
+                Best prices guaranteed
               </Text>
             </View>
           </View>
@@ -420,12 +592,12 @@ export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ on
             styles.submitButton,
             { opacity: isLoading ? 0.7 : 1 },
           ]}
-          onPress={handleRecharge}
-          disabled={isLoading}
+          onPress={handlePurchase}
+          disabled={isLoading || !selectedPlan}
           activeOpacity={0.8}
         >
           <LinearGradient
-            colors={isLoading ? [colors.mutedForeground, colors.mutedForeground] : ['#3B82F6', '#1D4ED8']}
+            colors={isLoading || !selectedPlan ? [colors.mutedForeground, colors.mutedForeground] : ['#8B5CF6', '#7C3AED']}
             style={styles.submitButtonGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
@@ -433,10 +605,10 @@ export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ on
             {isLoading ? (
               <ActivityIndicator color="white" size="small" />
             ) : (
-              <Ionicons name="phone-portrait" size={20} color="white" />
+              <Ionicons name="cellular" size={20} color="white" />
             )}
             <Text style={styles.submitButtonText}>
-              {isLoading ? 'Processing...' : 'Recharge Airtime'}
+              {isLoading ? 'Processing...' : selectedPlan ? `Buy ${selectedPlan.data_plan}` : `Select a ${selectedDuration} Plan`}
             </Text>
           </LinearGradient>
         </TouchableOpacity>
@@ -460,6 +632,7 @@ export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ on
                 ]}
                 onPress={() => {
                   setSelectedNetwork(network);
+                  filterDataPlansByNetwork(network);
                   setShowNetworkSelector(false);
                   triggerHapticFeedback('light');
                 }}
@@ -508,8 +681,8 @@ export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ on
       <CustomModal
         visible={showSuccessModal}
         onClose={handleSuccessModalClose}
-        title="Airtime Recharge Successful!"
-        message={`₦${successData?.amount} airtime has been sent to ${successData?.phone}. Your new balance is ₦${successData?.new_balance}.`}
+        title="Data Purchase Successful!"
+        message={`${successData?.transaction?.info} has been credited with data. Your transaction reference is ${successData?.reference}.`}
         type="success"
         primaryButtonText="View Receipt"
         onPrimaryPress={handleSuccessModalClose}
@@ -524,8 +697,10 @@ export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ on
           reference: successData.reference,
           amount: successData.amount,
           phone: successData.phone,
-          service: 'Airtime',
+          service: 'Data',
           date: new Date().toISOString(), // Use current time since API doesn't provide time
+          network: selectedNetwork ? getNetworkInfo(selectedNetwork).name : undefined,
+          dataPlan: selectedPlan?.data_plan,
           transaction_id: successData.transaction_id,
         } : null}
       />
@@ -574,7 +749,7 @@ const styles = StyleSheet.create({
     padding: 24,
     borderRadius: 20,
     alignItems: 'center',
-    shadowColor: '#3B82F6',
+    shadowColor: '#8B5CF6',
     shadowOffset: {
       width: 0,
       height: 8,
@@ -636,7 +811,7 @@ const styles = StyleSheet.create({
   },
   inputDecoration: {
     height: 2,
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#8B5CF6',
     marginHorizontal: 16,
     marginBottom: 12,
     borderRadius: 1,
@@ -650,9 +825,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 12,
     borderRadius: 12,
-    backgroundColor: 'rgba(59, 130, 246, 0.05)',
+    backgroundColor: 'rgba(139, 92, 246, 0.05)',
     borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.2)',
+    borderColor: 'rgba(139, 92, 246, 0.2)',
   },
   networkInfo: {
     flexDirection: 'row',
@@ -671,9 +846,6 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
   },
-  networkDetails: {
-    flex: 1,
-  },
   networkName: {
     fontSize: 16,
     fontWeight: '600',
@@ -687,7 +859,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    backgroundColor: 'rgba(139, 92, 246, 0.1)',
   },
   changeNetworkText: {
     fontSize: 12,
@@ -709,69 +881,89 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 12,
   },
-  amountInputContainer: {
-    borderRadius: 20,
+  loadingContainer: {
+    alignItems: 'center',
+    padding: 40,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  dataPlansContainer: {
+    gap: 12,
+  },
+  dataPlanCard: {
+    padding: 16,
+    borderRadius: 16,
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 2,
     },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  dataPlanCardSelected: {
+    backgroundColor: 'rgba(139, 92, 246, 0.05)',
+    borderColor: '#8B5CF6',
+    shadowColor: '#8B5CF6',
+    shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 4,
   },
-  amountInputWrapper: {
+  dataPlanHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
   },
-  currencySymbol: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginRight: 12,
-    color: '#3B82F6',
-  },
-  amountInput: {
+  dataPlanInfo: {
     flex: 1,
-    fontSize: 28,
-    fontWeight: 'bold',
   },
-  amountInputDecoration: {
-    height: 2,
-    backgroundColor: '#3B82F6',
-    marginHorizontal: 16,
-    marginBottom: 12,
-    borderRadius: 1,
+  dataPlanName: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
   },
-  quickAmountsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  quickAmountButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 8,
-    backgroundColor: '#F3F4F6',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    minWidth: (width - 72 - 16) / 3,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  quickAmountButtonSelected: {
-    backgroundColor: '#3B82F6',
-    borderColor: '#3B82F6',
-  },
-  quickAmountText: {
+  dataPlanNetwork: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#6B7280',
   },
-  quickAmountTextSelected: {
-    color: 'white',
-    fontWeight: '600',
+  dataPlanPrice: {
+    alignItems: 'flex-end',
+  },
+  dataPlanPriceText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#8B5CF6',
+  },
+  dataPlanOriginalPrice: {
+    fontSize: 12,
+    textDecorationLine: 'line-through',
+  },
+  dataPlanFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  dataPlanCharge: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  noPlansContainer: {
+    alignItems: 'center',
+    padding: 40,
+  },
+  noPlansText: {
+    marginTop: 12,
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'center',
   },
   infoSection: {
     padding: 24,
@@ -795,7 +987,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    backgroundColor: 'rgba(139, 92, 246, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -818,7 +1010,7 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     borderRadius: 20,
-    shadowColor: '#3B82F6',
+    shadowColor: '#8B5CF6',
     shadowOffset: {
       width: 0,
       height: 8,
@@ -854,8 +1046,8 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
   },
   networkOptionSelected: {
-    backgroundColor: 'rgba(59, 130, 246, 0.05)',
-    borderColor: '#3B82F6',
+    backgroundColor: 'rgba(139, 92, 246, 0.05)',
+    borderColor: '#8B5CF6',
   },
   networkOptionIcon: {
     width: 40,
@@ -869,5 +1061,32 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     flex: 1,
+  },
+  durationToggleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 20,
+    backgroundColor: 'rgba(139, 92, 246, 0.05)',
+    borderRadius: 12,
+    paddingVertical: 8,
+  },
+  durationToggleButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 10,
+    alignItems: 'center',
+    minWidth: 80,
+  },
+  durationToggleButtonActive: {
+    backgroundColor: '#8B5CF6',
+  },
+  durationToggleText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  durationToggleCount: {
+    fontSize: 10,
+    fontWeight: '500',
+    marginTop: 2,
   },
 });

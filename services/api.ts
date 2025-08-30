@@ -1,4 +1,5 @@
-const BASE_URL = 'https://prod.suretopup.com.ng/api/v1';
+//const BASE_URL = 'https://prod.suretopup.com.ng/api/v1';
+const BASE_URL = 'https://test.eyzmo.com/api/v1'
 
 export interface RegisterRequest {
   firstname: string;
@@ -103,6 +104,7 @@ class ApiService {
       }
 
       const config: RequestInit = {
+        method: options.method || 'GET',
         ...options,
         headers: {
           ...defaultHeaders,
@@ -121,10 +123,13 @@ class ApiService {
       const response = await fetch(url, config);
       const data = await response.json();
 
-      // Check for token expiration
-      if (response.status === 401 || 
-          (data.message && data.message.toLowerCase().includes('token has expired')) ||
-          (data.message && data.message.toLowerCase().includes('token expired'))) {
+      console.log('API Response:', { url, status: response.status, data });
+
+      // Check for token expiration (only when we have a token and specific token-related errors)
+      if (this.token && response.status === 401 && 
+          data.message && (data.message.toLowerCase().includes('token has expired') ||
+           data.message.toLowerCase().includes('token expired'))) {
+        console.log('Token expiration detected:', { status: response.status, message: data.message });
         if (this.onTokenExpired) {
           this.onTokenExpired();
         }
@@ -299,6 +304,330 @@ class ApiService {
       };
       date: string;
     }>('/user/buy-airtime', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Data Purchase
+  async getDataPlans(): Promise<ApiResponse<{
+    dataplans: Array<{
+      id: number;
+      variation_id: string;
+      service_name: string;
+      service_id: string;
+      data_plan: string;
+      price: string;
+      percentage_charge: string;
+      payment_price: string;
+      availability: string;
+      created_at: string;
+      updated_at: string;
+    }>;
+  }>> {
+    return this.makeRequest<{
+      dataplans: Array<{
+        id: number;
+        variation_id: string;
+        service_name: string;
+        service_id: string;
+        data_plan: string;
+        price: string;
+        percentage_charge: string;
+        payment_price: string;
+        availability: string;
+        created_at: string;
+        updated_at: string;
+      }>;
+    }>('/user/data-plan', {
+      method: 'GET',
+    });
+  }
+
+  async buyData(data: {
+    network: string;
+    dataplan: string;
+    amount: number;
+    phone: string;
+    tpin: string;
+  }): Promise<ApiResponse<{
+    reference: string;
+    amount: number;
+    phone: string;
+    service: string;
+    date: string;
+    transaction: {
+      userid: number;
+      service: string;
+      type: string;
+      amount: number;
+      ref: string;
+      date: string;
+      status: string;
+      info: string;
+      updated_at: string;
+      created_at: string;
+      id: number;
+    };
+  }>> {
+    return this.makeRequest<{
+      reference: string;
+      amount: number;
+      phone: string;
+      service: string;
+      date: string;
+      transaction: {
+        userid: number;
+        service: string;
+        type: string;
+        amount: number;
+        ref: string;
+        date: string;
+        status: string;
+        info: string;
+        updated_at: string;
+        created_at: string;
+        id: number;
+      };
+    }>('/user/buy-data', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Card Printing (Recharge Pins)
+  async buyRechargePins(data: {
+    businessname: string;
+    network: string;
+    amount: string;
+    quantity: string;
+    amountp: string;
+    tpin: string;
+  }): Promise<ApiResponse<{
+    reference: string;
+    business_name: string;
+    request_id: string;
+    product_name: string;
+    service_name: string;
+    value: number;
+    quantity: number;
+    amount: number;
+    initial_balance: number;
+    final_balance: number;
+    epins: Array<{
+      amount: string;
+      pin: string;
+      serial: string;
+      instruction: string;
+    }>;
+    transaction: {
+      userid: number;
+      service: string;
+      type: string;
+      amount: string;
+      ref: string;
+      date: string;
+      status: string;
+      updated_at: string;
+      created_at: string;
+      id: number;
+    };
+  }>> {
+    return this.makeRequest<{
+      reference: string;
+      business_name: string;
+      request_id: string;
+      product_name: string;
+      service_name: string;
+      value: number;
+      quantity: number;
+      amount: number;
+      initial_balance: number;
+      final_balance: number;
+      epins: Array<{
+        amount: string;
+        pin: string;
+        serial: string;
+        instruction: string;
+      }>;
+      transaction: {
+        userid: number;
+        service: string;
+        type: string;
+        amount: string;
+        ref: string;
+        date: string;
+        status: string;
+        updated_at: string;
+        created_at: string;
+        id: number;
+      };
+    }>('/user/buy-recharge-pins', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Betting Companies
+  async getBettingCompanies(): Promise<ApiResponse<Array<{
+    id: string;
+    name: string;
+  }>>> {
+    return this.makeRequest<Array<{
+      id: string;
+      name: string;
+    }>>('/user/betting-companies', {
+      method: 'GET',
+    });
+  }
+
+  // Verify Betting Customer
+  async verifyBettingCustomer(data: {
+    customer_id: string;
+    service_id: string;
+  }): Promise<ApiResponse<{
+    customer_username: string;
+    customer_name: string;
+    customer_id: string;
+    service_id: string;
+    raw_response: {
+      code: string;
+      message: string;
+      data: {
+        service_name: string;
+        customer_id: string;
+        customer_name: string;
+        customer_username: string;
+        customer_email_address: string;
+        customer_phone_number: string;
+        minimum_amount: number;
+        maximum_amount: number;
+      };
+    };
+  }>> {
+    return this.makeRequest<{
+      customer_username: string;
+      customer_name: string;
+      customer_id: string;
+      service_id: string;
+      raw_response: {
+        code: string;
+        message: string;
+        data: {
+          service_name: string;
+          customer_id: string;
+          customer_name: string;
+          customer_username: string;
+          customer_email_address: string;
+          customer_phone_number: string;
+          minimum_amount: number;
+          maximum_amount: number;
+        };
+      };
+    }>('/user/verify-bet-customer', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Fund Betting Account
+  async fundBettingAccount(data: {
+    service_id: string;
+    customer_id: string;
+    amount: number;
+    tpin: string;
+  }): Promise<ApiResponse<{
+    transaction: {
+      userid: number;
+      service: string;
+      type: string;
+      amount: number;
+      ref: string;
+      date: string;
+      status: string;
+      info: string;
+      old_balance: number;
+      new_balance: number;
+      updated_at: string;
+      created_at: string;
+      id: number;
+    };
+    ebills_response: {
+      code: string;
+      message: string;
+      data: {
+        order_id: number;
+        status: string;
+        product_name: string;
+        service_name: string;
+        customer_id: string;
+        customer_name: string;
+        customer_username: string;
+        customer_email_address: string;
+        customer_phone_number: string;
+        amount: number;
+        amount_charged: string;
+        discount: string;
+        initial_balance: string;
+        final_balance: string;
+        request_id: string;
+      };
+    };
+    receipt_data: {
+      service: string;
+      phone: string | null;
+      reference: string;
+      date: string;
+      amount: number;
+      rinfo: number;
+    };
+  }>> {
+    return this.makeRequest<{
+      transaction: {
+        userid: number;
+        service: string;
+        type: string;
+        amount: number;
+        ref: string;
+        date: string;
+        status: string;
+        info: string;
+        old_balance: number;
+        new_balance: number;
+        updated_at: string;
+        created_at: string;
+        id: number;
+      };
+      ebills_response: {
+        code: string;
+        message: string;
+        data: {
+          order_id: number;
+          status: string;
+          product_name: string;
+          service_name: string;
+          customer_id: string;
+          customer_name: string;
+          customer_username: string;
+          customer_email_address: string;
+          customer_phone_number: string;
+          amount: number;
+          amount_charged: string;
+          discount: string;
+          initial_balance: string;
+          final_balance: string;
+          request_id: string;
+        };
+      };
+      receipt_data: {
+        service: string;
+        phone: string | null;
+        reference: string;
+        date: string;
+        amount: number;
+        rinfo: number;
+      };
+    }>('/user/fund-account', {
       method: 'POST',
       body: JSON.stringify(data),
     });

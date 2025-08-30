@@ -18,9 +18,9 @@ import { useMobileFeatures } from '@/hooks/useMobileFeatures';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiService } from '@/services/api';
 import { CustomModal } from '@/components/ui/CustomModal';
-import { ReceiptModal } from '@/components/ui/ReceiptModal';
+import { EPinsModal } from '@/components/ui/EPinsModal';
 
-interface AirtimeRechargeScreenProps {
+interface CardPrintingScreenProps {
   onNavigate: (page: string) => void;
 }
 
@@ -32,39 +32,36 @@ const NETWORK_PROVIDERS = {
     name: 'MTN',
     color: '#FFC107',
     logo: 'https://d1jcea4y7xhp7l.cloudfront.net/2022/02/images-1.jpeg',
-    prefixes: ['0803', '0806', '0813', '0816', '0814', '0810', '0814', '0903', '0906', '0703', '0706', '0704', '0706', '07025', '07026', '0704'],
   },
   airtel: {
     name: 'Airtel',
     color: '#FF0000',
     logo: 'https://s3-ap-southeast-1.amazonaws.com/bsy/iportal/images/airtel-logo-white-text-horizontal.jpg',
-    prefixes: ['0802', '0808', '0812', '0701', '0708', '0902', '0907', '0809', '0818', '0817', '0708', '0702'],
   },
   glo: {
     name: 'Glo',
     color: '#00FF00',
     logo: 'https://www.mighty.ng/img/data/glo1.jpg',
-    prefixes: ['0805', '0807', '0811', '0815', '0705', '0905', '0805', '0815', '0811', '0705'],
   },
   '9mobile': {
     name: '9mobile',
     color: '#009900',
     logo: 'https://www.mighty.ng/img/data/9mobile_small.png',
-    prefixes: ['0809', '0817', '0818', '0908', '0909', '0817', '0818', '0809'],
   },
 };
 
-export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ onNavigate }) => {
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [amount, setAmount] = useState('');
-  const [transactionPin, setTransactionPin] = useState('');
-  const [detectedNetwork, setDetectedNetwork] = useState<string | null>(null);
+export const CardPrintingScreen: React.FC<CardPrintingScreenProps> = ({ onNavigate }) => {
+  const [businessName, setBusinessName] = useState('');
   const [selectedNetwork, setSelectedNetwork] = useState<string | null>(null);
   const [showNetworkSelector, setShowNetworkSelector] = useState(false);
+  const [amount, setAmount] = useState('100');
+  const [quantity, setQuantity] = useState('1');
+  const [amountp, setAmountp] = useState('110');
+  const [transactionPin, setTransactionPin] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
-  const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [showEPinsModal, setShowEPinsModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successData, setSuccessData] = useState<any>(null);
   
@@ -72,57 +69,60 @@ export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ on
   const { triggerHapticFeedback } = useMobileFeatures();
   const { user } = useAuth();
 
-  // Detect network when phone number changes
+  // Calculate amountp when denomination or quantity changes
   useEffect(() => {
-    if (phoneNumber.length >= 4) {
-      const prefix = phoneNumber.substring(0, 4);
-      let detected = null;
-      
-      for (const [network, data] of Object.entries(NETWORK_PROVIDERS)) {
-        if (data.prefixes.includes(prefix)) {
-          detected = network;
-          break;
-        }
-      }
-      
-      setDetectedNetwork(detected);
-      if (detected) {
-        setSelectedNetwork(detected);
-      }
-    } else {
-      setDetectedNetwork(null);
-      setSelectedNetwork(null);
-    }
-  }, [phoneNumber]);
+    const denominationValue = parseFloat(amount) || 0;
+    const quantityValue = parseInt(quantity) || 0;
+    const total = denominationValue * quantityValue;
+    
+    // Add 10% service charge
+    const serviceCharge = total * 0.10;
+    const finalAmount = total + serviceCharge;
+    
+    setAmountp(finalAmount.toFixed(2));
+  }, [amount, quantity]);
 
   const validateForm = () => {
-    if (!phoneNumber.trim()) {
-      setErrorMessage('Please enter a phone number');
+    if (!businessName.trim()) {
+      setErrorMessage('Please enter your business name');
       setShowErrorModal(true);
       return false;
     }
     
-    if (phoneNumber.length < 11) {
-      setErrorMessage('Please enter a valid 11-digit phone number');
+    if (!selectedNetwork) {
+      setErrorMessage('Please select a network provider');
       setShowErrorModal(true);
       return false;
     }
     
     if (!amount.trim()) {
-      setErrorMessage('Please enter an amount');
+      setErrorMessage('Please select a denomination');
       setShowErrorModal(true);
       return false;
     }
     
-    const amountValue = parseFloat(amount);
-    if (isNaN(amountValue) || amountValue <= 0) {
-      setErrorMessage('Please enter a valid amount greater than 0');
+    const denominationValue = parseFloat(amount);
+    if (isNaN(denominationValue) || denominationValue <= 0) {
+      setErrorMessage('Please select a valid denomination');
       setShowErrorModal(true);
       return false;
     }
     
-    if (amountValue < 50) {
-      setErrorMessage('Minimum airtime amount is ₦50');
+    if (!quantity.trim()) {
+      setErrorMessage('Please enter the quantity');
+      setShowErrorModal(true);
+      return false;
+    }
+    
+    const quantityValue = parseInt(quantity);
+    if (isNaN(quantityValue) || quantityValue <= 0) {
+      setErrorMessage('Please enter a valid quantity greater than 0');
+      setShowErrorModal(true);
+      return false;
+    }
+    
+    if (quantityValue > 10) {
+      setErrorMessage('Maximum quantity allowed is 10');
       setShowErrorModal(true);
       return false;
     }
@@ -139,16 +139,10 @@ export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ on
       return false;
     }
     
-    if (!selectedNetwork) {
-      setErrorMessage('Please select a network provider');
-      setShowErrorModal(true);
-      return false;
-    }
-    
     return true;
   };
 
-  const handleRecharge = async () => {
+  const handlePurchase = async () => {
     if (!validateForm()) return;
     
     setIsLoading(true);
@@ -156,29 +150,32 @@ export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ on
     
     try {
       const requestData = {
+        businessname: businessName,
         network: selectedNetwork!,
-        amount: parseFloat(amount),
-        phone: phoneNumber,
+        amount: amount,
+        quantity: quantity,
+        amountp: amountp,
         tpin: transactionPin,
       };
       
-      console.log('Sending airtime request:', requestData);
+      console.log('Sending card printing request:', requestData);
       
-      const response = await apiService.buyAirtime(requestData);
+      const response = await apiService.buyRechargePins(requestData);
       
-      console.log('Airtime recharge response:', response);
+      console.log('Card printing response:', response);
       
       if ((response.success || response.status === 'success') && response.data) {
         setSuccessData(response.data);
         setShowSuccessModal(true);
         // Clear form on success
-        setPhoneNumber('');
-        setAmount('');
-        setTransactionPin('');
+        setBusinessName('');
         setSelectedNetwork(null);
-        setDetectedNetwork(null);
+        setAmount('');
+        setQuantity('');
+        setAmountp('');
+        setTransactionPin('');
       } else {
-        setErrorMessage(response.message || 'Failed to purchase airtime');
+        setErrorMessage(response.message || 'Failed to purchase recharge pins');
         setShowErrorModal(true);
       }
     } catch (error) {
@@ -191,11 +188,11 @@ export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ on
 
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
-    setShowReceiptModal(true);
+    setShowEPinsModal(true);
   };
 
-  const handleReceiptModalClose = () => {
-    setShowReceiptModal(false);
+  const handleEPinsModalClose = () => {
+    setShowEPinsModal(false);
     onNavigate('home');
   };
 
@@ -207,10 +204,12 @@ export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ on
     onNavigate('home');
   };
 
-
-
   const getNetworkInfo = (network: string) => {
     return NETWORK_PROVIDERS[network as keyof typeof NETWORK_PROVIDERS];
+  };
+
+  const formatPrice = (price: string) => {
+    return `₦${parseFloat(price).toLocaleString()}`;
   };
 
   return (
@@ -225,7 +224,7 @@ export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ on
             <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: colors.text }]}>
-            Airtime Recharge
+            Card Printing
           </Text>
           <View style={styles.headerSpacer} />
         </View>
@@ -240,115 +239,144 @@ export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ on
         {/* Hero Section */}
         <View style={styles.heroSection}>
           <LinearGradient
-            colors={['#3B82F6', '#1D4ED8', '#1E40AF']}
+            colors={['#F59E0B', '#D97706', '#B45309']}
             style={styles.heroCard}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           >
             <View style={styles.heroIconContainer}>
-              <Ionicons name="phone-portrait" size={32} color="white" />
+              <Ionicons name="card" size={32} color="white" />
             </View>
-            <Text style={styles.heroTitle}>Recharge Airtime</Text>
+            <Text style={styles.heroTitle}>Print Recharge Cards</Text>
             <Text style={styles.heroSubtitle}>
-              Buy airtime for any network instantly and securely
+              Generate ePINs for any network instantly
             </Text>
           </LinearGradient>
         </View>
 
-        {/* Phone Number Input */}
+        {/* Business Name Input */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            Phone Number
+            Business Name
           </Text>
-          <LinearGradient
-            colors={[colors.card, colors.card + 'F0']}
-            style={styles.inputContainer}
-          >
+          <View style={[styles.inputContainer, { backgroundColor: colors.card }]}>
             <View style={styles.inputWrapper}>
-              <Ionicons name="call" size={20} color={colors.mutedForeground} />
+              <Ionicons name="business" size={16} color={colors.mutedForeground} />
               <TextInput
                 style={[styles.input, { color: colors.text }]}
-                value={phoneNumber}
-                onChangeText={setPhoneNumber}
-                placeholder="Enter phone number"
+                value={businessName}
+                onChangeText={setBusinessName}
+                placeholder="Enter business name"
                 placeholderTextColor={colors.mutedForeground}
-                keyboardType="phone-pad"
-                maxLength={11}
+                autoCapitalize="words"
               />
             </View>
-            <View style={styles.inputDecoration} />
-          </LinearGradient>
-          
-          {/* Network Selection - Compact */}
-          {phoneNumber.length >= 4 && (
-            <View style={styles.networkSection}>
-              {selectedNetwork ? (
-                <View style={styles.networkCard}>
-                  <View style={styles.networkInfo}>
-                    <View style={[
-                      styles.networkIconContainer,
-                      { backgroundColor: getNetworkInfo(selectedNetwork).color + '20' }
-                    ]}>
-                      <Image 
-                        source={{ uri: getNetworkInfo(selectedNetwork).logo }}
-                        style={styles.networkLogo}
-                        resizeMode="contain"
-                      />
-                    </View>
-                    <Text style={[styles.networkName, { color: colors.text }]}>
-                      {getNetworkInfo(selectedNetwork).name}
-                    </Text>
-                    <Text style={[styles.networkDetected, { color: colors.success }]}>
-                      {detectedNetwork === selectedNetwork ? '✓ Auto-detected' : '✓ Selected'}
-                    </Text>
-                  </View>
-                  <TouchableOpacity
-                    style={styles.changeNetworkButton}
-                    onPress={() => setShowNetworkSelector(true)}
-                  >
-                    <Text style={[styles.changeNetworkText, { color: colors.primary }]}>
-                      Change
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <TouchableOpacity
-                  style={[styles.selectNetworkButton, { backgroundColor: colors.card }]}
-                  onPress={() => setShowNetworkSelector(true)}
-                >
-                  <Ionicons name="cellular" size={16} color={colors.mutedForeground} />
-                  <Text style={[styles.selectNetworkText, { color: colors.mutedForeground }]}>
-                    Select Network
-                  </Text>
-                  <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
+          </View>
         </View>
 
-        {/* Amount Input */}
+        {/* Network Selection */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            Amount
+            Network
           </Text>
-          <LinearGradient
-            colors={[colors.card, colors.card + 'F0']}
-            style={styles.amountInputContainer}
+          <TouchableOpacity
+            style={[styles.networkSelector, { backgroundColor: colors.card }]}
+            onPress={() => setShowNetworkSelector(true)}
           >
-            <View style={styles.amountInputWrapper}>
-              <Text style={styles.currencySymbol}>₦</Text>
-              <TextInput
-                style={[styles.amountInput, { color: colors.text }]}
-                value={amount}
-                onChangeText={setAmount}
-                placeholder="0.00"
-                placeholderTextColor={colors.mutedForeground}
-                keyboardType="numeric"
-              />
+            {selectedNetwork ? (
+              <View style={styles.selectedNetwork}>
+                <Image 
+                  source={{ uri: getNetworkInfo(selectedNetwork).logo }}
+                  style={styles.networkLogo}
+                  resizeMode="contain"
+                />
+                <Text style={[styles.networkName, { color: colors.text }]}>
+                  {getNetworkInfo(selectedNetwork).name}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.selectNetwork}>
+                <Ionicons name="cellular" size={16} color={colors.mutedForeground} />
+                <Text style={[styles.selectNetworkText, { color: colors.mutedForeground }]}>
+                  Choose network
+                </Text>
+              </View>
+            )}
+
+          </TouchableOpacity>
+        </View>
+
+        {/* Denomination Selection */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Denomination
+          </Text>
+          <View style={styles.denominationGrid}>
+            {[100, 200, 500, 1000].map((denom) => (
+              <TouchableOpacity
+                key={denom}
+                style={[
+                  styles.denominationButton,
+                  amount === denom.toString() && styles.denominationButtonSelected
+                ]}
+                onPress={() => {
+                  setAmount(denom.toString());
+                  triggerHapticFeedback('light');
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[
+                  styles.denominationText,
+                  amount === denom.toString() && styles.denominationTextSelected
+                ]}>
+                  ₦{denom}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* Amount to Pay and Quantity Row */}
+        <View style={styles.row}>
+          {/* Amount to Pay Input */}
+          <View style={[styles.section, styles.halfSection]}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Amount to Pay
+            </Text>
+            <View style={[styles.inputContainer, { backgroundColor: colors.card }]}>
+              <View style={styles.inputWrapper}>
+                <Text style={styles.currencySymbol}>₦</Text>
+                <TextInput
+                  style={[styles.amountInput, { color: colors.text }]}
+                  value={amountp}
+                  onChangeText={setAmountp}
+                  placeholder="0"
+                  placeholderTextColor={colors.mutedForeground}
+                  keyboardType="numeric"
+                />
+              </View>
             </View>
-            <View style={styles.amountInputDecoration} />
-          </LinearGradient>
+          </View>
+
+          {/* Quantity Input */}
+          <View style={[styles.section, styles.halfSection]}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Quantity
+            </Text>
+            <View style={[styles.inputContainer, { backgroundColor: colors.card }]}>
+              <View style={styles.inputWrapper}>
+                <Ionicons name="layers" size={16} color={colors.mutedForeground} />
+                <TextInput
+                  style={[styles.input, { color: colors.text }]}
+                  value={quantity}
+                  onChangeText={setQuantity}
+                  placeholder="1"
+                  placeholderTextColor={colors.mutedForeground}
+                  keyboardType="numeric"
+                />
+              </View>
+            </View>
+          </View>
         </View>
 
 
@@ -358,12 +386,9 @@ export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ on
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             Transaction PIN
           </Text>
-          <LinearGradient
-            colors={[colors.card, colors.card + 'F0']}
-            style={styles.inputContainer}
-          >
+          <View style={[styles.inputContainer, { backgroundColor: colors.card }]}>
             <View style={styles.inputWrapper}>
-              <Ionicons name="lock-closed" size={20} color={colors.mutedForeground} />
+              <Ionicons name="lock-closed" size={16} color={colors.mutedForeground} />
               <TextInput
                 style={[styles.input, { color: colors.text }]}
                 value={transactionPin}
@@ -375,34 +400,16 @@ export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ on
                 secureTextEntry={true}
               />
             </View>
-            <View style={styles.inputDecoration} />
-          </LinearGradient>
+          </View>
         </View>
 
         {/* Info Section */}
-        <LinearGradient
-          colors={[colors.card, colors.card + 'F0']}
-          style={styles.infoSection}
-        >
-          <View style={styles.infoHeader}>
-            <View style={styles.infoIconContainer}>
-              <Ionicons name="shield-checkmark" size={20} color={colors.primary} />
-            </View>
-            <Text style={[styles.infoTitle, { color: colors.text }]}>
-              Secure Recharge
-            </Text>
-          </View>
+        <View style={[styles.infoSection, { backgroundColor: colors.card }]}>
           <View style={styles.infoContent}>
             <View style={styles.infoItem}>
               <Ionicons name="checkmark-circle" size={16} color={colors.success} />
               <Text style={[styles.infoText, { color: colors.mutedForeground }]}>
-                Minimum amount: ₦50
-              </Text>
-            </View>
-            <View style={styles.infoItem}>
-              <Ionicons name="checkmark-circle" size={16} color={colors.success} />
-              <Text style={[styles.infoText, { color: colors.mutedForeground }]}>
-                Instant delivery to phone
+                Instant ePIN generation
               </Text>
             </View>
             <View style={styles.infoItem}>
@@ -411,34 +418,42 @@ export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ on
                 All networks supported
               </Text>
             </View>
+            <View style={styles.infoItem}>
+              <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+                              <Text style={[styles.infoText, { color: colors.mutedForeground }]}>
+                  Max 10 pins per transaction
+                </Text>
+            </View>
+            <View style={styles.infoItem}>
+              <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+              <Text style={[styles.infoText, { color: colors.mutedForeground }]}>
+                10% service charge included
+              </Text>
+            </View>
           </View>
-        </LinearGradient>
+        </View>
 
         {/* Submit Button */}
         <TouchableOpacity
           style={[
             styles.submitButton,
-            { opacity: isLoading ? 0.7 : 1 },
+            { 
+              backgroundColor: isLoading ? colors.mutedForeground : '#F59E0B',
+              opacity: isLoading ? 0.7 : 1 
+            },
           ]}
-          onPress={handleRecharge}
+          onPress={handlePurchase}
           disabled={isLoading}
           activeOpacity={0.8}
         >
-          <LinearGradient
-            colors={isLoading ? [colors.mutedForeground, colors.mutedForeground] : ['#3B82F6', '#1D4ED8']}
-            style={styles.submitButtonGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="white" size="small" />
-            ) : (
-              <Ionicons name="phone-portrait" size={20} color="white" />
-            )}
-            <Text style={styles.submitButtonText}>
-              {isLoading ? 'Processing...' : 'Recharge Airtime'}
-            </Text>
-          </LinearGradient>
+          {isLoading ? (
+            <ActivityIndicator color="white" size="small" />
+          ) : (
+            <Ionicons name="card" size={18} color="white" />
+          )}
+          <Text style={styles.submitButtonText}>
+            {isLoading ? 'Processing...' : 'Generate ePINs'}
+          </Text>
         </TouchableOpacity>
       </ScrollView>
 
@@ -450,7 +465,7 @@ export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ on
         message="Choose your network provider"
         type="info"
         customContent={
-          <View style={styles.networkSelector}>
+          <View style={styles.networkSelectorModal}>
             {Object.entries(NETWORK_PROVIDERS).map(([network, data]) => (
               <TouchableOpacity
                 key={network}
@@ -470,7 +485,7 @@ export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ on
                 ]}>
                   <Image 
                     source={{ uri: data.logo }}
-                    style={styles.networkLogo}
+                    style={styles.networkLogoModal}
                     resizeMode="contain"
                   />
                 </View>
@@ -508,26 +523,19 @@ export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ on
       <CustomModal
         visible={showSuccessModal}
         onClose={handleSuccessModalClose}
-        title="Airtime Recharge Successful!"
-        message={`₦${successData?.amount} airtime has been sent to ${successData?.phone}. Your new balance is ₦${successData?.new_balance}.`}
+        title="ePINs Generated Successfully!"
+        message={`${successData?.quantity} ${successData?.quantity === 1 ? 'ePIN' : 'ePINs'} of ₦${successData?.value} each ${successData?.quantity === 1 ? 'has' : 'have'} been generated for ${successData?.service_name}. Total amount: ${formatPrice(successData?.amount)}`}
         type="success"
-        primaryButtonText="View Receipt"
+        primaryButtonText="View ePINs"
         onPrimaryPress={handleSuccessModalClose}
         singleButton={true}
       />
 
-      {/* Receipt Modal */}
-      <ReceiptModal
-        visible={showReceiptModal}
-        onClose={handleReceiptModalClose}
-        receiptData={successData ? {
-          reference: successData.reference,
-          amount: successData.amount,
-          phone: successData.phone,
-          service: 'Airtime',
-          date: new Date().toISOString(), // Use current time since API doesn't provide time
-          transaction_id: successData.transaction_id,
-        } : null}
+      {/* ePINs Modal */}
+      <EPinsModal
+        visible={showEPinsModal}
+        onClose={handleEPinsModalClose}
+        epinsData={successData}
       />
     </View>
   );
@@ -563,9 +571,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: 40,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 32,
   },
   heroSection: {
     marginBottom: 32,
@@ -574,7 +582,7 @@ const styles = StyleSheet.create({
     padding: 24,
     borderRadius: 20,
     alignItems: 'center',
-    shadowColor: '#3B82F6',
+    shadowColor: '#F59E0B',
     shadowOffset: {
       width: 0,
       height: 8,
@@ -605,12 +613,20 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   section: {
+    marginBottom: 16,
+  },
+  halfSection: {
+    flex: 1,
+    marginHorizontal: 4,
+  },
+  row: {
+    flexDirection: 'row',
     marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   inputContainer: {
     borderRadius: 20,
@@ -626,74 +642,34 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
   input: {
     flex: 1,
+    fontSize: 14,
+    marginLeft: 10,
+  },
+  amountInput: {
+    flex: 1,
     fontSize: 16,
-    marginLeft: 12,
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  currencySymbol: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginRight: 8,
+    color: '#F59E0B',
   },
   inputDecoration: {
     height: 2,
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#F59E0B',
     marginHorizontal: 16,
     marginBottom: 12,
     borderRadius: 1,
   },
-  networkSection: {
-    marginTop: 8,
-  },
-  networkCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 12,
-    borderRadius: 12,
-    backgroundColor: 'rgba(59, 130, 246, 0.05)',
-    borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.2)',
-  },
-  networkInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  networkIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 8,
-  },
-  networkLogo: {
-    width: 24,
-    height: 24,
-  },
-  networkDetails: {
-    flex: 1,
-  },
-  networkName: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  networkDetected: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  changeNetworkButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-  },
-  changeNetworkText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  selectNetworkButton: {
+  networkSelector: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -703,88 +679,119 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(0, 0, 0, 0.1)',
     borderStyle: 'dashed',
   },
-  selectNetworkText: {
-    fontSize: 16,
-    fontWeight: '500',
-    flex: 1,
-    marginLeft: 12,
-  },
-  amountInputContainer: {
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  amountInputWrapper: {
+  selectedNetwork: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  currencySymbol: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginRight: 12,
-    color: '#3B82F6',
-  },
-  amountInput: {
     flex: 1,
-    fontSize: 28,
-    fontWeight: 'bold',
   },
-  amountInputDecoration: {
-    height: 2,
-    backgroundColor: '#3B82F6',
-    marginHorizontal: 16,
-    marginBottom: 12,
-    borderRadius: 1,
+  selectNetwork: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
   },
-  quickAmountsGrid: {
+  networkIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  networkLogo: {
+    width: 24,
+    height: 24,
+    marginRight: 12,
+  },
+  networkLogoModal: {
+    width: 24,
+    height: 24,
+  },
+  networkName: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  selectNetworkText: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginLeft: 10,
+  },
+  denominationGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
   },
-  quickAmountButton: {
+  denominationButton: {
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 8,
     borderRadius: 8,
     backgroundColor: '#F3F4F6',
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    minWidth: (width - 72 - 16) / 3,
+    minWidth: (width - 56 - 24) / 4,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  quickAmountButtonSelected: {
-    backgroundColor: '#3B82F6',
-    borderColor: '#3B82F6',
+  denominationButtonSelected: {
+    backgroundColor: '#F59E0B',
+    borderColor: '#F59E0B',
   },
-  quickAmountText: {
+  denominationText: {
     fontSize: 14,
     fontWeight: '500',
     color: '#6B7280',
   },
-  quickAmountTextSelected: {
+  denominationTextSelected: {
     color: 'white',
     fontWeight: '600',
   },
-  infoSection: {
-    padding: 24,
-    borderRadius: 20,
-    marginBottom: 32,
+  totalSection: {
+    marginBottom: 16,
+  },
+  totalContainer: {
+    padding: 16,
+    borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 2,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  totalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  finalTotal: {
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 0, 0, 0.1)',
+    paddingTop: 12,
+    marginTop: 8,
+    marginBottom: 0,
+  },
+  totalLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  totalValue: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  infoSection: {
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   infoHeader: {
     flexDirection: 'row',
@@ -795,7 +802,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    backgroundColor: 'rgba(245, 158, 11, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -805,43 +812,40 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   infoContent: {
-    gap: 12,
+    gap: 8,
   },
   infoItem: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   infoText: {
-    fontSize: 14,
-    marginLeft: 8,
-    lineHeight: 20,
+    fontSize: 13,
+    marginLeft: 6,
+    lineHeight: 18,
   },
   submitButton: {
-    borderRadius: 20,
-    shadowColor: '#3B82F6',
+    borderRadius: 12,
+    shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 8,
+      height: 4,
     },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  submitButtonGradient: {
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 20,
-    paddingHorizontal: 24,
-    borderRadius: 20,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
     gap: 8,
   },
   submitButtonText: {
     color: 'white',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
   },
-  networkSelector: {
+  networkSelectorModal: {
     gap: 12,
   },
   networkOption: {
@@ -854,8 +858,8 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
   },
   networkOptionSelected: {
-    backgroundColor: 'rgba(59, 130, 246, 0.05)',
-    borderColor: '#3B82F6',
+    backgroundColor: 'rgba(245, 158, 11, 0.05)',
+    borderColor: '#F59E0B',
   },
   networkOptionIcon: {
     width: 40,

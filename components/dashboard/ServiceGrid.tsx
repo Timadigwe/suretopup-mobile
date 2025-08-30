@@ -44,10 +44,10 @@ export const ServiceGrid: React.FC<ServiceGridProps> = ({ onServiceClick }) => {
       isComingSoon: true,
     },
     {
-      id: "betting",
+      id: "betting-funding",
       name: "Betting\nFunding",
-      icon: "cash",
-      color: "#10B981",
+      icon: "trophy",
+      color: "#F59E0B",
     },
     {
       id: "bills",

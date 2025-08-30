@@ -28,6 +28,7 @@ interface CustomModalProps {
   onPrimaryPress?: () => void;
   onSecondaryPress?: () => void;
   singleButton?: boolean;
+  customContent?: React.ReactNode;
 }
 
 export const CustomModal: React.FC<CustomModalProps> = ({
@@ -42,6 +43,7 @@ export const CustomModal: React.FC<CustomModalProps> = ({
   onPrimaryPress,
   onSecondaryPress,
   singleButton = true,
+  customContent,
 }) => {
   const { colors } = useTheme();
   const { triggerHapticFeedback } = useMobileFeatures();
@@ -222,10 +224,14 @@ export const CustomModal: React.FC<CustomModalProps> = ({
                   {title}
                 </Text>
 
-                {/* Message */}
-                <Text style={[styles.message, { color: colors.mutedForeground }]}>
-                  {message}
-                </Text>
+                {/* Message or Custom Content */}
+                {customContent ? (
+                  customContent
+                ) : (
+                  <Text style={[styles.message, { color: colors.mutedForeground }]}>
+                    {message}
+                  </Text>
+                )}
 
                 {/* Buttons */}
                 <View style={styles.buttonContainer}>
