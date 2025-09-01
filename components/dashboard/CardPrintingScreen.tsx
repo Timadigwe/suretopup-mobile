@@ -18,10 +18,9 @@ import { useMobileFeatures } from '@/hooks/useMobileFeatures';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiService } from '@/services/api';
 import { CustomModal } from '@/components/ui/CustomModal';
-import { EPinsModal } from '@/components/ui/EPinsModal';
 
 interface CardPrintingScreenProps {
-  onNavigate: (page: string) => void;
+  onNavigate: (page: string, data?: any) => void;
 }
 
 const { width } = Dimensions.get('window');
@@ -30,23 +29,23 @@ const { width } = Dimensions.get('window');
 const NETWORK_PROVIDERS = {
   mtn: {
     name: 'MTN',
-    color: '#FFC107',
-    logo: 'https://d1jcea4y7xhp7l.cloudfront.net/2022/02/images-1.jpeg',
+    color: '#fbc404',
+    logo: require('@/assets/images/mtn.jpeg'),
   },
   airtel: {
     name: 'Airtel',
-    color: '#FF0000',
-    logo: 'https://s3-ap-southeast-1.amazonaws.com/bsy/iportal/images/airtel-logo-white-text-horizontal.jpg',
+    color: '#ec1c24',
+    logo: require('@/assets/images/airtel.jpg'),
   },
   glo: {
     name: 'Glo',
-    color: '#00FF00',
-    logo: 'https://www.mighty.ng/img/data/glo1.jpg',
+    color: '#1daa10',
+    logo: require('@/assets/images/glo.jpg'),
   },
   '9mobile': {
     name: '9mobile',
-    color: '#009900',
-    logo: 'https://www.mighty.ng/img/data/9mobile_small.png',
+    color: '#040404',
+    logo: require('@/assets/images/9mobile.png'),
   },
 };
 
@@ -61,7 +60,7 @@ export const CardPrintingScreen: React.FC<CardPrintingScreenProps> = ({ onNaviga
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
-  const [showEPinsModal, setShowEPinsModal] = useState(false);
+
   const [errorMessage, setErrorMessage] = useState('');
   const [successData, setSuccessData] = useState<any>(null);
   
@@ -188,12 +187,20 @@ export const CardPrintingScreen: React.FC<CardPrintingScreenProps> = ({ onNaviga
 
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
-    setShowEPinsModal(true);
-  };
-
-  const handleEPinsModalClose = () => {
-    setShowEPinsModal(false);
-    onNavigate('home');
+    // Navigate to receipt screen with data
+    onNavigate('receipt', {
+      reference: successData.reference,
+      amount: successData.amount,
+      phone: '', // Card printing doesn't use phone
+      service: 'Card Printing',
+      date: new Date().toISOString(),
+      network: selectedNetwork ? getNetworkInfo(selectedNetwork).name : undefined,
+      businessName: businessName,
+      quantity: quantity,
+      denomination: amount,
+      epins: successData.epins || [],
+      transaction_id: successData.transaction_id,
+    });
   };
 
   const handleErrorModalClose = () => {
@@ -484,7 +491,7 @@ export const CardPrintingScreen: React.FC<CardPrintingScreenProps> = ({ onNaviga
                   { backgroundColor: data.color + '20' }
                 ]}>
                   <Image 
-                    source={{ uri: data.logo }}
+                    source={data.logo}
                     style={styles.networkLogoModal}
                     resizeMode="contain"
                   />
@@ -531,12 +538,7 @@ export const CardPrintingScreen: React.FC<CardPrintingScreenProps> = ({ onNaviga
         singleButton={true}
       />
 
-      {/* ePINs Modal */}
-      <EPinsModal
-        visible={showEPinsModal}
-        onClose={handleEPinsModalClose}
-        epinsData={successData}
-      />
+
     </View>
   );
 };

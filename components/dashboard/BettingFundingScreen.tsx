@@ -19,10 +19,10 @@ import { useMobileFeatures } from '@/hooks/useMobileFeatures';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiService } from '@/services/api';
 import { CustomModal } from '@/components/ui/CustomModal';
-import { ReceiptModal } from '@/components/ui/ReceiptModal';
+import { TransactionReceiptScreen } from './TransactionReceiptScreen';
 
 interface BettingFundingScreenProps {
-  onNavigate: (page: string) => void;
+  onNavigate: (page: string, data?: any) => void;
 }
 
 const { width } = Dimensions.get('window');
@@ -58,7 +58,7 @@ export const BettingFundingScreen: React.FC<BettingFundingScreenProps> = ({ onNa
   const [isLoadingFunding, setIsLoadingFunding] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [showReceiptModal, setShowReceiptModal] = useState(false);
+
   const [errorMessage, setErrorMessage] = useState('');
   const [successData, setSuccessData] = useState<any>(null);
   
@@ -199,12 +199,17 @@ export const BettingFundingScreen: React.FC<BettingFundingScreenProps> = ({ onNa
 
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
-    setShowReceiptModal(true);
-  };
-
-  const handleReceiptModalClose = () => {
-    setShowReceiptModal(false);
-    onNavigate('home');
+    // Navigate to receipt screen with data
+    onNavigate('receipt', {
+      reference: successData.receipt_data.reference,
+      amount: successData.receipt_data.amount,
+      phone: '',
+      service: 'Betting',
+      date: new Date().toISOString(),
+      transaction_id: successData.transaction.id,
+      bettingCompany: successData.companyName || selectedCompany?.name,
+      bettingCustomer: successData.customerInfo?.customer_name || customerInfo?.customer_name,
+    });
   };
 
   const handleErrorModalClose = () => {
@@ -654,19 +659,7 @@ export const BettingFundingScreen: React.FC<BettingFundingScreenProps> = ({ onNa
         singleButton={true}
       />
 
-      {/* Receipt Modal */}
-      <ReceiptModal
-        visible={showReceiptModal}
-        onClose={handleReceiptModalClose}
-        receiptData={successData ? {
-          reference: successData.receipt_data.reference,
-          amount: successData.receipt_data.amount,
-          phone: '', // No phone number for betting transactions
-          service: 'Betting',
-          date: new Date().toISOString(),
-          transaction_id: successData.transaction.id,
-        } : null}
-      />
+
     </KeyboardAvoidingView>
   );
 };

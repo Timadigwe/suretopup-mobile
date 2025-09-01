@@ -20,6 +20,7 @@ import { WalletBalanceCard } from './WalletBalanceCard';
 import { ServiceGrid } from './ServiceGrid';
 import { PromoCarousel } from './PromoCarousel';
 import { HomeScreenSkeleton, SkeletonLoader } from '@/components/ui/SkeletonLoader';
+
 import { apiService, DashboardData } from '@/services/api';
 
 interface HomeScreenProps {
@@ -35,6 +36,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 }) => {
   const [hasInitialLoad, setHasInitialLoad] = useState(false);
   const [lastUserId, setLastUserId] = useState<number | null>(null);
+
   const { colors } = useTheme();
   const { triggerHapticFeedback } = useMobileFeatures();
   const { user, token, logout, onLoginSuccess } = useAuth();
@@ -52,6 +54,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const handleServiceClick = (serviceId: string) => {
     triggerHapticFeedback('light');
     onNavigate(serviceId);
+  };
+
+  // Navigate to test receipt screen
+  const navigateToTestReceipt = () => {
+    triggerHapticFeedback('light');
+    onNavigate('test-receipt');
   };
 
   // Fetch dashboard data
@@ -453,6 +461,24 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             )}
           </View>
         </View>
+
+        {/* Test Receipt Button */}
+        <View style={styles.testReceiptSection}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Test Receipt UI
+          </Text>
+          <Text style={[styles.testReceiptSubtitle, { color: colors.mutedForeground }]}>
+            Test the new receipt screen design
+          </Text>
+          <TouchableOpacity
+            style={[styles.testReceiptButton, { backgroundColor: '#10B981' }]}
+            onPress={navigateToTestReceipt}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="receipt" size={20} color="white" />
+            <Text style={styles.testReceiptButtonText}>Test Receipt UI</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
 
       {/* Bottom Navigation */}
@@ -703,6 +729,29 @@ const styles = StyleSheet.create({
   },
   statusSkeleton: {
     marginBottom: 0,
+  },
+  testReceiptSection: {
+    marginTop: 32,
+    paddingHorizontal: 24,
+  },
+  testReceiptSubtitle: {
+    fontSize: 14,
+    marginBottom: 16,
+  },
+
+  testReceiptButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    gap: 8,
+  },
+  testReceiptButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
   },
   statIconContainer: {
     width: 40,

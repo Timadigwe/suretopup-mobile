@@ -12,6 +12,8 @@ import { AirtimeRechargeScreen } from './dashboard/AirtimeRechargeScreen';
 import { DataPurchaseScreen } from './dashboard/DataPurchaseScreen';
 import { CardPrintingScreen } from './dashboard/CardPrintingScreen';
 import { BettingFundingScreen } from './dashboard/BettingFundingScreen';
+import { TestReceiptScreen } from './dashboard/TestReceiptScreen';
+import { TransactionReceiptScreen } from './dashboard/TransactionReceiptScreen';
 import { ServicePlaceholder } from './services/ServicePlaceholder';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -33,12 +35,15 @@ type AppScreen =
   | 'bills' 
   | 'printing' 
   | 'add-funds' 
-  | 'notifications';
+  | 'notifications'
+  | 'test-receipt'
+  | 'receipt';
 
 export const App: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState<AppScreen>('onboarding');
   const [userEmail, setUserEmail] = useState('');
   const [registrationData, setRegistrationData] = useState<any>(null);
+  const [receiptData, setReceiptData] = useState<any>(null);
   const { user, token, isInitialized, logout } = useAuth();
   
   // Determine if user is authenticated based on context
@@ -79,7 +84,10 @@ export const App: React.FC = () => {
     }
   };
 
-  const handleNavigate = (page: string) => {
+  const handleNavigate = (page: string, data?: any) => {
+    if (page === 'receipt' && data) {
+      setReceiptData(data);
+    }
     setCurrentScreen(page as AppScreen);
   };
 
@@ -190,6 +198,19 @@ export const App: React.FC = () => {
         
       case 'betting-funding':
         return <BettingFundingScreen onNavigate={handleNavigate} />;
+        
+      case 'test-receipt':
+        return <TestReceiptScreen onNavigate={handleNavigate} />;
+        
+      case 'receipt':
+        return receiptData ? (
+          <TransactionReceiptScreen
+            receiptData={receiptData}
+            onClose={() => handleNavigate('home')}
+          />
+        ) : (
+          <HomeScreen onNavigate={handleNavigate} onLogout={handleLogout} />
+        );
         
       case 'add-funds':
       case 'transactions':

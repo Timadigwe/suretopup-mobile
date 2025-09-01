@@ -10,6 +10,8 @@ import {
   ActivityIndicator,
   Dimensions,
   Image,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,10 +20,10 @@ import { useMobileFeatures } from '@/hooks/useMobileFeatures';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiService } from '@/services/api';
 import { CustomModal } from '@/components/ui/CustomModal';
-import { ReceiptModal } from '@/components/ui/ReceiptModal';
+import { TransactionReceiptScreen } from './TransactionReceiptScreen';
 
 interface DataPurchaseScreenProps {
-  onNavigate: (page: string) => void;
+  onNavigate: (page: string, data?: any) => void;
 }
 
 const { width } = Dimensions.get('window');
@@ -30,26 +32,26 @@ const { width } = Dimensions.get('window');
 const NETWORK_PROVIDERS = {
   mtn: {
     name: 'MTN',
-    color: '#FFC107',
-    logo: 'https://d1jcea4y7xhp7l.cloudfront.net/2022/02/images-1.jpeg',
+    color: '#fbc404',
+    logo: require('@/assets/images/mtn.jpeg'),
     prefixes: ['0803', '0806', '0813', '0816', '0814', '0810', '0814', '0903', '0906', '0703', '0706', '0704', '0706', '07025', '07026', '0704'],
   },
   airtel: {
     name: 'Airtel',
-    color: '#FF0000',
-    logo: 'https://s3-ap-southeast-1.amazonaws.com/bsy/iportal/images/airtel-logo-white-text-horizontal.jpg',
+    color: '#ec1c24',
+    logo: require('@/assets/images/airtel.jpg'),
     prefixes: ['0802', '0808', '0812', '0701', '0708', '0902', '0907', '0809', '0818', '0817', '0708', '0702'],
   },
   glo: {
     name: 'Glo',
-    color: '#00FF00',
-    logo: 'https://www.mighty.ng/img/data/glo1.jpg',
+    color: '#1daa10',
+    logo: require('@/assets/images/glo.jpg'),
     prefixes: ['0805', '0807', '0811', '0815', '0705', '0905', '0805', '0815', '0811', '0705'],
   },
   '9mobile': {
     name: '9mobile',
-    color: '#009900',
-    logo: 'https://www.mighty.ng/img/data/9mobile_small.png',
+    color: '#040404',
+    logo: require('@/assets/images/9mobile.png'),
     prefixes: ['0809', '0817', '0818', '0908', '0909', '0817', '0818', '0809'],
   },
 };
@@ -80,11 +82,11 @@ export const DataPurchaseScreen: React.FC<DataPurchaseScreenProps> = ({ onNaviga
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
-  const [showReceiptModal, setShowReceiptModal] = useState(false);
+
   const [errorMessage, setErrorMessage] = useState('');
   const [successData, setSuccessData] = useState<any>(null);
   const [selectedPlan, setSelectedPlan] = useState<DataPlan | null>(null);
-  const [selectedDuration, setSelectedDuration] = useState<'daily' | 'weekly' | 'monthly'>('daily');
+  const [selectedDuration, setSelectedDuration] = useState<'daily' | 'weekly' | 'monthly' | 'binge'>('daily');
   
   const { colors } = useTheme();
   const { triggerHapticFeedback } = useMobileFeatures();
@@ -150,10 +152,21 @@ export const DataPurchaseScreen: React.FC<DataPurchaseScreenProps> = ({ onNaviga
       daily: [] as DataPlan[],
       weekly: [] as DataPlan[],
       monthly: [] as DataPlan[],
+      binge: [] as DataPlan[],
     };
 
-    plans.forEach(plan => {
+    plans.forEach((plan: DataPlan) => {
       const dataPlanText = plan.data_plan.toLowerCase();
+      
+      // Check for social/binge plans first
+      if (dataPlanText.includes('social') || dataPlanText.includes('binge') || 
+          dataPlanText.includes('whatsapp') || dataPlanText.includes('facebook') ||
+          dataPlanText.includes('instagram') || dataPlanText.includes('twitter') ||
+          dataPlanText.includes('youtube') || dataPlanText.includes('tiktok') ||
+          dataPlanText.includes('snapchat') || dataPlanText.includes('telegram')) {
+        categorized.binge.push(plan);
+        return;
+      }
       
       // Extract number of days from the plan text
       const dayMatch = dataPlanText.match(/(\d+)\s*days?/i);
@@ -191,7 +204,10 @@ export const DataPurchaseScreen: React.FC<DataPurchaseScreenProps> = ({ onNaviga
 
   const getCurrentPlans = () => {
     const categorized = categorizePlansByDuration(filteredDataPlans);
-    return categorized[selectedDuration] || [];
+    const plans = categorized[selectedDuration] || [];
+    
+    // Sort plans by payment price from lowest to highest
+    return plans.sort((a, b) => parseFloat(a.payment_price) - parseFloat(b.payment_price));
   };
 
   const validateForm = () => {
@@ -243,7 +259,7 @@ export const DataPurchaseScreen: React.FC<DataPurchaseScreenProps> = ({ onNaviga
     try {
       const requestData = {
         network: selectedNetwork!,
-        dataplan: selectedPlan!.variation_id,
+        dataplan: selectedPlan!.variation_id.toString(),
         amount: parseFloat(selectedPlan!.payment_price),
         phone: phoneNumber,
         tpin: transactionPin,
@@ -256,7 +272,15 @@ export const DataPurchaseScreen: React.FC<DataPurchaseScreenProps> = ({ onNaviga
       console.log('Data purchase response:', response);
       
       if ((response.success || response.status === 'success') && response.data) {
-        setSuccessData(response.data);
+        // Store network info before clearing state
+        const networkName = selectedNetwork ? getNetworkInfo(selectedNetwork).name : undefined;
+        const dataPlanName = selectedPlan?.data_plan;
+        
+        setSuccessData({
+          ...response.data,
+          network: networkName,
+          dataPlan: dataPlanName,
+        });
         setShowSuccessModal(true);
         // Clear form on success
         setPhoneNumber('');
@@ -279,12 +303,17 @@ export const DataPurchaseScreen: React.FC<DataPurchaseScreenProps> = ({ onNaviga
 
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
-    setShowReceiptModal(true);
-  };
-
-  const handleReceiptModalClose = () => {
-    setShowReceiptModal(false);
-    onNavigate('home');
+    // Navigate to receipt screen with data
+    onNavigate('receipt', {
+      reference: successData.reference,
+      amount: successData.amount,
+      phone: successData.phone,
+      service: 'Data',
+      date: new Date().toISOString(),
+      network: successData.network,
+      dataPlan: successData.dataPlan,
+      transaction_id: successData.transaction_id,
+    });
   };
 
   const handleErrorModalClose = () => {
@@ -304,7 +333,11 @@ export const DataPurchaseScreen: React.FC<DataPurchaseScreenProps> = ({ onNaviga
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+    >
       {/* Header with Gradient */}
       <LinearGradient
         colors={[colors.card + 'F5', colors.card + 'E0']}
@@ -326,6 +359,7 @@ export const DataPurchaseScreen: React.FC<DataPurchaseScreenProps> = ({ onNaviga
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
       >
         {/* Hero Section */}
         <View style={styles.heroSection}>
@@ -380,7 +414,7 @@ export const DataPurchaseScreen: React.FC<DataPurchaseScreenProps> = ({ onNaviga
                       { backgroundColor: getNetworkInfo(selectedNetwork).color + '20' }
                     ]}>
                       <Image 
-                        source={{ uri: getNetworkInfo(selectedNetwork).logo }}
+                        source={getNetworkInfo(selectedNetwork).logo}
                         style={styles.networkLogo}
                         resizeMode="contain"
                       />
@@ -426,10 +460,7 @@ export const DataPurchaseScreen: React.FC<DataPurchaseScreenProps> = ({ onNaviga
             
             {/* Duration Toggle */}
             <View style={styles.durationToggleContainer}>
-              {(['daily', 'weekly', 'monthly'] as const).map((duration) => {
-                const categorized = categorizePlansByDuration(filteredDataPlans);
-                const planCount = categorized[duration]?.length || 0;
-                
+              {(['daily', 'weekly', 'monthly', 'binge'] as const).map((duration) => {
                 return (
                   <TouchableOpacity
                     key={duration}
@@ -448,16 +479,8 @@ export const DataPurchaseScreen: React.FC<DataPurchaseScreenProps> = ({ onNaviga
                       styles.durationToggleText,
                       { color: selectedDuration === duration ? 'white' : colors.mutedForeground }
                     ]}>
-                      {duration.charAt(0).toUpperCase() + duration.slice(1)}
+                      {duration === 'binge' ? 'Binge/Social' : duration.charAt(0).toUpperCase() + duration.slice(1)}
                     </Text>
-                    {planCount > 0 && (
-                      <Text style={[
-                        styles.durationToggleCount,
-                        { color: selectedDuration === duration ? 'rgba(255, 255, 255, 0.8)' : colors.mutedForeground }
-                      ]}>
-                        ({planCount})
-                      </Text>
-                    )}
                   </TouchableOpacity>
                 );
               })}
@@ -495,7 +518,7 @@ export const DataPurchaseScreen: React.FC<DataPurchaseScreenProps> = ({ onNaviga
                         </Text>
                       </View>
                       <View style={styles.dataPlanPrice}>
-                        <Text style={[styles.dataPlanPriceText, { color: colors.text }]}>
+                        <Text style={[styles.dataPlanPriceText, { color: '#10B981' }]}>
                           {formatPrice(plan.payment_price)}
                         </Text>
                         <Text style={[styles.dataPlanOriginalPrice, { color: colors.mutedForeground }]}>
@@ -504,9 +527,6 @@ export const DataPurchaseScreen: React.FC<DataPurchaseScreenProps> = ({ onNaviga
                       </View>
                     </View>
                     <View style={styles.dataPlanFooter}>
-                      <Text style={[styles.dataPlanCharge, { color: colors.primary }]}>
-                        +{plan.percentage_charge}% service charge
-                      </Text>
                       {selectedPlan?.id === plan.id && (
                         <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
                       )}
@@ -642,7 +662,7 @@ export const DataPurchaseScreen: React.FC<DataPurchaseScreenProps> = ({ onNaviga
                   { backgroundColor: data.color + '20' }
                 ]}>
                   <Image 
-                    source={{ uri: data.logo }}
+                    source={data.logo}
                     style={styles.networkLogo}
                     resizeMode="contain"
                   />
@@ -689,22 +709,8 @@ export const DataPurchaseScreen: React.FC<DataPurchaseScreenProps> = ({ onNaviga
         singleButton={true}
       />
 
-      {/* Receipt Modal */}
-      <ReceiptModal
-        visible={showReceiptModal}
-        onClose={handleReceiptModalClose}
-        receiptData={successData ? {
-          reference: successData.reference,
-          amount: successData.amount,
-          phone: successData.phone,
-          service: 'Data',
-          date: new Date().toISOString(), // Use current time since API doesn't provide time
-          network: selectedNetwork ? getNetworkInfo(selectedNetwork).name : undefined,
-          dataPlan: selectedPlan?.data_plan,
-          transaction_id: successData.transaction_id,
-        } : null}
-      />
-    </View>
+
+    </KeyboardAvoidingView>
   );
 };
 
@@ -951,10 +957,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  dataPlanCharge: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
+
   noPlansContainer: {
     alignItems: 'center',
     padding: 40,
@@ -1084,9 +1087,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  durationToggleCount: {
-    fontSize: 10,
-    fontWeight: '500',
-    marginTop: 2,
-  },
+
 });
