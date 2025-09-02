@@ -325,10 +325,7 @@ export const BettingFundingScreen: React.FC<BettingFundingScreenProps> = ({ onNa
         <Text style={[styles.inputLabel, { color: colors.text }]}>
           Customer ID
         </Text>
-        <LinearGradient
-          colors={[colors.card, colors.card + 'F0']}
-          style={styles.inputContainer}
-        >
+        <View style={[styles.inputContainer, { backgroundColor: colors.card }]}>
           <View style={styles.inputWrapper}>
             <Ionicons name="person" size={20} color={colors.mutedForeground} />
             <TextInput
@@ -338,10 +335,11 @@ export const BettingFundingScreen: React.FC<BettingFundingScreenProps> = ({ onNa
               placeholder="Enter your customer ID"
               placeholderTextColor={colors.mutedForeground}
               keyboardType="numeric"
+              textAlignVertical="center"
+              underlineColorAndroid="transparent"
             />
           </View>
-          <View style={styles.inputDecoration} />
-        </LinearGradient>
+        </View>
       </View>
 
       <View style={styles.buttonContainer}>
@@ -494,10 +492,7 @@ export const BettingFundingScreen: React.FC<BettingFundingScreenProps> = ({ onNa
         <Text style={[styles.inputLabel, { color: colors.text }]}>
           Amount to Fund
         </Text>
-        <LinearGradient
-          colors={[colors.card, colors.card + 'F0']}
-          style={styles.amountInputContainer}
-        >
+        <View style={[styles.amountInputContainer, { backgroundColor: colors.card }]}>
           <View style={styles.amountInputWrapper}>
             <Text style={styles.currencySymbol}>₦</Text>
             <TextInput
@@ -507,20 +502,18 @@ export const BettingFundingScreen: React.FC<BettingFundingScreenProps> = ({ onNa
               placeholder="0.00"
               placeholderTextColor={colors.mutedForeground}
               keyboardType="numeric"
+              textAlignVertical="center"
+              underlineColorAndroid="transparent"
             />
           </View>
-          <View style={styles.amountInputDecoration} />
-        </LinearGradient>
+        </View>
       </View>
 
       <View style={styles.inputSection}>
         <Text style={[styles.inputLabel, { color: colors.text }]}>
           Transaction PIN
         </Text>
-        <LinearGradient
-          colors={[colors.card, colors.card + 'F0']}
-          style={styles.inputContainer}
-        >
+        <View style={[styles.inputContainer, { backgroundColor: colors.card }]}>
           <View style={styles.inputWrapper}>
             <Ionicons name="lock-closed" size={20} color={colors.mutedForeground} />
             <TextInput
@@ -532,10 +525,11 @@ export const BettingFundingScreen: React.FC<BettingFundingScreenProps> = ({ onNa
               keyboardType="numeric"
               maxLength={4}
               secureTextEntry={true}
+              textAlignVertical="center"
+              underlineColorAndroid="transparent"
             />
           </View>
-          <View style={styles.inputDecoration} />
-        </LinearGradient>
+        </View>
       </View>
 
       <TouchableOpacity
@@ -847,50 +841,48 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   inputContainer: {
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
+    backgroundColor: '#ffffff',
+    ...(Platform.OS === 'android' && {
+      elevation: 1,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+    }),
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 16,
   },
   input: {
     flex: 1,
     fontSize: 16,
     marginLeft: 12,
-  },
-  inputDecoration: {
-    height: 2,
-    backgroundColor: '#F59E0B',
-    marginHorizontal: 16,
-    marginBottom: 12,
-    borderRadius: 1,
+    paddingVertical: 0,
   },
   amountInputContainer: {
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
+    backgroundColor: '#ffffff',
+    ...(Platform.OS === 'android' && {
+      elevation: 1,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+    }),
   },
   amountInputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 16,
   },
   currencySymbol: {
     fontSize: 24,
@@ -902,13 +894,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 24,
     fontWeight: 'bold',
-  },
-  amountInputDecoration: {
-    height: 2,
-    backgroundColor: '#F59E0B',
-    marginHorizontal: 16,
-    marginBottom: 12,
-    borderRadius: 1,
+    paddingVertical: 0,
   },
   actionButton: {
     borderRadius: 16,

@@ -41,7 +41,6 @@ export const ServiceGrid: React.FC<ServiceGridProps> = ({ onServiceClick }) => {
       name: "Electricity\nBills",
       icon: "flash",
       color: "#F59E0B",
-      isComingSoon: true,
     },
     {
       id: "betting-funding",
@@ -50,16 +49,16 @@ export const ServiceGrid: React.FC<ServiceGridProps> = ({ onServiceClick }) => {
       color: "#F59E0B",
     },
     {
-      id: "bills",
-      name: "Bill\nPayments",
-      icon: "card",
-      color: "#8B5CF6",
-    },
-    {
       id: "printing",
       name: "Card\nPrinting",
       icon: "print",
       color: "#F97316",
+    },
+    {
+      id: "other-services",
+      name: "Other\nServices",
+      icon: "apps",
+      color: "#8B5CF6",
     }
   ];
 

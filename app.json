@@ -1,11 +1,11 @@
 {
   "expo": {
     "name": "SureTopUp",
-    "slug": "SureTopUp",
+    "slug": "suretopup",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "SureTopUp",
+    "scheme": "suretopup",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -29,7 +29,13 @@
     },
     "web": {
       "bundler": "metro",
-      "output": "static"
+      "output": "static",
+      "favicon": "./assets/images/favicon.png",
+      "themeColor": "#3b82f6",
+      "backgroundColor": "#ffffff",
+      "meta": {
+        "viewport": "width=device-width, initial-scale=1, shrink-to-fit=no"
+      }
     },
     "plugins": [
       "expo-router",
@@ -43,7 +49,8 @@
       ]
     ],
     "experiments": {
-      "typedRoutes": true
+      "typedRoutes": true,
+      "tsconfigPaths": true
     },
     "extra": {
       "router": {},

@@ -310,7 +310,7 @@ export const DataPurchaseScreen: React.FC<DataPurchaseScreenProps> = ({ onNaviga
       phone: successData.phone,
       service: 'Data',
       date: new Date().toISOString(),
-      network: successData.network,
+      network: selectedNetwork ? selectedNetwork : undefined,
       dataPlan: successData.dataPlan,
       transaction_id: successData.transaction_id,
     });
@@ -384,10 +384,7 @@ export const DataPurchaseScreen: React.FC<DataPurchaseScreenProps> = ({ onNaviga
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             Phone Number
           </Text>
-          <LinearGradient
-            colors={[colors.card, colors.card + 'F0']}
-            style={styles.inputContainer}
-          >
+          <View style={[styles.inputContainer, { backgroundColor: colors.card }]}>
             <View style={styles.inputWrapper}>
               <Ionicons name="call" size={20} color={colors.mutedForeground} />
               <TextInput
@@ -398,10 +395,11 @@ export const DataPurchaseScreen: React.FC<DataPurchaseScreenProps> = ({ onNaviga
                 placeholderTextColor={colors.mutedForeground}
                 keyboardType="phone-pad"
                 maxLength={11}
+                textAlignVertical="center"
+                underlineColorAndroid="transparent"
               />
             </View>
-            <View style={styles.inputDecoration} />
-          </LinearGradient>
+          </View>
           
           {/* Network Selection - Compact */}
           {phoneNumber.length >= 4 && (
@@ -510,18 +508,30 @@ export const DataPurchaseScreen: React.FC<DataPurchaseScreenProps> = ({ onNaviga
                   >
                     <View style={styles.dataPlanHeader}>
                       <View style={styles.dataPlanInfo}>
-                        <Text style={[styles.dataPlanName, { color: colors.text }]}>
+                        <Text style={[
+                          styles.dataPlanName, 
+                          { color: selectedPlan?.id === plan.id ? '#8B5CF6' : colors.text }
+                        ]}>
                           {plan.data_plan}
                         </Text>
-                        <Text style={[styles.dataPlanNetwork, { color: colors.mutedForeground }]}>
+                        <Text style={[
+                          styles.dataPlanNetwork, 
+                          { color: selectedPlan?.id === plan.id ? '#8B5CF6' : colors.mutedForeground }
+                        ]}>
                           {plan.service_name}
                         </Text>
                       </View>
                       <View style={styles.dataPlanPrice}>
-                        <Text style={[styles.dataPlanPriceText, { color: '#10B981' }]}>
+                        <Text style={[
+                          styles.dataPlanPriceText, 
+                          { color: selectedPlan?.id === plan.id ? '#8B5CF6' : '#10B981' }
+                        ]}>
                           {formatPrice(plan.payment_price)}
                         </Text>
-                        <Text style={[styles.dataPlanOriginalPrice, { color: colors.mutedForeground }]}>
+                        <Text style={[
+                          styles.dataPlanOriginalPrice, 
+                          { color: selectedPlan?.id === plan.id ? '#8B5CF6' : colors.mutedForeground }
+                        ]}>
                           {formatPrice(plan.price)}
                         </Text>
                       </View>
@@ -550,10 +560,7 @@ export const DataPurchaseScreen: React.FC<DataPurchaseScreenProps> = ({ onNaviga
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             Transaction PIN
           </Text>
-          <LinearGradient
-            colors={[colors.card, colors.card + 'F0']}
-            style={styles.inputContainer}
-          >
+          <View style={[styles.inputContainer, { backgroundColor: colors.card }]}>
             <View style={styles.inputWrapper}>
               <Ionicons name="lock-closed" size={20} color={colors.mutedForeground} />
               <TextInput
@@ -565,10 +572,11 @@ export const DataPurchaseScreen: React.FC<DataPurchaseScreenProps> = ({ onNaviga
                 keyboardType="numeric"
                 maxLength={4}
                 secureTextEntry={true}
+                textAlignVertical="center"
+                underlineColorAndroid="transparent"
               />
             </View>
-            <View style={styles.inputDecoration} />
-          </LinearGradient>
+          </View>
         </View>
 
         {/* Info Section */}
@@ -794,33 +802,29 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   inputContainer: {
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
+    backgroundColor: '#ffffff',
+    ...(Platform.OS === 'android' && {
+      elevation: 1,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+    }),
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 16,
   },
   input: {
     flex: 1,
     fontSize: 16,
     marginLeft: 12,
-  },
-  inputDecoration: {
-    height: 2,
-    backgroundColor: '#8B5CF6',
-    marginHorizontal: 16,
-    marginBottom: 12,
-    borderRadius: 1,
+    paddingVertical: 0,
   },
   networkSection: {
     marginTop: 8,
@@ -915,7 +919,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   dataPlanCardSelected: {
-    backgroundColor: 'rgba(139, 92, 246, 0.05)',
+    backgroundColor: '#F8F7FF',
     borderColor: '#8B5CF6',
     shadowColor: '#8B5CF6',
     shadowOpacity: 0.2,

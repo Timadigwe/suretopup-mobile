@@ -18,7 +18,6 @@ interface BottomTabNavigatorProps {
 const tabItems = [
   { id: 'home', icon: 'home-outline', activeIcon: 'home', label: 'Home' },
   { id: 'transactions', icon: 'receipt-outline', activeIcon: 'receipt', label: 'History' },
-  { id: 'wallet', icon: 'wallet-outline', activeIcon: 'wallet', label: 'Wallet' },
   { id: 'profile', icon: 'person-outline', activeIcon: 'person', label: 'Profile' },
 ];
 

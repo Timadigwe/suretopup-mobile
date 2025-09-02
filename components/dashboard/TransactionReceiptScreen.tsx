@@ -23,18 +23,46 @@ import { useAuth } from '@/contexts/AuthContext';
 interface ReceiptData {
   reference: string;
   amount: number;
-  phone: string;
+  phone?: string;
   service: string;
   date: string;
   network?: string;
   dataPlan?: string;
   transaction_id?: number;
   new_balance?: number;
+  // Transaction details
+  transactionId?: number;
+  type?: string;
+  status?: string;
+  oldBalance?: string;
+  newBalance?: string;
+  info?: string;
   bettingCompany?: string;
   bettingCustomer?: string;
   businessName?: string;
   quantity?: string;
   denomination?: string;
+  customerName?: string;
+  customerAddress?: string;
+  meterNumber?: string;
+  accountNumber?: string;
+  district?: string;
+          // Electricity-specific fields
+        serviceName?: string;
+        customerId?: string;
+        token?: string;
+        orderId?: number;
+        units?: string | null;
+        band?: string;
+        amountCharged?: string;
+        discount?: string;
+        initialBalance?: string;
+        finalBalance?: string;
+        // NIN-specific fields
+        slipType?: string;
+        // CAC-specific fields
+        certificateType?: string;
+        businessName1?: string;
   epins?: Array<{
     pin: string;
     serial: string;
@@ -173,35 +201,130 @@ export const TransactionReceiptScreen: React.FC<TransactionReceiptScreenProps> =
   };
 
   const getNetworkImage = () => {
-    if (!receiptData.network) return null;
-    const networkKey = receiptData.network.toLowerCase();
+    // First check if network is directly provided
+    if (receiptData.network) {
+      const networkKey = receiptData.network.toLowerCase();
+      
+      // Handle different network name variations
+      if (networkKey === 'mtn') return NETWORK_IMAGES.mtn;
+      if (networkKey === 'airtel') return NETWORK_IMAGES.airtel;
+      if (networkKey === 'glo') return NETWORK_IMAGES.glo;
+      if (networkKey === '9mobile') return NETWORK_IMAGES['9mobile'];
+    }
     
-    // Handle different network name variations
-    if (networkKey === 'mtn') return NETWORK_IMAGES.mtn;
-    if (networkKey === 'airtel') return NETWORK_IMAGES.airtel;
-    if (networkKey === 'glo') return NETWORK_IMAGES.glo;
-    if (networkKey === '9mobile') return NETWORK_IMAGES['9mobile'];
+    // For transaction history, try to extract network from service name or info
+    const service = receiptData.service?.toLowerCase() || '';
+    const info = receiptData.info?.toLowerCase() || '';
+    
+    // Check if it's airtime, data, or card printing transaction
+    if (service.includes('airtime') || service.includes('recharge') || 
+        service.includes('data') || service.includes('card print') ||
+        info.includes('mtn') || info.includes('airtel') || info.includes('glo') || info.includes('9mobile')) {
+      
+      // Try to extract network from info first
+      if (info.includes('mtn')) return NETWORK_IMAGES.mtn;
+      if (info.includes('airtel')) return NETWORK_IMAGES.airtel;
+      if (info.includes('glo')) return NETWORK_IMAGES.glo;
+      if (info.includes('9mobile')) return NETWORK_IMAGES['9mobile'];
+      
+      // If no network found in info, try to extract from service name
+      if (service.includes('mtn')) return NETWORK_IMAGES.mtn;
+      if (service.includes('airtel')) return NETWORK_IMAGES.airtel;
+      if (service.includes('glo')) return NETWORK_IMAGES.glo;
+      if (service.includes('9mobile')) return NETWORK_IMAGES['9mobile'];
+    }
     
     return null;
   };
 
   const getNetworkBackgroundColor = () => {
-    if (!receiptData.network) return '#f8f9fa';
-    const networkKey = receiptData.network.toLowerCase();
-    
-    // Network-specific background colors
-    switch (networkKey) {
-      case 'mtn':
-        return '#fbc404';
-      case 'airtel':
-        return '#ec1c24';
-      case 'glo':
-        return '#1daa10';
-      case '9mobile':
-        return '#040404';
-      default:
-        return '#f8f9fa';
+    // First check if network is directly provided
+    if (receiptData.network) {
+      const networkKey = receiptData.network.toLowerCase();
+      
+      // Network-specific background colors
+      switch (networkKey) {
+        case 'mtn':
+          return '#fbc404';
+        case 'airtel':
+          return '#ec1c24';
+        case 'glo':
+          return '#1daa10';
+        case '9mobile':
+          return '#040404';
+        default:
+          return '#f8f9fa';
+      }
     }
+    
+    // For transaction history, try to extract network from service name or info
+    const service = receiptData.service?.toLowerCase() || '';
+    const info = receiptData.info?.toLowerCase() || '';
+    
+    // Check if it's airtime, data, or card printing transaction
+    if (service.includes('airtime') || service.includes('recharge') || 
+        service.includes('data') || service.includes('card print') ||
+        info.includes('mtn') || info.includes('airtel') || info.includes('glo') || info.includes('9mobile')) {
+      
+      // Try to extract network from info first
+      if (info.includes('mtn')) return '#fbc404';
+      if (info.includes('airtel')) return '#ec1c24';
+      if (info.includes('glo')) return '#1daa10';
+      if (info.includes('9mobile')) return '#040404';
+      
+      // If no network found in info, try to extract from service name
+      if (service.includes('mtn')) return '#fbc404';
+      if (service.includes('airtel')) return '#ec1c24';
+      if (service.includes('glo')) return '#1daa10';
+      if (service.includes('9mobile')) return '#040404';
+    }
+    
+    return '#f8f9fa';
+  };
+
+  const getNetworkDisplayName = () => {
+    // First check if network is directly provided
+    if (receiptData.network) {
+      const networkKey = receiptData.network.toLowerCase();
+      
+      // Network display names
+      switch (networkKey) {
+        case 'mtn':
+          return 'MTN';
+        case 'airtel':
+          return 'Airtel';
+        case 'glo':
+          return 'Glo';
+        case '9mobile':
+          return '9mobile';
+        default:
+          return receiptData.network; // Return original if not recognized
+      }
+    }
+    
+    // For transaction history, try to extract network from service name or info
+    const service = receiptData.service?.toLowerCase() || '';
+    const info = receiptData.info?.toLowerCase() || '';
+    
+    // Check if it's airtime, data, or card printing transaction
+    if (service.includes('airtime') || service.includes('recharge') || 
+        service.includes('data') || service.includes('card print') ||
+        info.includes('mtn') || info.includes('airtel') || info.includes('glo') || info.includes('9mobile')) {
+      
+      // Try to extract network from info first
+      if (info.includes('mtn')) return 'MTN';
+      if (info.includes('airtel')) return 'Airtel';
+      if (info.includes('glo')) return 'Glo';
+      if (info.includes('9mobile')) return '9mobile';
+      
+      // If no network found in info, try to extract from service name
+      if (service.includes('mtn')) return 'MTN';
+      if (service.includes('airtel')) return 'Airtel';
+      if (service.includes('glo')) return 'Glo';
+      if (service.includes('9mobile')) return '9mobile';
+    }
+    
+    return '';
   };
 
   const getUserFullName = () => {
@@ -210,6 +333,10 @@ export const TransactionReceiptScreen: React.FC<TransactionReceiptScreenProps> =
     }
     return user?.firstname || user?.lastname || 'SureTopUp User';
   };
+
+  // Debug: Check what network data we're receiving
+  console.log('Network data:', receiptData.network);
+  console.log('getNetworkImage result:', getNetworkImage());
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -272,7 +399,7 @@ export const TransactionReceiptScreen: React.FC<TransactionReceiptScreenProps> =
             </Text>
           </View>
 
-          {/* Network Provider Image */}
+          {/* Network Provider Image - Show for airtime, data, card printing, and other network services */}
           {getNetworkImage() && (
             <View style={styles.networkImageContainer}>
               <View style={[styles.networkImageWrapper, { backgroundColor: getNetworkBackgroundColor() }]}>
@@ -285,16 +412,43 @@ export const TransactionReceiptScreen: React.FC<TransactionReceiptScreenProps> =
             </View>
           )}
           
-          {/* Fallback Network Name if no image */}
-          {!getNetworkImage() && receiptData.network && (
+          {/* Fallback Network Name if no image but network is detected */}
+          {!getNetworkImage() && getNetworkDisplayName() && (
             <View style={styles.networkImageContainer}>
               <View style={[styles.networkFallback, { backgroundColor: getNetworkBackgroundColor() }]}>
                 <Text style={[styles.networkFallbackText, { color: '#ffffff' }]}>
-                  {receiptData.network}
+                  {getNetworkDisplayName()}
                 </Text>
               </View>
             </View>
           )}
+
+                {/* Electricity Icon for Electricity Bills */}
+      {receiptData.service.toLowerCase() === 'electricity bill' && (
+        <View style={styles.networkImageContainer}>
+          <View style={[styles.networkFallback, { backgroundColor: '#eab308' }]}>
+            <Ionicons name="flash" size={32} color="#ffffff" />
+          </View>
+        </View>
+      )}
+
+      {/* NIN Icon for NIN Print */}
+      {receiptData.service.toLowerCase() === 'nin print' && (
+        <View style={styles.networkImageContainer}>
+          <View style={[styles.networkFallback, { backgroundColor: '#8b5cf6' }]}>
+            <Ionicons name="card" size={32} color="#ffffff" />
+          </View>
+        </View>
+      )}
+
+      {/* CAC Icon for CAC Registration */}
+      {receiptData.service.toLowerCase() === 'cac registration' && (
+        <View style={styles.networkImageContainer}>
+          <View style={[styles.networkFallback, { backgroundColor: '#10b981' }]}>
+            <Ionicons name="business" size={32} color="#ffffff" />
+          </View>
+        </View>
+      )}
           
 
 
@@ -329,24 +483,149 @@ export const TransactionReceiptScreen: React.FC<TransactionReceiptScreenProps> =
               </Text>
             </View>
 
-            {receiptData.network && (
+            {/* Transaction ID */}
+            {receiptData.transactionId && (
+              <View style={styles.detailRow}>
+                <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>
+                  Transaction ID
+                </Text>
+                <Text style={[styles.detailValue, { color: colors.text }]}>
+                  #{receiptData.transactionId}
+                </Text>
+              </View>
+            )}
+
+            {/* Transaction Type (Credit/Debit) */}
+            {receiptData.type && (
+              <View style={styles.detailRow}>
+                <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>
+                  Type
+                </Text>
+                <Text style={[styles.detailValue, { color: colors.text }]}>
+                  {receiptData.type}
+                </Text>
+              </View>
+            )}
+
+            {/* Transaction Status */}
+            {receiptData.status && (
+              <View style={styles.detailRow}>
+                <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>
+                  Status
+                </Text>
+                <Text style={[styles.detailValue, { color: colors.text }]}>
+                  {receiptData.status}
+                </Text>
+              </View>
+            )}
+
+            {/* Balance Changes */}
+            {receiptData.oldBalance && receiptData.newBalance && (
+              <>
+                <View style={styles.detailRow}>
+                  <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>
+                    Previous Balance
+                  </Text>
+                  <Text style={[styles.detailValue, { color: colors.text }]}>
+                    ₦{parseFloat(receiptData.oldBalance).toLocaleString()}
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>
+                    New Balance
+                  </Text>
+                  <Text style={[styles.detailValue, { color: colors.text }]}>
+                    ₦{parseFloat(receiptData.newBalance).toLocaleString()}
+                  </Text>
+                </View>
+              </>
+            )}
+
+            {/* Additional Info */}
+            {receiptData.info && (
+              <View style={styles.detailRow}>
+                <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>
+                  Additional Info
+                </Text>
+                <Text style={[styles.detailValue, { color: colors.text }]}>
+                  {receiptData.info}
+                </Text>
+              </View>
+            )}
+
+            {receiptData.network && receiptData.service.toLowerCase() !== 'electricity bill' && (
               <View style={styles.detailRow}>
                 <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>
                   Network
                 </Text>
                 <Text style={[styles.detailValue, { color: colors.text }]}>
-                  {receiptData.network}
+                  {getNetworkDisplayName()}
                 </Text>
               </View>
             )}
 
-            {receiptData.phone && (
+            {receiptData.phone && receiptData.service.toLowerCase() !== 'electricity bill' && (
               <View style={styles.detailRow}>
                 <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>
                   Recipient Mobile Number
                 </Text>
                 <Text style={[styles.detailValue, { color: colors.text }]}>
                   {receiptData.phone}
+                </Text>
+              </View>
+            )}
+
+            {receiptData.customerName && (
+              <View style={styles.detailRow}>
+                <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>
+                  Customer Name
+                </Text>
+                <Text style={[styles.detailValue, { color: colors.text }]}>
+                  {receiptData.customerName}
+                </Text>
+              </View>
+            )}
+
+            {receiptData.meterNumber && (
+              <View style={styles.detailRow}>
+                <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>
+                  Meter Number
+                </Text>
+                <Text style={[styles.detailValue, { color: colors.text }]}>
+                  {receiptData.meterNumber}
+                </Text>
+              </View>
+            )}
+
+            {receiptData.accountNumber && (
+              <View style={styles.detailRow}>
+                <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>
+                  Account Number
+                </Text>
+                <Text style={[styles.detailValue, { color: colors.text }]}>
+                  {receiptData.accountNumber}
+                </Text>
+              </View>
+            )}
+
+            {receiptData.district && (
+              <View style={styles.detailRow}>
+                <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>
+                  District
+                </Text>
+                <Text style={[styles.detailValue, { color: colors.text }]}>
+                  {receiptData.district}
+                </Text>
+              </View>
+            )}
+
+            {receiptData.customerAddress && (
+              <View style={styles.detailRow}>
+                <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>
+                  Customer Address
+                </Text>
+                <Text style={[styles.detailValue, { color: colors.text }]} numberOfLines={2}>
+                  {receiptData.customerAddress}
                 </Text>
               </View>
             )}
@@ -402,6 +681,122 @@ export const TransactionReceiptScreen: React.FC<TransactionReceiptScreenProps> =
                 </Text>
                 <Text style={[styles.detailValue, { color: colors.text }]}>
                   ₦{receiptData.denomination}
+                </Text>
+              </View>
+            )}
+
+            {/* Electricity-specific fields */}
+            {receiptData.serviceName && (
+              <View style={styles.detailRow}>
+                <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>
+                  Service Provider
+                </Text>
+                <Text style={[styles.detailValue, { color: colors.text }]}>
+                  {receiptData.serviceName}
+                </Text>
+              </View>
+            )}
+
+            {receiptData.customerId && (
+              <View style={styles.detailRow}>
+                <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>
+                  Customer ID
+                </Text>
+                <Text style={[styles.detailValue, { color: colors.text }]}>
+                  {receiptData.customerId}
+                </Text>
+              </View>
+            )}
+
+            {receiptData.token && (
+              <View style={styles.detailRow}>
+                <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>
+                  Token
+                </Text>
+                <Text style={[styles.detailValue, { color: colors.text }]}>
+                  {receiptData.token}
+                </Text>
+              </View>
+            )}
+
+            {receiptData.orderId && (
+              <View style={styles.detailRow}>
+                <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>
+                  Order ID
+                </Text>
+                <Text style={[styles.detailValue, { color: colors.text }]}>
+                  {receiptData.orderId}
+                </Text>
+              </View>
+            )}
+
+            {receiptData.amountCharged && (
+              <View style={styles.detailRow}>
+                <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>
+                  Amount Charged
+                </Text>
+                <Text style={[styles.detailValue, { color: colors.text }]}>
+                  ₦{receiptData.amountCharged}
+                </Text>
+              </View>
+            )}
+
+            {receiptData.discount && (
+              <View style={styles.detailRow}>
+                <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>
+                  Discount
+                </Text>
+                <Text style={[styles.detailValue, { color: colors.text }]}>
+                  ₦{receiptData.discount}
+                </Text>
+              </View>
+            )}
+
+            {/* NIN-specific fields */}
+            {receiptData.slipType && (
+              <View style={styles.detailRow}>
+                <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>
+                  Slip Type
+                </Text>
+                <Text style={[styles.detailValue, { color: colors.text }]}>
+                  {receiptData.slipType === 'regular' ? 'Regular Slip' : 
+                   receiptData.slipType === 'standard' ? 'Standard Slip' : 
+                   receiptData.slipType === 'premium' ? 'Premium Slip' : receiptData.slipType}
+                </Text>
+              </View>
+            )}
+
+            {/* CAC-specific fields */}
+            {receiptData.certificateType && (
+              <View style={styles.detailRow}>
+                <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>
+                  Certificate Type
+                </Text>
+                <Text style={[styles.detailValue, { color: colors.text }]}>
+                  {receiptData.certificateType}
+                </Text>
+              </View>
+            )}
+
+            {receiptData.businessName1 && (
+              <View style={styles.detailRow}>
+                <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>
+                  Business Name
+                </Text>
+                <Text style={[styles.detailValue, { color: colors.text }]}>
+                  {receiptData.businessName1}
+                </Text>
+              </View>
+            )}
+
+            {/* Electricity-specific fields */}
+            {receiptData.finalBalance && (
+              <View style={styles.detailRow}>
+                <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>
+                  Final Balance
+                </Text>
+                <Text style={[styles.detailValue, { color: colors.text }]}>
+                  ₦{receiptData.finalBalance}
                 </Text>
               </View>
             )}
@@ -487,6 +882,30 @@ export const TransactionReceiptScreen: React.FC<TransactionReceiptScreenProps> =
           {receiptData.epins && receiptData.epins.length > 0 && (
             <View style={styles.epinsSection}>
               <View style={styles.epinsHeader}>
+                {/* Network Provider Image */}
+                {getNetworkImage() && (
+                  <View style={styles.networkImageContainer}>
+                    <View style={[styles.networkImageWrapper, { backgroundColor: getNetworkBackgroundColor() }]}>
+                      <Image
+                        source={getNetworkImage()!}
+                        style={styles.networkImage}
+                        resizeMode="contain"
+                      />
+                    </View>
+                  </View>
+                )}
+                
+                {/* Fallback Network Name if no image but network is detected */}
+                {!getNetworkImage() && getNetworkDisplayName() && (
+                  <View style={styles.networkImageContainer}>
+                    <View style={[styles.networkFallback, { backgroundColor: getNetworkBackgroundColor() }]}>
+                      <Text style={[styles.networkFallbackText, { color: '#ffffff' }]}>
+                        {getNetworkDisplayName()}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+                
                 <Text style={[styles.epinsTitle, { color: colors.text }]}>
                   e-Card Pins
                 </Text>
@@ -737,12 +1156,15 @@ const styles = StyleSheet.create({
   },
   epinsHeader: {
     marginBottom: 20,
+    alignItems: 'center',
   },
   epinsTitle: {
     fontSize: 18,
     fontWeight: '600',
     textAlign: 'center',
+    marginTop: 12,
   },
+
   epinCard: {
     backgroundColor: '#f8f9fa',
     borderRadius: 12,

@@ -88,15 +88,19 @@ class ApiService {
 
   private async makeRequest<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit & { isFormData?: boolean } = {}
   ): Promise<ApiResponse<T>> {
     try {
       const url = `${this.baseUrl}${endpoint}`;
       
       const defaultHeaders: Record<string, string> = {
-        'Content-Type': 'application/json',
         'Accept': 'application/json',
       };
+
+      // Only add Content-Type for JSON requests
+      if (!options.isFormData) {
+        defaultHeaders['Content-Type'] = 'application/json';
+      }
 
       // Add authorization header if token exists
       if (this.token) {
@@ -628,6 +632,263 @@ class ApiService {
         rinfo: number;
       };
     }>('/user/fund-account', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Electricity Bills
+  async getPowerCompanies(): Promise<ApiResponse<Array<{
+    id: string;
+    name: string;
+    covers: string;
+  }>>> {
+    return this.makeRequest<Array<{
+      id: string;
+      name: string;
+      covers: string;
+    }>>('/user/power-companies', {
+      method: 'GET',
+    });
+  }
+
+  async verifyElectricityCustomer(data: {
+    customer_id: string;
+    service_id: string;
+    variation_id: string;
+  }): Promise<ApiResponse<any>> {
+    return this.makeRequest('/user/verify-electricity-customer', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async purchaseElectricity(data: {
+    customer_id: string;
+    service_id: string;
+    variation_id: string;
+    amount: number;
+    tpin: string;
+  }): Promise<ApiResponse<any>> {
+    return this.makeRequest('/user/purchase-electricity', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Cable TV API methods
+  async getCableCompanies(): Promise<ApiResponse<Array<{
+    id: string;
+    name: string;
+  }>>> {
+    return this.makeRequest<Array<{
+      id: string;
+      name: string;
+    }>>('/user/cable-companies', {
+      method: 'GET',
+    });
+  }
+
+  // NIN API methods
+  async getNinSlipTypes(): Promise<ApiResponse<{
+    slip_types: Array<{
+      id: number;
+      type: string;
+      name: string;
+      price: number;
+      status: string;
+      created_at: string;
+      updated_at: string;
+    }>;
+  }>> {
+    return this.makeRequest<{
+      slip_types: Array<{
+        id: number;
+        type: string;
+        name: string;
+        price: number;
+        status: string;
+        created_at: string;
+        updated_at: string;
+      }>;
+    }>('/user/slip-type', {
+      method: 'GET',
+    });
+  }
+
+  async submitNinRequest(data: {
+    slip_type: string;
+    nin_number: string;
+    amount: string;
+  }): Promise<ApiResponse<{
+    nin_id: number;
+    transaction: {
+      userid: number;
+      service: string;
+      type: string;
+      amount: number;
+      ref: string;
+      date: string;
+      status: string;
+      info: string;
+      old_balance: number;
+      new_balance: number;
+      updated_at: string;
+      created_at: string;
+      id: number;
+    };
+  }>> {
+    return this.makeRequest<{
+      nin_id: number;
+      transaction: {
+        userid: number;
+        service: string;
+        type: string;
+        amount: number;
+        ref: string;
+        date: string;
+        status: string;
+        info: string;
+        old_balance: number;
+        new_balance: number;
+        updated_at: string;
+        created_at: string;
+        id: number;
+      };
+    }>('/user/nin', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // CAC API methods
+  async getCacPrice(): Promise<{
+    success: boolean;
+    cac_price: string;
+  }> {
+    const response = await this.makeRequest<{
+      success: boolean;
+      cac_price: string;
+    }>('/user/cac-price', {
+      method: 'GET',
+    });
+    // The API returns data directly, not wrapped in response.data
+    return response as any;
+  }
+
+  async submitCacRequest(data: FormData): Promise<ApiResponse<any>> {
+    return this.makeRequest('/user/cac', {
+      method: 'POST',
+      body: data,
+      isFormData: true,
+    });
+  }
+
+  // Get single transaction details
+  async getSingleTransaction(ref: string, service: string): Promise<ApiResponse<{
+    id: number;
+    userid: string;
+    service: string;
+    type: string;
+    amount: string;
+    ref: string;
+    date: string;
+    status: string;
+    info: string | null;
+    old_balance: string;
+    new_balance: string;
+    created_at: string;
+    updated_at: string;
+  }>> {
+    return this.makeRequest(`/user/single-transaction?ref=${ref}&service=${encodeURIComponent(service)}`, {
+      method: 'GET',
+    });
+  }
+
+  // Profile API methods
+  async getUserProfile(): Promise<ApiResponse<{
+    id: number;
+    firstname: string;
+    lastname: string;
+    email: string;
+    verification_code: string | null;
+    email_verified_at: string | null;
+    tpin: string;
+    phone: string;
+    balance: string;
+    state: string;
+    ipaddress: string | null;
+    device: string | null;
+    status: string;
+    created_at: string;
+    updated_at: string;
+    deleted_at: string | null;
+  }>> {
+    return this.makeRequest('/user/profile', {
+      method: 'GET',
+    });
+  }
+
+  async updateProfile(data: {
+    firstname: string;
+    lastname: string;
+    email: string;
+    phone_number: string;
+    state: string;
+  }): Promise<ApiResponse<any>> {
+    return this.makeRequest('/user/update-profile', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async changePassword(data: {
+    current_password: string;
+    new_password: string;
+    new_password_confirmation: string;
+  }): Promise<ApiResponse<any>> {
+    return this.makeRequest('/user/change-password', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async changePin(data: {
+    current_pin: string;
+    new_pin: string;
+    new_pin_confirmation: string;
+  }): Promise<ApiResponse<any>> {
+    return this.makeRequest('/user/change-pin', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getCableVariations(): Promise<ApiResponse<any>> {
+    return this.makeRequest('/user/cable-variations', {
+      method: 'GET',
+    });
+  }
+
+  async verifyCableCustomer(data: {
+    customer_id: string;
+    service_id: string;
+  }): Promise<ApiResponse<any>> {
+    return this.makeRequest('/user/verify-cable-customer', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async subscribeCable(data: {
+    variation_id: string;
+    service_id: string;
+    customer_id: string;
+    subscription_type: string;
+    amount: number;
+    tpin: string;
+  }): Promise<ApiResponse<any>> {
+    return this.makeRequest('/user/subscribe-cable', {
       method: 'POST',
       body: JSON.stringify(data),
     });

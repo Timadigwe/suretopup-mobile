@@ -200,7 +200,7 @@ export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ on
       phone: successData.phone,
       service: 'Airtime',
       date: new Date().toISOString(),
-      network: successData.network ? successData.network.charAt(0).toUpperCase() + successData.network.slice(1) : undefined,
+      network: selectedNetwork ? selectedNetwork : undefined,
       transaction_id: successData.transaction_id,
     });
   };
@@ -271,10 +271,7 @@ export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ on
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             Phone Number
           </Text>
-          <LinearGradient
-            colors={[colors.card, colors.card + 'F0']}
-            style={styles.inputContainer}
-          >
+          <View style={[styles.inputContainer, { backgroundColor: colors.card }]}>
             <View style={styles.inputWrapper}>
               <Ionicons name="call" size={20} color={colors.mutedForeground} />
               <TextInput
@@ -285,10 +282,11 @@ export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ on
                 placeholderTextColor={colors.mutedForeground}
                 keyboardType="phone-pad"
                 maxLength={11}
+                textAlignVertical="center"
+                underlineColorAndroid="transparent"
               />
             </View>
-            <View style={styles.inputDecoration} />
-          </LinearGradient>
+          </View>
           
           {/* Network Selection - Compact */}
           {phoneNumber.length >= 4 && (
@@ -343,10 +341,7 @@ export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ on
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             Amount
           </Text>
-          <LinearGradient
-            colors={[colors.card, colors.card + 'F0']}
-            style={styles.amountInputContainer}
-          >
+          <View style={[styles.amountInputContainer, { backgroundColor: colors.card }]}>
             <View style={styles.amountInputWrapper}>
               <Text style={styles.currencySymbol}>₦</Text>
               <TextInput
@@ -356,10 +351,11 @@ export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ on
                 placeholder="0.00"
                 placeholderTextColor={colors.mutedForeground}
                 keyboardType="numeric"
+                textAlignVertical="center"
+                underlineColorAndroid="transparent"
               />
             </View>
-            <View style={styles.amountInputDecoration} />
-          </LinearGradient>
+          </View>
         </View>
 
 
@@ -369,10 +365,7 @@ export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ on
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             Transaction PIN
           </Text>
-          <LinearGradient
-            colors={[colors.card, colors.card + 'F0']}
-            style={styles.inputContainer}
-          >
+          <View style={[styles.inputContainer, { backgroundColor: colors.card }]}>
             <View style={styles.inputWrapper}>
               <Ionicons name="lock-closed" size={20} color={colors.mutedForeground} />
               <TextInput
@@ -384,10 +377,11 @@ export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ on
                 keyboardType="numeric"
                 maxLength={4}
                 secureTextEntry={true}
+                textAlignVertical="center"
+                underlineColorAndroid="transparent"
               />
             </View>
-            <View style={styles.inputDecoration} />
-          </LinearGradient>
+          </View>
         </View>
 
         {/* Info Section */}
@@ -612,33 +606,29 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   inputContainer: {
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
+    backgroundColor: '#ffffff',
+    ...(Platform.OS === 'android' && {
+      elevation: 1,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+    }),
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 16,
   },
   input: {
     flex: 1,
     fontSize: 16,
     marginLeft: 12,
-  },
-  inputDecoration: {
-    height: 2,
-    backgroundColor: '#3B82F6',
-    marginHorizontal: 16,
-    marginBottom: 12,
-    borderRadius: 1,
+    paddingVertical: 0,
   },
   networkSection: {
     marginTop: 8,
@@ -709,39 +699,35 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   amountInputContainer: {
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
+    backgroundColor: '#ffffff',
+    ...(Platform.OS === 'android' && {
+      elevation: 1,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+    }),
   },
   amountInputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 16,
   },
   currencySymbol: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
     marginRight: 12,
     color: '#3B82F6',
   },
   amountInput: {
     flex: 1,
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
-  },
-  amountInputDecoration: {
-    height: 2,
-    backgroundColor: '#3B82F6',
-    marginHorizontal: 16,
-    marginBottom: 12,
-    borderRadius: 1,
+    paddingVertical: 0,
   },
   quickAmountsGrid: {
     flexDirection: 'row',

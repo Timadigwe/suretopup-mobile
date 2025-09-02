@@ -96,6 +96,49 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
     return '';
   };
 
+  const handleTransactionPress = (transaction: any) => {
+    // Try to extract network from service name or info for airtime/data/card printing
+    let network = null;
+    const service = transaction.service?.toLowerCase() || '';
+    const info = transaction.info?.toLowerCase() || '';
+    
+    if (service.includes('airtime') || service.includes('recharge') || 
+        service.includes('data') || service.includes('card print')) {
+      
+      // Try to extract network from info first
+      if (info.includes('mtn')) network = 'mtn';
+      else if (info.includes('airtel')) network = 'airtel';
+      else if (info.includes('glo')) network = 'glo';
+      else if (info.includes('9mobile')) network = '9mobile';
+      
+      // If no network found in info, try to extract from service name
+      if (!network) {
+        if (service.includes('mtn')) network = 'mtn';
+        else if (service.includes('airtel')) network = 'airtel';
+        else if (service.includes('glo')) network = 'glo';
+        else if (service.includes('9mobile')) network = '9mobile';
+      }
+    }
+    
+    // Navigate to receipt screen with transaction data
+    onNavigate('receipt', {
+      reference: transaction.ref,
+      amount: parseFloat(transaction.amount),
+      service: transaction.service,
+      date: transaction.created_at,
+      businessName: 'SureTopUp',
+      // Network information for airtime/data/card printing
+      network: network,
+      // Additional transaction details
+      transactionId: transaction.id,
+      type: transaction.type,
+      status: transaction.status,
+      oldBalance: transaction.old_balance,
+      newBalance: transaction.new_balance,
+      info: transaction.info,
+    });
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
@@ -129,9 +172,11 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
               const amount = parseFloat(transaction.amount);
               
               return (
-                <View 
+                <TouchableOpacity 
                   key={transaction.id} 
                   style={[styles.transactionCard, { backgroundColor: colors.card }]}
+                  onPress={() => handleTransactionPress(transaction)}
+                  activeOpacity={0.7}
                 >
                   <View style={styles.transactionInfo}>
                     <View style={[
@@ -181,7 +226,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                       </Text>
                     </View>
                   </View>
-                </View>
+                </TouchableOpacity>
               );
             })}
           </View>

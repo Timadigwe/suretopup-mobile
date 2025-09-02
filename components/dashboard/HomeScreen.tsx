@@ -463,7 +463,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </View>
 
         {/* Test Receipt Button */}
-        <View style={styles.testReceiptSection}>
+        {/* <View style={styles.testReceiptSection}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             Test Receipt UI
           </Text>
@@ -478,7 +478,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <Ionicons name="receipt" size={20} color="white" />
             <Text style={styles.testReceiptButtonText}>Test Receipt UI</Text>
           </TouchableOpacity>
-        </View>
+        </View> */}
       </ScrollView>
 
       {/* Bottom Navigation */}

@@ -40,4 +40,21 @@ export const dashboardCacheUtils = {
       };
     }
   },
+  refreshData: async () => {
+    try {
+      // Import apiService dynamically to avoid circular dependencies
+      const { apiService } = await import('@/services/api');
+      const response = await apiService.getDashboard();
+      
+      if (response.success && response.data) {
+        dashboardCache.data = response.data;
+        dashboardCache.hasFetched = true;
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Failed to refresh dashboard data:', error);
+      return false;
+    }
+  },
 };

@@ -12,9 +12,17 @@ import { AirtimeRechargeScreen } from './dashboard/AirtimeRechargeScreen';
 import { DataPurchaseScreen } from './dashboard/DataPurchaseScreen';
 import { CardPrintingScreen } from './dashboard/CardPrintingScreen';
 import { BettingFundingScreen } from './dashboard/BettingFundingScreen';
+import ElectricityScreen from './dashboard/ElectricityScreen';
 import { TestReceiptScreen } from './dashboard/TestReceiptScreen';
 import { TransactionReceiptScreen } from './dashboard/TransactionReceiptScreen';
+import OtherServicesScreen from './dashboard/OtherServicesScreen';
+import CableScreen from './dashboard/CableScreen';
+import NinScreen from './dashboard/NinScreen';
+import CacScreen from './dashboard/CacScreen';
 import { ServicePlaceholder } from './services/ServicePlaceholder';
+import { NotificationsScreen } from './dashboard/NotificationsScreen';
+import { HelpSupportScreen } from './dashboard/HelpSupportScreen';
+import { AboutScreen } from './dashboard/AboutScreen';
 import { useAuth } from '@/contexts/AuthContext';
 
 type AppScreen = 
@@ -32,18 +40,25 @@ type AppScreen =
   | 'electricity' 
   | 'betting' 
   | 'betting-funding'
-  | 'bills' 
   | 'printing' 
   | 'add-funds' 
   | 'notifications'
+  | 'help-support'
+  | 'about'
   | 'test-receipt'
-  | 'receipt';
+  | 'receipt'
+  | 'other-services'
+  | 'service-placeholder'
+  | 'cable'
+  | 'nin'
+  | 'cac';
 
 export const App: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState<AppScreen>('onboarding');
   const [userEmail, setUserEmail] = useState('');
   const [registrationData, setRegistrationData] = useState<any>(null);
   const [receiptData, setReceiptData] = useState<any>(null);
+  const [receiptSource, setReceiptSource] = useState<string>('home');
   const { user, token, isInitialized, logout } = useAuth();
   
   // Determine if user is authenticated based on context
@@ -86,6 +101,11 @@ export const App: React.FC = () => {
 
   const handleNavigate = (page: string, data?: any) => {
     if (page === 'receipt' && data) {
+      setReceiptData(data);
+      // Track where the receipt was opened from
+      setReceiptSource(currentScreen);
+    }
+    if (page === 'service-placeholder' && data) {
       setReceiptData(data);
     }
     setCurrentScreen(page as AppScreen);
@@ -184,8 +204,20 @@ export const App: React.FC = () => {
         return <DataPurchaseScreen onNavigate={handleNavigate} />;
         
       case 'electricity':
+        return <ElectricityScreen onNavigate={handleNavigate} />;
+        
+      case 'other-services':
+        return <OtherServicesScreen onNavigate={handleNavigate} />;
+        
+      case 'cable':
+        return <CableScreen onNavigate={handleNavigate} />;
+        
+              case 'nin':
+          return <NinScreen onNavigate={handleNavigate} />;
+        case 'cac':
+          return <CacScreen onNavigate={handleNavigate} />;
+        
       case 'betting':
-      case 'bills':
         return (
           <ServicePlaceholder 
             serviceName={currentScreen}
@@ -206,22 +238,28 @@ export const App: React.FC = () => {
         return receiptData ? (
           <TransactionReceiptScreen
             receiptData={receiptData}
-            onClose={() => handleNavigate('home')}
+            onClose={() => handleNavigate(receiptSource)}
           />
         ) : (
           <HomeScreen onNavigate={handleNavigate} onLogout={handleLogout} />
         );
         
-      case 'add-funds':
-      case 'transactions':
-      case 'profile':
-      case 'notifications':
+      case 'service-placeholder':
         return (
           <ServicePlaceholder 
-            serviceName={currentScreen.replace('-', ' ')}
+            serviceName={receiptData?.serviceName || 'Service'}
             onBack={handleBackToDashboard}
           />
         );
+        
+      case 'notifications':
+        return <NotificationsScreen onNavigate={handleNavigate} />;
+        
+      case 'help-support':
+        return <HelpSupportScreen onNavigate={handleNavigate} />;
+        
+      case 'about':
+        return <AboutScreen onNavigate={handleNavigate} />;
         
       default:
         return <HomeScreen onNavigate={handleNavigate} onLogout={handleLogout} />;

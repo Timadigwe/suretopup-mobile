@@ -194,7 +194,7 @@ export const CardPrintingScreen: React.FC<CardPrintingScreenProps> = ({ onNaviga
       phone: '', // Card printing doesn't use phone
       service: 'Card Printing',
       date: new Date().toISOString(),
-      network: selectedNetwork ? getNetworkInfo(selectedNetwork).name : undefined,
+      network: successData.service_name?.toLowerCase() || selectedNetwork,
       businessName: businessName,
       quantity: quantity,
       denomination: amount,
@@ -293,7 +293,7 @@ export const CardPrintingScreen: React.FC<CardPrintingScreenProps> = ({ onNaviga
             {selectedNetwork ? (
               <View style={styles.selectedNetwork}>
                 <Image 
-                  source={{ uri: getNetworkInfo(selectedNetwork).logo }}
+                  source={getNetworkInfo(selectedNetwork).logo}
                   style={styles.networkLogo}
                   resizeMode="contain"
                 />
@@ -488,7 +488,7 @@ export const CardPrintingScreen: React.FC<CardPrintingScreenProps> = ({ onNaviga
               >
                 <View style={[
                   styles.networkOptionIcon,
-                  { backgroundColor: data.color + '20' }
+                  { backgroundColor: data.color }
                 ]}>
                   <Image 
                     source={data.logo}
