@@ -8,6 +8,7 @@ import {
   Dimensions,
   Alert,
   RefreshControl,
+  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -544,7 +545,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 100,
+    paddingBottom: 20,
   },
   walletSection: {
     paddingTop: 16,
@@ -562,6 +563,7 @@ const styles = StyleSheet.create({
   transactionsSection: {
     marginTop: 32,
     paddingHorizontal: 24,
+    paddingBottom: Platform.OS === 'android' ? 16 : 24,
   },
   sectionTitle: {
     fontSize: 20,

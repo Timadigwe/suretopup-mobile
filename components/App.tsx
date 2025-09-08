@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { OnboardingScreen } from './onboarding/OnboardingScreen';
-import { AuthScreen } from './auth/AuthScreen';
+import { AuthContainer } from './auth/AuthContainer';
 import { EmailVerificationScreen } from './auth/EmailVerificationScreen';
-import { ForgotPasswordScreen } from './auth/ForgotPasswordScreen';
 import { HomeScreen } from './dashboard/HomeScreen';
 import { TransactionsScreen } from './dashboard/TransactionsScreen';
 import { WalletScreen } from './dashboard/WalletScreen';
@@ -29,7 +28,6 @@ type AppScreen =
   | 'onboarding' 
   | 'auth' 
   | 'email-verification'
-  | 'forgot-password'
   | 'dashboard' 
   | 'home'
   | 'transactions'
@@ -59,6 +57,7 @@ export const App: React.FC = () => {
   const [registrationData, setRegistrationData] = useState<any>(null);
   const [receiptData, setReceiptData] = useState<any>(null);
   const [receiptSource, setReceiptSource] = useState<string>('home');
+  const [isInAuthFlow, setIsInAuthFlow] = useState(false);
   const { user, token, isInitialized, logout } = useAuth();
   
   // Determine if user is authenticated based on context
@@ -66,35 +65,35 @@ export const App: React.FC = () => {
 
   // Set initial screen based on authentication state
   useEffect(() => {
-    if (isInitialized) {
+    if (isInitialized && !isInAuthFlow) {
       if (isAuthenticated) {
         setCurrentScreen('dashboard');
       } else {
         setCurrentScreen('onboarding');
       }
     }
-  }, [isAuthenticated, isInitialized]);
+  }, [isAuthenticated, isInitialized, isInAuthFlow]);
 
-  // Handle automatic logout due to token expiration
-  useEffect(() => {
-    if (isInitialized && !isAuthenticated && currentScreen !== 'onboarding' && currentScreen !== 'auth') {
-      setCurrentScreen('onboarding');
-    }
-  }, [isAuthenticated, isInitialized, currentScreen]);
+  // Remove the problematic useEffect that was causing unwanted redirects
+  // The authentication flow will be handled manually through the handlers
 
   const handleOnboardingComplete = () => {
+    setIsInAuthFlow(true);
     setCurrentScreen('auth');
   };
 
   const handleLogin = () => {
+    setIsInAuthFlow(false);
     setCurrentScreen('dashboard');
   };
 
   const handleLogout = async () => {
     try {
       await logout();
+      setIsInAuthFlow(true);
       setCurrentScreen('auth');
     } catch (error) {
+      setIsInAuthFlow(true);
       setCurrentScreen('auth');
     }
   };
@@ -126,24 +125,19 @@ export const App: React.FC = () => {
   };
 
   const handleVerificationComplete = () => {
-    // Store auth data after successful verification
-    if (registrationData) {
-      // The auth context will handle storing the data
-      setCurrentScreen('dashboard');
-    }
+    // After successful email verification, go back to auth screen for login
+    // Clear registration data since we don't need it anymore
+    setRegistrationData(null);
+    setCurrentScreen('auth');
   };
 
   const handleBackToAuth = () => {
     setCurrentScreen('auth');
   };
 
-  const handleForgotPassword = () => {
-    setCurrentScreen('forgot-password');
-  };
 
-  const handleForgotPasswordComplete = () => {
-    setCurrentScreen('auth');
-  };
+
+
 
   // Render different screens based on current state
   const renderScreen = () => {
@@ -153,11 +147,10 @@ export const App: React.FC = () => {
         
       case 'auth':
         return (
-          <AuthScreen 
+          <AuthContainer 
             onLogin={handleLogin}
             onBack={handleBackToOnboarding}
             onEmailVerification={handleEmailVerification}
-            onForgotPassword={handleForgotPassword}
           />
         );
         
@@ -168,14 +161,6 @@ export const App: React.FC = () => {
             onBack={handleBackToAuth}
             userEmail={userEmail}
             registrationData={registrationData}
-          />
-        );
-        
-      case 'forgot-password':
-        return (
-          <ForgotPasswordScreen
-            onBack={handleBackToAuth}
-            onComplete={handleForgotPasswordComplete}
           />
         );
         

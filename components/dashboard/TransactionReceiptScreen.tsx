@@ -1016,7 +1016,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 100,
+    paddingBottom: 20,
   },
   receiptCaptureContainer: {
     marginHorizontal: 15,
@@ -1136,7 +1136,8 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   bottomActions: {
-    padding: 16,
+    padding: Platform.OS === 'android' ? 12 : 16,
+    paddingBottom: 40,
     borderTopWidth: 1,
     borderTopColor: 'rgba(0,0,0,0.1)',
   },

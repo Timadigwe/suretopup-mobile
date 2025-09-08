@@ -111,8 +111,6 @@ export const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = (
       return;
     }
 
-
-
     setIsLoading(true);
     triggerNotificationHaptic();
 
@@ -122,14 +120,10 @@ export const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = (
       if (result.success) {
         triggerHapticFeedback('light');
         
-        // Store auth data after successful verification
-        if (registrationData) {
-          await storeAuthDataAfterVerification(registrationData);
-        }
-        
+        // Don't store any auth data - just show success and go back to auth
         showModal(
           'Email Verified!',
-          'Your email has been successfully verified. You can now access all features.',
+          'Your email has been successfully verified. You can now login to your account.',
           'success',
           () => {
             setModalVisible(false);

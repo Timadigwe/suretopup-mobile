@@ -402,7 +402,8 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
   },
   closeButton: {
-    padding: 4,
+    padding: Platform.OS === 'android' ? 8 : 4,
+    marginTop: Platform.OS === 'android' ? 4 : 0,
   },
   content: {
     padding: 24,

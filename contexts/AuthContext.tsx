@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AuthResponse, apiService } from '@/services/api';
+import { AuthResponse, BASE_URL, apiService } from '@/services/api';
 import { dashboardCacheUtils } from '@/utils/dashboardCache';
+
 
 interface AuthContextType {
   user: AuthResponse['user'] | null;
@@ -123,10 +124,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await apiService.register(userData);
 
       if (response.success) {
-        // Don't store auth data yet - wait for email verification
+        // Don't store any auth data - wait for user to login after email verification
         return { 
           success: true, 
-          message: 'Registration successful',
+          message: 'Registration successful. Please check your email for verification.',
           data: response.data // Return the data for email verification screen
         };
       } else {
@@ -148,7 +149,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsLoading(true);
     try {
       if (token) {
-        const response = await fetch('https://prod.suretopup.com.ng/api/v1/auth/logout', {
+        const response = await fetch(`${BASE_URL}/auth/logout`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -193,7 +194,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const verifyForgotPasswordOtp = async (email: string, otp: string) => {
     setIsLoading(true);
     try {
-      const response = await fetch('https://prod.suretopup.com.ng/api/v1/auth/forgot-password-verify', {
+      const response = await fetch(`${BASE_URL}/auth/forgot-password-verify`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -221,7 +222,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const resetPassword = async (email: string, otp: string, password: string, password_confirmation: string) => {
     setIsLoading(true);
     try {
-      const response = await fetch('https://prod.suretopup.com.ng/api/v1/auth/forgot-password-verify', {
+      const response = await fetch(`${BASE_URL}/auth/forgot-password-verify`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -249,7 +250,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const verifyEmail = async (verificationCode: string, bearerToken: string) => {
     setIsLoading(true);
     try {
-      const response = await fetch('https://prod.suretopup.com.ng/api/v1/auth/email-verification', {
+      const response = await fetch(`${BASE_URL}/auth/email-verification`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -279,7 +280,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const resendVerificationCode = async (email: string) => {
     setIsLoading(true);
     try {
-      const response = await fetch('https://prod.suretopup.com.ng/api/v1/auth/resend-verification-code', {
+      const response = await fetch(`${BASE_URL}/auth/resend-verification-code`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
