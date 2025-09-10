@@ -25,7 +25,7 @@ import { HomeScreenSkeleton, SkeletonLoader } from '@/components/ui/SkeletonLoad
 import { apiService, DashboardData } from '@/services/api';
 
 interface HomeScreenProps {
-  onNavigate: (page: string) => void;
+  onNavigate: (page: string, data?: any) => void;
   onLogout: () => void;
 }
 
@@ -61,6 +61,42 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const navigateToTestReceipt = () => {
     triggerHapticFeedback('light');
     onNavigate('test-receipt');
+  };
+
+  // Handle transaction press to navigate to receipt
+  const handleTransactionPress = (transaction: any) => {
+    triggerHapticFeedback('light');
+    
+    // Use the network field directly from transaction data
+    let network = transaction.network;
+    const service = transaction.service?.toLowerCase() || '';
+    const info = transaction.info?.toLowerCase() || '';
+    
+    // If no network field, try to extract from service name or info for airtime/data/card printing
+    if (!network && (service.includes('airtime') || service.includes('data') || service.includes('card print'))) {
+      if (service.includes('mtn') || info.includes('mtn')) network = 'mtn';
+      else if (service.includes('airtel') || info.includes('airtel')) network = 'airtel';
+      else if (service.includes('glo') || info.includes('glo')) network = 'glo';
+      else if (service.includes('9mobile') || service.includes('etisalat') || info.includes('9mobile') || info.includes('etisalat')) network = '9mobile';
+    }
+    
+    // Navigate to receipt screen with transaction data
+    onNavigate('receipt', {
+      reference: transaction.ref,
+      amount: parseFloat(transaction.amount),
+      service: transaction.service,
+      date: transaction.created_at,
+      businessName: 'SureTopUp',
+      // Network information for airtime/data/card printing
+      network: network,
+      // Additional transaction details
+      transactionId: transaction.id,
+      type: transaction.type,
+      status: transaction.status,
+      oldBalance: transaction.old_balance,
+      newBalance: transaction.new_balance,
+      info: transaction.info,
+    });
   };
 
   // Fetch dashboard data
@@ -391,9 +427,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 const transactionColor = getTransactionColor(transaction, transaction.id || 0);
                 
                 return (
-                <View 
-                  key={transaction.id} 
+                <TouchableOpacity
+                  key={transaction.id}
                   style={[styles.transactionCard, { backgroundColor: colors.card }]}
+                  onPress={() => handleTransactionPress(transaction)}
+                  activeOpacity={0.7}
                 >
                   <View style={styles.transactionInfo}>
                     <View style={[
@@ -444,7 +482,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                       </Text>
                     </View>
                   </View>
-                </View>
+                </TouchableOpacity>
               );
               })
             ) : (

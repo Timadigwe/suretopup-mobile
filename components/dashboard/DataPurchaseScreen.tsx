@@ -97,6 +97,8 @@ export const DataPurchaseScreen: React.FC<DataPurchaseScreenProps> = ({ onNaviga
     fetchDataPlans();
   }, []);
 
+
+
   // Detect network when phone number changes
   useEffect(() => {
     if (phoneNumber.length >= 4) {
@@ -270,6 +272,7 @@ export const DataPurchaseScreen: React.FC<DataPurchaseScreenProps> = ({ onNaviga
       const response = await apiService.buyData(requestData);
       
       console.log('Data purchase response:', response);
+      console.log('Ebills data structure:', response.data);
       
       if ((response.success || response.status === 'success') && response.data) {
         // Store network info before clearing state
@@ -303,16 +306,22 @@ export const DataPurchaseScreen: React.FC<DataPurchaseScreenProps> = ({ onNaviga
 
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
-    // Navigate to receipt screen with data
+    // Navigate to receipt screen with data - match history screen structure
     onNavigate('receipt', {
       reference: successData.reference,
       amount: successData.amount,
-      phone: successData.phone,
-      service: 'Data',
-      date: new Date().toISOString(),
-      network: selectedNetwork ? selectedNetwork : undefined,
-      dataPlan: successData.dataPlan,
-      transaction_id: successData.transaction_id,
+      service: successData.service || 'Data',
+      date: successData.transaction?.date || new Date().toISOString(),
+      businessName: 'SureTopUp',
+      // Network information
+      network: successData.transaction?.network || selectedNetwork,
+      // Additional transaction details
+      transactionId: successData.transaction?.id,
+      type: successData.transaction?.type,
+      status: successData.transaction?.status,
+      oldBalance: successData.transaction?.old_balance,
+      newBalance: successData.transaction?.new_balance,
+      info: successData.transaction?.info || successData.phone,
     });
   };
 
@@ -527,12 +536,6 @@ export const DataPurchaseScreen: React.FC<DataPurchaseScreenProps> = ({ onNaviga
                           { color: selectedPlan?.id === plan.id ? '#8B5CF6' : '#10B981' }
                         ]}>
                           {formatPrice(plan.payment_price)}
-                        </Text>
-                        <Text style={[
-                          styles.dataPlanOriginalPrice, 
-                          { color: selectedPlan?.id === plan.id ? '#8B5CF6' : colors.mutedForeground }
-                        ]}>
-                          {formatPrice(plan.price)}
                         </Text>
                       </View>
                     </View>
@@ -945,7 +948,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   dataPlanPrice: {
-    alignItems: 'flex-end',
+    alignItems: 'center',
   },
   dataPlanPriceText: {
     fontSize: 18,

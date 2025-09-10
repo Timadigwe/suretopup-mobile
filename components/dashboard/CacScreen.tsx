@@ -232,16 +232,24 @@ const CacScreen: React.FC<{ onNavigate: (screen: string, data?: any) => void }> 
         triggerHapticFeedback('medium');
         setSuccessMessage(response.message || 'CAC request submitted successfully!');
         setSuccessData({
-          reference: 'CAC-' + Date.now(),
+          reference: response.data?.transaction?.ref || 'CAC-' + Date.now(),
           amount: parseFloat(formData.amount),
           service: 'CAC Registration',
           date: new Date().toISOString(),
           businessName: 'SureTopUp',
+          // Transaction details for consistency with history
+          transactionId: response.data?.transaction?.id,
+          type: response.data?.transaction?.type || 'Debit',
+          status: response.data?.transaction?.status || 'Pending',
+          old_balance: response.data?.transaction?.old_balance?.toString(),
+          new_balance: response.data?.transaction?.new_balance?.toString(),
+          info: response.data?.transaction?.info || '',
           // CAC-specific data
           serviceName: 'CAC Registration',
           certificateType: formData.certificate_type,
           businessName1: formData.business_name_1,
           fullname: formData.fullname,
+          cacId: response.data?.cac_id,
         });
         setShowSuccessModal(true);
       } else {

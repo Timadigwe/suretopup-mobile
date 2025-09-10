@@ -195,10 +195,12 @@ export const CardPrintingScreen: React.FC<CardPrintingScreenProps> = ({ onNaviga
       service: 'Card Printing',
       date: new Date().toISOString(),
       network: successData.service_name?.toLowerCase() || selectedNetwork,
-      businessName: businessName,
+      businessName: successData.business_name || businessName,
       quantity: quantity,
       denomination: amount,
       epins: successData.epins || [],
+      oldBalance: successData.initial_balance,
+      newBalance: successData.final_balance,
       transaction_id: successData.transaction_id,
     });
   };

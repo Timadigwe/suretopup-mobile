@@ -357,28 +357,6 @@ export const AddFundsScreen: React.FC<AddFundsScreenProps> = ({ onNavigate }) =>
         />
         
         {/* Payment Complete Button */}
-        <TouchableOpacity
-          style={[styles.paymentCompleteButton, { backgroundColor: colors.success }]}
-          onPress={() => {
-            if (paymentData?.reference) {
-              console.log('Payment complete button pressed');
-              // Don't stop polling, just check status immediately
-              checkFinalPaymentStatus(paymentData.reference);
-            }
-          }}
-        >
-          <View style={styles.paymentButtonContent}>
-            <View style={styles.paymentButtonMain}>
-              <Ionicons name="checkmark-circle" size={22} color="white" />
-              <Text style={styles.paymentCompleteButtonText}>
-                I've Completed Payment
-              </Text>
-            </View>
-            <Text style={styles.paymentButtonHint}>
-              Only click after you've sent money to Paystack
-            </Text>
-          </View>
-        </TouchableOpacity>
 
         {/* Error Modal */}
         <CustomModal

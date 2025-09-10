@@ -161,10 +161,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const data = await response.json();
       }
 
+      // Clear dashboard cache
+      dashboardCacheUtils.reset();
       // Always clear local auth data regardless of server response
       await clearAuthData();
     } catch (error) {
       // Error handling without console logs
+      // Clear dashboard cache even if server call fails
+      dashboardCacheUtils.reset();
       // Still clear local auth data even if server call fails
       await clearAuthData();
     } finally {

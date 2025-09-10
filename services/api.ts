@@ -1,5 +1,5 @@
-//const BASE_URL = 'https://prod.suretopup.com.ng/api/v1';
-export const BASE_URL = 'https://test.eyzmo.com/api/v1'
+export const BASE_URL = 'https://prod.suretopup.com.ng/api/v1';
+//export const BASE_URL = 'https://test.eyzmo.com/api/v1'
 
 export interface RegisterRequest {
   firstname: string;

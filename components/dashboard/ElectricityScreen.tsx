@@ -171,6 +171,9 @@ const ElectricityScreen: React.FC<{ onNavigate: (screen: string, data?: any) => 
       });
 
       if (response.status === 'success') {
+        console.log('response', response);
+        console.log('response.data', response.data);
+        console.log('response.data.ebills_response', response.data?.ebills_response);
         triggerHapticFeedback('medium');
         // Show success modal
         setSuccessMessage(response.message || 'Electricity purchase successful!');
@@ -180,6 +183,13 @@ const ElectricityScreen: React.FC<{ onNavigate: (screen: string, data?: any) => 
           service: 'Electricity Bill',
           date: new Date().toISOString(),
           businessName: 'SureTopUp',
+          // Transaction details for consistency with history
+          transactionId: response.data?.transaction?.id,
+          type: response.data?.transaction?.type || 'Debit',
+          status: response.data?.transaction?.status || 'Completed',
+          oldBalance: response.data?.transaction?.old_balance,
+          newBalance: response.data?.transaction?.new_balance,
+          info: response.data?.transaction?.info || '',
           // Electricity-specific data
           serviceName: response.data?.ebills_response?.data?.service_name || selectedCompany?.name || '',
           customerId: response.data?.ebills_response?.data?.customer_id || customerData.customer_id,

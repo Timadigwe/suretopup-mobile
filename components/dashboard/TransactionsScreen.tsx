@@ -97,13 +97,14 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
   };
 
   const handleTransactionPress = (transaction: any) => {
-    // Try to extract network from service name or info for airtime/data/card printing
-    let network = null;
+    // Use the network field directly from transaction data
+    let network = transaction.network;
     const service = transaction.service?.toLowerCase() || '';
     const info = transaction.info?.toLowerCase() || '';
     
-    if (service.includes('airtime') || service.includes('recharge') || 
-        service.includes('data') || service.includes('card print')) {
+    // If no network field, try to extract from service name or info for airtime/data/card printing
+    if (!network && (service.includes('airtime') || service.includes('recharge') || 
+        service.includes('data') || service.includes('card print'))) {
       
       // Try to extract network from info first
       if (info.includes('mtn')) network = 'mtn';

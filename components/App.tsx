@@ -14,6 +14,15 @@ import { BettingFundingScreen } from './dashboard/BettingFundingScreen';
 import ElectricityScreen from './dashboard/ElectricityScreen';
 import { TestReceiptScreen } from './dashboard/TestReceiptScreen';
 import { TransactionReceiptScreen } from './dashboard/TransactionReceiptScreen';
+import { DepositReceiptScreen } from './dashboard/receipts/DepositReceiptScreen';
+import { AirtimeReceiptScreen } from './dashboard/receipts/AirtimeReceiptScreen';
+import { DataReceiptScreen } from './dashboard/receipts/DataReceiptScreen';
+import { CardPrintingReceiptScreen } from './dashboard/receipts/CardPrintingReceiptScreen';
+import { BettingReceiptScreen } from './dashboard/receipts/BettingReceiptScreen';
+import { ElectricityReceiptScreen } from './dashboard/receipts/ElectricityReceiptScreen';
+import { CableReceiptScreen } from './dashboard/receipts/CableReceiptScreen';
+import { NinReceiptScreen } from './dashboard/receipts/NinReceiptScreen';
+import { CacReceiptScreen } from './dashboard/receipts/CacReceiptScreen';
 import OtherServicesScreen from './dashboard/OtherServicesScreen';
 import CableScreen from './dashboard/CableScreen';
 import NinScreen from './dashboard/NinScreen';
@@ -62,17 +71,34 @@ export const App: React.FC = () => {
   
   // Determine if user is authenticated based on context
   const isAuthenticated = !!(user && token);
-
+  
+  // Initialize wasAuthenticated based on current auth state
+  const [wasAuthenticated, setWasAuthenticated] = useState(false);
+  
+  // Track authentication state changes to set wasAuthenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      setWasAuthenticated(true);
+    }
+  }, [isAuthenticated]);
+  
   // Set initial screen based on authentication state
   useEffect(() => {
     if (isInitialized && !isInAuthFlow) {
       if (isAuthenticated) {
         setCurrentScreen('dashboard');
       } else {
-        setCurrentScreen('onboarding');
+        // If user was previously authenticated, redirect to login (token expired)
+        // Otherwise, redirect to onboarding (first time user)
+        if (wasAuthenticated) {
+          setCurrentScreen('auth');
+          setIsInAuthFlow(true);
+        } else {
+          setCurrentScreen('onboarding');
+        }
       }
     }
-  }, [isAuthenticated, isInitialized, isInAuthFlow]);
+  }, [isAuthenticated, isInitialized, isInAuthFlow, wasAuthenticated]);
 
   // Remove the problematic useEffect that was causing unwanted redirects
   // The authentication flow will be handled manually through the handlers
@@ -90,9 +116,11 @@ export const App: React.FC = () => {
   const handleLogout = async () => {
     try {
       await logout();
+      setWasAuthenticated(false);
       setIsInAuthFlow(true);
       setCurrentScreen('auth');
     } catch (error) {
+      setWasAuthenticated(false);
       setIsInAuthFlow(true);
       setCurrentScreen('auth');
     }
@@ -108,6 +136,111 @@ export const App: React.FC = () => {
       setReceiptData(data);
     }
     setCurrentScreen(page as AppScreen);
+  };
+
+  // Determine which receipt component to show based on transaction type
+  const getReceiptComponent = (data: any) => {
+    const service = data?.service?.toLowerCase() || '';
+    
+    // Check for deposit transactions
+    if (service.includes('deposit') || service.includes('fund') || service.includes('credit') || 
+        data?.type?.toLowerCase() === 'credit') {
+      return (
+        <DepositReceiptScreen
+          receiptData={data}
+          onClose={() => handleNavigate(receiptSource)}
+        />
+      );
+    }
+    
+    // Check for airtime transactions
+    if (service.includes('airtime') || service.includes('recharge')) {
+      return (
+        <AirtimeReceiptScreen
+          receiptData={data}
+          onClose={() => handleNavigate(receiptSource)}
+        />
+      );
+    }
+    
+    // Check for data transactions
+    if (service.includes('data') || service.includes('internet')) {
+      return (
+        <DataReceiptScreen
+          receiptData={data}
+          onClose={() => handleNavigate(receiptSource)}
+        />
+      );
+    }
+    
+    // Check for card printing transactions
+    if (service.includes('card') || service.includes('pin') || service.includes('recharge')) {
+      return (
+        <CardPrintingReceiptScreen
+          receiptData={data}
+          onClose={() => handleNavigate(receiptSource)}
+        />
+      );
+    }
+    
+    // Check for betting transactions
+    if (service.includes('bet') || service.includes('fund') || service.includes('betting')) {
+      return (
+        <BettingReceiptScreen
+          receiptData={data}
+          onClose={() => handleNavigate(receiptSource)}
+        />
+      );
+    }
+    
+    // Check for electricity transactions
+    if (service.includes('electricity') || service.includes('power') || service.includes('bill')) {
+      return (
+        <ElectricityReceiptScreen
+          receiptData={data}
+          onClose={() => handleNavigate(receiptSource)}
+        />
+      );
+    }
+    
+    // Check for cable transactions
+    if (service.includes('cable') || service.includes('tv') || service.includes('dstv') || service.includes('gotv') || service.includes('startimes')) {
+      return (
+        <CableReceiptScreen
+          receiptData={data}
+          onClose={() => handleNavigate(receiptSource)}
+        />
+      );
+    }
+    
+    // Check for NIN transactions
+    if (service.includes('nin') || service.includes('slip') || service.includes('print')) {
+      return (
+        <NinReceiptScreen
+          receiptData={data}
+          onClose={() => handleNavigate(receiptSource)}
+        />
+      );
+    }
+    
+    // Check for CAC transactions
+    if (service.includes('cac') || service.includes('registration') || service.includes('business')) {
+      return (
+        <CacReceiptScreen
+          receiptData={data}
+          onClose={() => handleNavigate(receiptSource)}
+        />
+      );
+    }
+    
+    // Default to general transaction receipt for now
+    // All specific receipt components have been created
+    return (
+      <TransactionReceiptScreen
+        receiptData={data}
+        onClose={() => handleNavigate(receiptSource)}
+      />
+    );
   };
 
   const handleBackToOnboarding = () => {
@@ -221,10 +354,7 @@ export const App: React.FC = () => {
         
       case 'receipt':
         return receiptData ? (
-          <TransactionReceiptScreen
-            receiptData={receiptData}
-            onClose={() => handleNavigate(receiptSource)}
-          />
+          getReceiptComponent(receiptData)
         ) : (
           <HomeScreen onNavigate={handleNavigate} onLogout={handleLogout} />
         );

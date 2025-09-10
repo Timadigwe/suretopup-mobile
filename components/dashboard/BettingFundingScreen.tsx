@@ -11,6 +11,7 @@ import {
   Dimensions,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -31,6 +32,29 @@ interface BettingCompany {
   id: string;
   name: string;
 }
+
+// Function to get the correct image for each betting company
+const getBettingCompanyImage = (companyName: string) => {
+  const name = companyName.toLowerCase().replace(/\s+/g, '');
+  
+  const imageMap: { [key: string]: any } = {
+    '1xbet': require('@/assets/images/1xbet.png'),
+    'bangbet': require('@/assets/images/bangbet.png'),
+    'bet9ja': require('@/assets/images/bet9ja.png'),
+    'betking': require('@/assets/images/betking.png'),
+    'betland': require('@/assets/images/betland.png'),
+    'betlion': require('@/assets/images/betlion.png'),
+    'betway': require('@/assets/images/betway.png'),
+    'cloudbet': require('@/assets/images/cloudbet.png'),
+    'livescorebet': require('@/assets/images/livescorebet.png'),
+    'merrybet': require('@/assets/images/merrybet.png'),
+    'naijabet': require('@/assets/images/naijabet.png'),
+    'nairabet': require('@/assets/images/nairabet.png'),
+    'supabet': require('@/assets/images/supabet.png'),
+  };
+  
+  return imageMap[name] || null;
+};
 
 interface CustomerInfo {
   customer_username: string;
@@ -172,6 +196,9 @@ export const BettingFundingScreen: React.FC<BettingFundingScreenProps> = ({ onNa
 
       if ((response.success || response.status === 'success') && response.data) {
         // Store company name in success data before clearing state
+        console.log('response.data', response.data);
+        console.log("data", response.data?.transaction);
+  
         const successDataWithCompany = {
           ...response.data,
           companyName: selectedCompany?.name
@@ -201,14 +228,31 @@ export const BettingFundingScreen: React.FC<BettingFundingScreenProps> = ({ onNa
     setShowSuccessModal(false);
     // Navigate to receipt screen with data
     onNavigate('receipt', {
-      reference: successData.receipt_data.reference,
-      amount: successData.receipt_data.amount,
-      phone: '',
+      reference: successData.receipt_data?.reference || successData.transaction?.ref || 'N/A',
+      amount: successData.receipt_data?.amount || successData.transaction?.amount || 0,
+      phone: successData.ebills_response?.data?.customer_phone_number || '',
       service: 'Betting',
-      date: new Date().toISOString(),
-      transaction_id: successData.transaction.id,
-      bettingCompany: successData.companyName || selectedCompany?.name,
-      bettingCustomer: successData.customerInfo?.customer_name || customerInfo?.customer_name,
+      date: successData.receipt_data?.date || successData.transaction?.date || new Date().toISOString(),
+      businessName: 'SureTopUp',
+      // Transaction details for consistency with history
+      transactionId: successData.transaction?.id,
+      type: successData.transaction?.type || 'Debit',
+      status: successData.transaction?.status || 'Completed',
+      oldBalance: successData.transaction?.old_balance,
+      newBalance: successData.transaction?.new_balance,
+      info: successData.transaction?.info || '',
+      // Betting specific data
+      company_name: successData.ebills_response?.data?.service_name || successData.companyName || selectedCompany?.name,
+      customer_id: successData.ebills_response?.data?.customer_id,
+      customer_name: successData.ebills_response?.data?.customer_name,
+      customer_username: successData.ebills_response?.data?.customer_username,
+      customer_email: successData.ebills_response?.data?.customer_email_address,
+      customer_phone: successData.ebills_response?.data?.customer_phone_number,
+      order_id: successData.ebills_response?.data?.order_id,
+      amount_charged: successData.ebills_response?.data?.amount_charged,
+      discount: successData.ebills_response?.data?.discount,
+      initial_balance: successData.ebills_response?.data?.initial_balance,
+      final_balance: successData.ebills_response?.data?.final_balance,
     });
   };
 
@@ -290,7 +334,15 @@ export const BettingFundingScreen: React.FC<BettingFundingScreenProps> = ({ onNa
               activeOpacity={0.7}
             >
               <View style={styles.companyIconContainer}>
-                <Ionicons name="trophy" size={24} color={colors.primary} />
+                {getBettingCompanyImage(company.name) ? (
+                  <Image 
+                    source={getBettingCompanyImage(company.name)} 
+                    style={styles.companyImage}
+                    resizeMode="contain"
+                  />
+                ) : (
+                  <Ionicons name="trophy" size={24} color={colors.primary} />
+                )}
               </View>
               <Text style={[styles.companyName, { color: colors.text }]}>
                 {company.name}
@@ -307,7 +359,11 @@ export const BettingFundingScreen: React.FC<BettingFundingScreenProps> = ({ onNa
       <View style={styles.selectedCompanyCard}>
         <View style={styles.companyInfo}>
           <View style={styles.companyIconContainer}>
-            <Ionicons name="trophy" size={20} color={colors.primary} />
+            <Image
+              source={getBettingCompanyImage(selectedCompany?.name || '')}
+              style={styles.companyLogo}
+              resizeMode="contain"
+            />
           </View>
           <View style={styles.companyTextContainer}>
             <Text style={[styles.selectedCompanyName, { color: colors.text }]}>
@@ -798,9 +854,19 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    backgroundColor: 'white',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  companyImage: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+  },
+  companyLogo: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
   },
   companyName: {
     fontSize: 12,

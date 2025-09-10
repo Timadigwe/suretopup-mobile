@@ -169,6 +169,7 @@ export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ on
       const response = await apiService.buyAirtime(requestData);
       
       console.log('Airtime recharge response:', response);
+      console.log('Ebills data structure:', response.data?.ebills?.data);
       
       if ((response.success || response.status === 'success') && response.data) {
         setSuccessData(response.data);
@@ -199,9 +200,17 @@ export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ on
       amount: successData.amount,
       phone: successData.phone,
       service: 'Airtime',
-      date: new Date().toISOString(),
-      network: selectedNetwork ? selectedNetwork : undefined,
+      date: successData.date || new Date().toISOString(),
+      network: successData.network || selectedNetwork || undefined,
       transaction_id: successData.transaction_id,
+      // Add balance information
+      oldBalance: successData.new_balance ? (successData.new_balance + successData.amount).toString() : undefined,
+      newBalance: successData.new_balance?.toString(),
+      // Add additional info
+      info: successData.phone,
+      businessName: 'SureTopUp',
+      // Add ebills data if available
+      ebillsData: successData.ebills?.data,
     });
   };
 

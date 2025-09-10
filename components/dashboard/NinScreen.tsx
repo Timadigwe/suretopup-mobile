@@ -109,11 +109,18 @@ const NinScreen: React.FC<{ onNavigate: (screen: string, data?: any) => void }> 
           service: 'NIN Print',
           date: new Date().toISOString(),
           businessName: 'SureTopUp',
+          // Transaction details for consistency with history
+          transactionId: response.data?.transaction?.id,
+          type: response.data?.transaction?.type || 'Debit',
+          status: response.data?.transaction?.status || 'Pending',
+          old_balance: response.data?.transaction?.old_balance?.toString(),
+          new_balance: response.data?.transaction?.new_balance?.toString(),
+          info: response.data?.transaction?.info || '',
           // NIN-specific data
           serviceName: selectedSlipType.name,
           customerId: ninNumber.trim(),
           slipType: selectedSlipType.type,
-          transaction_id: response.data?.transaction?.id,
+          ninId: response.data?.nin_id,
         });
         setShowSuccessModal(true);
       } else {
