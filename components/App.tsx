@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BackHandler, Alert } from 'react-native';
 import { OnboardingScreen } from './onboarding/OnboardingScreen';
 import { AuthContainer } from './auth/AuthContainer';
 import { EmailVerificationScreen } from './auth/EmailVerificationScreen';
@@ -67,6 +68,7 @@ export const App: React.FC = () => {
   const [receiptData, setReceiptData] = useState<any>(null);
   const [receiptSource, setReceiptSource] = useState<string>('home');
   const [isInAuthFlow, setIsInAuthFlow] = useState(false);
+  const [navigationHistory, setNavigationHistory] = useState<AppScreen[]>(['onboarding']);
   const { user, token, isInitialized, logout } = useAuth();
   
   // Determine if user is authenticated based on context
@@ -87,18 +89,71 @@ export const App: React.FC = () => {
     if (isInitialized && !isInAuthFlow) {
       if (isAuthenticated) {
         setCurrentScreen('dashboard');
+        setNavigationHistory(['dashboard']);
       } else {
         // If user was previously authenticated, redirect to login (token expired)
         // Otherwise, redirect to onboarding (first time user)
         if (wasAuthenticated) {
           setCurrentScreen('auth');
           setIsInAuthFlow(true);
+          setNavigationHistory(['auth']);
         } else {
           setCurrentScreen('onboarding');
+          setNavigationHistory(['onboarding']);
         }
       }
     }
   }, [isAuthenticated, isInitialized, isInAuthFlow, wasAuthenticated]);
+
+  // Handle Android back button
+  useEffect(() => {
+    const backAction = () => {
+      // Define screens that should exit the app
+      const exitScreens: AppScreen[] = ['onboarding', 'dashboard', 'home'];
+      
+      // If we're on an exit screen or have no history, show exit confirmation
+      if (exitScreens.includes(currentScreen) || navigationHistory.length <= 1) {
+        Alert.alert(
+          'Exit App',
+          'Are you sure you want to exit the app?',
+          [
+            {
+              text: 'Cancel',
+              onPress: () => null,
+              style: 'cancel',
+            },
+            {
+              text: 'Exit',
+              onPress: () => BackHandler.exitApp(),
+            },
+          ]
+        );
+        return true; // Prevent default behavior
+      }
+      
+      // Navigate back to previous screen
+      const newHistory = [...navigationHistory];
+      newHistory.pop(); // Remove current screen
+      const previousScreen = newHistory[newHistory.length - 1];
+      
+      if (previousScreen) {
+        setCurrentScreen(previousScreen);
+        setNavigationHistory(newHistory);
+        
+        // Clear receipt data if going back from receipt
+        if (currentScreen === 'receipt') {
+          setReceiptData(null);
+          setReceiptSource('home');
+        }
+      }
+      
+      return true; // Prevent default behavior
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+
+    return () => backHandler.remove();
+  }, [currentScreen, navigationHistory]);
 
   // Remove the problematic useEffect that was causing unwanted redirects
   // The authentication flow will be handled manually through the handlers
@@ -106,11 +161,13 @@ export const App: React.FC = () => {
   const handleOnboardingComplete = () => {
     setIsInAuthFlow(true);
     setCurrentScreen('auth');
+    setNavigationHistory(['onboarding', 'auth']);
   };
 
   const handleLogin = () => {
     setIsInAuthFlow(false);
     setCurrentScreen('dashboard');
+    setNavigationHistory(['auth', 'dashboard']);
   };
 
   const handleLogout = async () => {
@@ -119,10 +176,12 @@ export const App: React.FC = () => {
       setWasAuthenticated(false);
       setIsInAuthFlow(true);
       setCurrentScreen('auth');
+      setNavigationHistory(['auth']);
     } catch (error) {
       setWasAuthenticated(false);
       setIsInAuthFlow(true);
       setCurrentScreen('auth');
+      setNavigationHistory(['auth']);
     }
   };
 
@@ -135,6 +194,9 @@ export const App: React.FC = () => {
     if (page === 'service-placeholder' && data) {
       setReceiptData(data);
     }
+    
+    // Update navigation history
+    setNavigationHistory(prev => [...prev, page as AppScreen]);
     setCurrentScreen(page as AppScreen);
   };
 
@@ -245,16 +307,19 @@ export const App: React.FC = () => {
 
   const handleBackToOnboarding = () => {
     setCurrentScreen('onboarding');
+    setNavigationHistory(['onboarding']);
   };
 
   const handleBackToDashboard = () => {
     setCurrentScreen('dashboard');
+    setNavigationHistory(['dashboard']);
   };
 
   const handleEmailVerification = (email: string, regData?: any) => {
     setUserEmail(email);
     setRegistrationData(regData);
     setCurrentScreen('email-verification');
+    setNavigationHistory(prev => [...prev, 'email-verification']);
   };
 
   const handleVerificationComplete = () => {
@@ -262,10 +327,17 @@ export const App: React.FC = () => {
     // Clear registration data since we don't need it anymore
     setRegistrationData(null);
     setCurrentScreen('auth');
+    setNavigationHistory(['auth']);
   };
 
   const handleBackToAuth = () => {
     setCurrentScreen('auth');
+    setNavigationHistory(prev => {
+      const newHistory = [...prev];
+      // Remove email-verification from history if it exists
+      const filteredHistory = newHistory.filter(screen => screen !== 'email-verification');
+      return [...filteredHistory, 'auth'];
+    });
   };
 
 
