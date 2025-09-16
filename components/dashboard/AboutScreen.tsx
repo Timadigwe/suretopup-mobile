@@ -36,7 +36,6 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({
   const appInfo = {
     company: 'SureTopUp Nigeria Limited',
     website: 'suretopup.com.ng',
-    email: 'info@suretopup.com.ng',
     phone: '+234 902 281 8497',
     address: 'Lagos, Nigeria',
   };
@@ -95,17 +94,6 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({
               </TouchableOpacity>
             </View>
             
-            <View style={styles.infoRow}>
-              <View style={[styles.infoIcon, { backgroundColor: colors.primary + '15' }]}>
-                <Ionicons name="mail" size={18} color={colors.primary} />
-              </View>
-              <View style={styles.infoContent}>
-                <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>Email</Text>
-                <Text style={[styles.infoText, { color: colors.text }]}>
-                  {appInfo.email}
-                </Text>
-              </View>
-            </View>
             
             <View style={styles.infoRow}>
               <View style={[styles.infoIcon, { backgroundColor: colors.primary + '15' }]}>

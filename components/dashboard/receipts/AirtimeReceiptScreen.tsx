@@ -19,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useMobileFeatures } from '@/hooks/useMobileFeatures';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSafeArea } from '@/hooks/useSafeArea';
 
 interface AirtimeReceiptData {
   reference: string;
@@ -67,6 +68,7 @@ export const AirtimeReceiptScreen: React.FC<AirtimeReceiptScreenProps> = ({
   const { colors } = useTheme();
   const { triggerHapticFeedback } = useMobileFeatures();
   const { user } = useAuth();
+  const { safeAreaTop, safeAreaBottom } = useSafeArea();
   const viewShotRef = useRef<ViewShot>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
@@ -186,7 +188,7 @@ export const AirtimeReceiptScreen: React.FC<AirtimeReceiptScreenProps> = ({
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.card }]}>
+      <View style={[styles.header, { backgroundColor: colors.card, paddingTop: safeAreaTop }]}>
         <TouchableOpacity
           onPress={handleDone}
           style={styles.backButton}
@@ -225,7 +227,7 @@ export const AirtimeReceiptScreen: React.FC<AirtimeReceiptScreenProps> = ({
       <ScrollView 
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: safeAreaBottom + 20 }]}
       >
         {/* Receipt Content */}
         <ViewShot
@@ -603,7 +605,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: Platform.OS === 'android' ? 20 : 32,
+    flexGrow: 1,
   },
   receiptContainer: {
     alignItems: 'center',

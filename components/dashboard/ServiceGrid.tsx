@@ -55,10 +55,22 @@ export const ServiceGrid: React.FC<ServiceGridProps> = ({ onServiceClick }) => {
       color: "#F97316",
     },
     {
-      id: "other-services",
-      name: "Other\nServices",
-      icon: "apps",
+      id: "cable",
+      name: "Cable TV",
+      icon: "tv",
       color: "#8B5CF6",
+    },
+    {
+      id: "nin",
+      name: "NIN\nServices",
+      icon: "card",
+      color: "#059669",
+    },
+    {
+      id: "cac",
+      name: "CAC\nServices",
+      icon: "business",
+      color: "#DC2626",
     }
   ];
 
@@ -92,7 +104,7 @@ export const ServiceGrid: React.FC<ServiceGridProps> = ({ onServiceClick }) => {
               styles.iconContainer,
               { backgroundColor: `${service.color}20` }
             ]}>
-              <Ionicons name={service.icon} size={22} color={service.color} />
+              <Ionicons name={service.icon} size={18} color={service.color} />
             </View>
             
             <Text style={[styles.serviceName, { color: colors.text }]} numberOfLines={2}>
@@ -121,16 +133,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   serviceCard: {
-    width: '30%',
-    minHeight: 100,
+    width: '22%',
+    minHeight: 85,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 16,
+    borderRadius: 12,
     borderWidth: 1,
-    marginBottom: 12,
+    marginBottom: 10,
     position: 'relative',
-    paddingVertical: 16,
-    paddingHorizontal: 4,
+    paddingVertical: 12,
+    paddingHorizontal: 2,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -154,21 +166,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   iconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   serviceName: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '500',
     textAlign: 'center',
-    lineHeight: 18,
+    lineHeight: 14,
     flexWrap: 'wrap',
     flexShrink: 1,
     paddingHorizontal: 2,
-    marginTop: 4,
+    marginTop: 2,
   },
 });

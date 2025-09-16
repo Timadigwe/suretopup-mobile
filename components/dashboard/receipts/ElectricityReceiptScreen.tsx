@@ -418,9 +418,6 @@ export const ElectricityReceiptScreen: React.FC<ElectricityReceiptScreenProps> =
               <Text style={styles.footerText}>
                 Thank you for using SureTopUp
               </Text>
-              <Text style={styles.footerSubtext}>
-                For support, contact us at info@suretopup.com.ng
-              </Text>
             </View>
           </View>
         </ViewShot>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useMobileFeatures } from '@/hooks/useMobileFeatures';
+import { useSafeArea } from '@/hooks/useSafeArea';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiService } from '@/services/api';
 import { CustomModal } from '@/components/ui/CustomModal';
@@ -24,6 +25,8 @@ import { TransactionReceiptScreen } from './TransactionReceiptScreen';
 
 interface BettingFundingScreenProps {
   onNavigate: (page: string, data?: any) => void;
+  registerMultiStepInfo: (screen: string, currentStep: string, onStepBack: () => void) => void;
+  clearMultiStepInfo: () => void;
 }
 
 const { width } = Dimensions.get('window');
@@ -69,7 +72,7 @@ interface CustomerInfo {
   };
 }
 
-export const BettingFundingScreen: React.FC<BettingFundingScreenProps> = ({ onNavigate }) => {
+export const BettingFundingScreen: React.FC<BettingFundingScreenProps> = ({ onNavigate, registerMultiStepInfo, clearMultiStepInfo }) => {
   const [step, setStep] = useState<'company' | 'verify' | 'confirm' | 'fund'>('company');
   const [bettingCompanies, setBettingCompanies] = useState<BettingCompany[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<BettingCompany | null>(null);
@@ -88,12 +91,29 @@ export const BettingFundingScreen: React.FC<BettingFundingScreenProps> = ({ onNa
   
   const { colors } = useTheme();
   const { triggerHapticFeedback } = useMobileFeatures();
+  const { safeAreaTop, safeAreaBottom } = useSafeArea();
   const { user } = useAuth();
 
   // Fetch betting companies on component mount
   useEffect(() => {
     fetchBettingCompanies();
   }, []);
+
+  // Register multi-step info when step changes
+  useEffect(() => {
+    if (step !== 'company') {
+      registerMultiStepInfo('betting-funding', step, handleGoBack);
+    } else {
+      clearMultiStepInfo();
+    }
+  }, [step, registerMultiStepInfo, clearMultiStepInfo]);
+
+  // Clear multi-step info when component unmounts
+  useEffect(() => {
+    return () => {
+      clearMultiStepInfo();
+    };
+  }, [clearMultiStepInfo]);
 
   const fetchBettingCompanies = async () => {
     setIsLoadingCompanies(true);
@@ -260,7 +280,7 @@ export const BettingFundingScreen: React.FC<BettingFundingScreenProps> = ({ onNa
     setShowErrorModal(false);
   };
 
-  const handleGoBack = () => {
+  const handleGoBack = useCallback(() => {
     if (step === 'company') {
       onNavigate('home');
     } else if (step === 'verify') {
@@ -272,7 +292,7 @@ export const BettingFundingScreen: React.FC<BettingFundingScreenProps> = ({ onNa
     } else if (step === 'fund') {
       setStep('confirm');
     }
-  };
+  }, [step, onNavigate]);
 
   const renderStepIndicator = () => {
     const steps = [
@@ -640,7 +660,7 @@ export const BettingFundingScreen: React.FC<BettingFundingScreenProps> = ({ onNa
       {/* Header with Gradient */}
       <LinearGradient
         colors={[colors.card + 'F5', colors.card + 'E0']}
-        style={styles.header}
+        style={[styles.header, { paddingTop: safeAreaTop }]}
       >
         <View style={styles.headerContent}>
           <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
@@ -657,7 +677,7 @@ export const BettingFundingScreen: React.FC<BettingFundingScreenProps> = ({ onNa
       <ScrollView 
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: safeAreaBottom + 20 }]}
         keyboardShouldPersistTaps="handled"
       >
         {/* Hero Section */}
@@ -719,7 +739,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingTop: 60,
     paddingBottom: 16,
     paddingHorizontal: 24,
   },
@@ -746,7 +765,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 24,
     paddingTop: 24,
-    paddingBottom: 40,
   },
   heroSection: {
     marginBottom: 32,

@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useMobileFeatures } from '@/hooks/useMobileFeatures';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSafeArea } from '@/hooks/useSafeArea';
 import { BottomTabNavigator } from '@/components/navigation/BottomTabNavigator';
 import { apiService } from '@/services/api';
 import { dashboardCacheUtils } from '@/utils/dashboardCache';
@@ -32,12 +33,17 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const { colors } = useTheme();
   const { triggerHapticFeedback } = useMobileFeatures();
   const { user, clearAllStoredData } = useAuth();
+  const { safeAreaTop, safeAreaBottom } = useSafeArea();
   
   // Profile editing states
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [showChangePin, setShowChangePin] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  
+  // Preloaded profile data state
+  const [preloadedProfileData, setPreloadedProfileData] = useState<any>(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   
   // Form states
   const [editForm, setEditForm] = useState({
@@ -83,8 +89,45 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     }
   }, [userData, user]);
 
-  // Fetch detailed profile data when edit modal opens
+  // Preload profile data when component mounts
+  useEffect(() => {
+    const preloadProfileData = async () => {
+      if (!preloadedProfileData && !isLoadingProfile) {
+        setIsLoadingProfile(true);
+        try {
+          const response = await apiService.getUserProfile();
+          
+          if (response.success && response.data) {
+            setPreloadedProfileData(response.data);
+          }
+        } catch (error) {
+          // Silently fail - we'll fetch again when user clicks edit
+          console.log('Failed to preload profile data:', error);
+        } finally {
+          setIsLoadingProfile(false);
+        }
+      }
+    };
+
+    preloadProfileData();
+  }, [preloadedProfileData, isLoadingProfile]);
+
+  // Show edit profile modal with preloaded data
   const handleEditProfilePress = async () => {
+    // If we have preloaded data, use it immediately
+    if (preloadedProfileData) {
+      setEditForm({
+        firstname: preloadedProfileData.firstname || '',
+        lastname: preloadedProfileData.lastname || '',
+        email: preloadedProfileData.email || '',
+        phone_number: preloadedProfileData.phone || '',
+        state: preloadedProfileData.state || '',
+      });
+      setShowEditProfile(true);
+      return;
+    }
+
+    // Fallback: fetch data if preloading failed
     try {
       const response = await apiService.getUserProfile();
       
@@ -130,6 +173,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         const profileResponse = await apiService.getUserProfile();
         if (profileResponse.success && profileResponse.data) {
           const profileData = profileResponse.data;
+          // Update preloaded data for future use
+          setPreloadedProfileData(profileData);
           setEditForm({
             firstname: profileData.firstname || '',
             lastname: profileData.lastname || '',
@@ -292,7 +337,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.card + 'F5' }]}>
+      <View style={[styles.header, { backgroundColor: colors.card + 'F5', paddingTop: safeAreaTop + 20 }]}>
         <View style={styles.headerContent}>
           <TouchableOpacity
             onPress={() => onNavigate('home')}
@@ -388,14 +433,16 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       </ScrollView>
 
       {/* Bottom Navigation */}
-      <BottomTabNavigator
-        activeTab="profile"
-        onTabPress={(tabId) => {
-          if (tabId !== 'profile') {
-            onNavigate(tabId);
-          }
-        }}
-      />
+      <View style={{ paddingBottom: safeAreaBottom }}>
+        <BottomTabNavigator
+          activeTab="profile"
+          onTabPress={(tabId) => {
+            if (tabId !== 'profile') {
+              onNavigate(tabId);
+            }
+          }}
+        />
+      </View>
 
       {/* Edit Profile Modal */}
       <Modal
@@ -702,7 +749,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingTop: 60,
     paddingBottom: 16,
     paddingHorizontal: 24,
   },

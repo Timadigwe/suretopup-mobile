@@ -17,6 +17,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useMobileFeatures } from '@/hooks/useMobileFeatures';
+import { useSafeArea } from '@/hooks/useSafeArea';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiService } from '@/services/api';
 import { CustomModal } from '@/components/ui/CustomModal';
@@ -90,6 +91,7 @@ export const DataPurchaseScreen: React.FC<DataPurchaseScreenProps> = ({ onNaviga
   
   const { colors } = useTheme();
   const { triggerHapticFeedback } = useMobileFeatures();
+  const { safeAreaTop, safeAreaBottom } = useSafeArea();
   const { user } = useAuth();
 
   // Fetch data plans on component mount
@@ -350,7 +352,7 @@ export const DataPurchaseScreen: React.FC<DataPurchaseScreenProps> = ({ onNaviga
       {/* Header with Gradient */}
       <LinearGradient
         colors={[colors.card + 'F5', colors.card + 'E0']}
-        style={styles.header}
+        style={[styles.header, { paddingTop: safeAreaTop }]}
       >
         <View style={styles.headerContent}>
           <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
@@ -367,7 +369,7 @@ export const DataPurchaseScreen: React.FC<DataPurchaseScreenProps> = ({ onNaviga
       <ScrollView 
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: safeAreaBottom + 20 }]}
         keyboardShouldPersistTaps="handled"
       >
         {/* Hero Section */}
@@ -730,7 +732,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingTop: 60,
     paddingBottom: 16,
     paddingHorizontal: 24,
   },
@@ -757,7 +758,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 24,
     paddingTop: 24,
-    paddingBottom: 40,
   },
   heroSection: {
     marginBottom: 32,

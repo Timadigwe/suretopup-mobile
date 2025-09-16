@@ -19,6 +19,7 @@ interface PromoSlide {
   subtitle: string;
   buttonText: string;
   colors: [string, string];
+  navigateTo: string;
 }
 
 const promoSlides: PromoSlide[] = [
@@ -27,25 +28,32 @@ const promoSlides: PromoSlide[] = [
     title: "Get 5% Bonus",
     subtitle: "On your first recharge above ₦1,000",
     buttonText: "Recharge Now",
-    colors: ['#00A900', '#008800']
+    colors: ['#00A900', '#008800'],
+    navigateTo: 'airtime'
   },
   {
     id: 2,
     title: "Data Deals",
     subtitle: "Buy 2GB and get 1GB free for new users",
     buttonText: "Buy Data",
-    colors: ['#3B82F6', '#2563EB']
+    colors: ['#3B82F6', '#2563EB'],
+    navigateTo: 'data'
   },
   {
     id: 3,
     title: "Weekend Special",
     subtitle: "50% off on all betting fund transfers",
     buttonText: "Fund Now",
-    colors: ['#FFD700', '#F59E0B']
+    colors: ['#FFD700', '#F59E0B'],
+    navigateTo: 'betting-funding'
   }
 ];
 
-export const PromoCarousel: React.FC = () => {
+interface PromoCarouselProps {
+  onNavigate: (screen: string) => void;
+}
+
+export const PromoCarousel: React.FC<PromoCarouselProps> = ({ onNavigate }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const { colors } = useTheme();
 
@@ -108,7 +116,11 @@ export const PromoCarousel: React.FC = () => {
                   <View style={styles.slideText}>
                     <Text style={styles.slideTitle}>{slide.title}</Text>
                     <Text style={styles.slideSubtitle}>{slide.subtitle}</Text>
-                    <TouchableOpacity style={styles.slideButton}>
+                    <TouchableOpacity 
+                      style={styles.slideButton}
+                      onPress={() => onNavigate(slide.navigateTo)}
+                      activeOpacity={0.8}
+                    >
                       <Text style={styles.slideButtonText}>{slide.buttonText}</Text>
                     </TouchableOpacity>
                   </View>

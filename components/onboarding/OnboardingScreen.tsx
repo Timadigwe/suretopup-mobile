@@ -11,6 +11,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useMobileFeatures } from '@/hooks/useMobileFeatures';
+import { useSafeArea } from '@/hooks/useSafeArea';
 import { Ionicons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
@@ -51,6 +52,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
   const [currentSlide, setCurrentSlide] = useState(0);
   const { colors } = useTheme();
   const { triggerHapticFeedback } = useMobileFeatures();
+  const { safeAreaTop, safeAreaBottom } = useSafeArea();
 
   const nextSlide = () => {
     triggerHapticFeedback('light');
@@ -77,7 +79,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
         style={styles.gradient}
       >
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: safeAreaTop + 16 }]}>
           <View style={styles.headerSpacer} />
           <Text style={[styles.slideCounter, { color: colors.mutedForeground }]}>
             {currentSlide + 1} / {slides.length}
@@ -137,7 +139,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
         </View>
 
         {/* Navigation buttons */}
-        <View style={styles.navigation}>
+        <View style={[styles.navigation, { paddingBottom: safeAreaBottom + 16 }]}>
           <TouchableOpacity
             onPress={prevSlide}
             disabled={currentSlide === 0}
@@ -184,7 +186,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: 60,
     paddingBottom: 16,
   },
   headerSpacer: {
@@ -252,7 +253,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 24,
-    paddingBottom: 40,
   },
   navButton: {
     flexDirection: 'row',

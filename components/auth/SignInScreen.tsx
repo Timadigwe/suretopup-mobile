@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useMobileFeatures } from '@/hooks/useMobileFeatures';
@@ -44,6 +45,9 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
     password: '',
   });
   
+  // Remember me functionality
+  const [rememberMe, setRememberMe] = useState(false);
+  
   const [errors, setErrors] = useState({
     email: '',
     password: '',
@@ -66,13 +70,55 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
   // Animation for loading spinner
   const spinValue = React.useRef(new Animated.Value(0)).current;
   
+  // Load saved credentials on component mount
+  useEffect(() => {
+    console.log('SignInScreen mounted - loading saved credentials');
+    const loadSavedCredentials = async () => {
+      try {
+        // Check all AsyncStorage keys for debugging
+        const allKeys = await AsyncStorage.getAllKeys();
+        console.log('All AsyncStorage keys:', allKeys);
+        
+        const savedEmail = await AsyncStorage.getItem('remembered_email');
+        const savedPassword = await AsyncStorage.getItem('remembered_password');
+        const rememberMeStatus = await AsyncStorage.getItem('remember_me');
+        
+        console.log('Loading saved credentials:', {
+          savedEmail: savedEmail ? 'Found' : 'Not found',
+          savedPassword: savedPassword ? 'Found' : 'Not found',
+          rememberMeStatus
+        });
+        
+        if (savedEmail && savedPassword && rememberMeStatus === 'true') {
+          console.log('Auto-filling credentials');
+          setFormData({
+            email: savedEmail,
+            password: savedPassword,
+          });
+          setRememberMe(true);
+        } else {
+          console.log('No saved credentials found or remember me not enabled');
+          // In development mode, AsyncStorage might be cleared on reload
+          // This is normal behavior and doesn't affect production
+          if (__DEV__ && allKeys.length === 0) {
+            console.log('Development mode: AsyncStorage cleared on reload (normal behavior)');
+          }
+        }
+      } catch (error) {
+        console.log('Error loading saved credentials:', error);
+      }
+    };
+    
+    loadSavedCredentials();
+  }, []);
+
   React.useEffect(() => {
     if (isLoading) {
       Animated.loop(
         Animated.timing(spinValue, {
           toValue: 1,
           duration: 1000,
-          useNativeDriver: true,
+          useNativeDriver: true
         })
       ).start();
     } else {
@@ -183,9 +229,46 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
     triggerNotificationHaptic();
     
     // Handle login
-    login(formData.email, formData.password).then((result) => {
+    login(formData.email, formData.password).then(async (result) => {
       setIsLoading(false);
       if (result.success) {
+        // Save credentials if remember me is checked
+        if (rememberMe) {
+          try {
+            console.log('Saving credentials for remember me:', {
+              email: formData.email,
+              password: formData.password,
+              rememberMe: true
+            });
+            await AsyncStorage.setItem('remembered_email', formData.email);
+            await AsyncStorage.setItem('remembered_password', formData.password);
+            await AsyncStorage.setItem('remember_me', 'true');
+            
+            // Verify the data was saved
+            const savedEmail = await AsyncStorage.getItem('remembered_email');
+            const savedPassword = await AsyncStorage.getItem('remembered_password');
+            const savedRememberMe = await AsyncStorage.getItem('remember_me');
+            console.log('Verification - saved data:', {
+              savedEmail,
+              savedPassword: savedPassword ? 'Found' : 'Not found',
+              savedRememberMe
+            });
+            console.log('Credentials saved successfully');
+          } catch (error) {
+            console.log('Error saving credentials:', error);
+          }
+        } else {
+          // Clear saved credentials if remember me is unchecked
+          try {
+            console.log('Clearing saved credentials');
+            await AsyncStorage.removeItem('remembered_email');
+            await AsyncStorage.removeItem('remembered_password');
+            await AsyncStorage.removeItem('remember_me');
+            console.log('Credentials cleared successfully');
+          } catch (error) {
+            console.log('Error clearing credentials:', error);
+          }
+        }
         onLogin();
       } else {
         const errorMessage = getUserFriendlyError(result.message);
@@ -197,6 +280,11 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
   const togglePasswordVisibility = () => {
     triggerHapticFeedback('light');
     setShowPassword(!showPassword);
+  };
+
+  const toggleRememberMe = () => {
+    triggerHapticFeedback('light');
+    setRememberMe(!rememberMe);
   };
 
   const renderLogo = () => (
@@ -337,11 +425,35 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
                 {renderInput('mail', 'Enter your email', formData.email, 'email', 'email-address', false, 'Email')}
                 {renderInput('lock-closed', 'Enter your password', formData.password, 'password', 'default', !showPassword, 'Password')}
 
-                <TouchableOpacity style={styles.forgotPassword} onPress={onForgotPassword}>
-                  <Text style={[styles.forgotPasswordText, { color: colors.primary }]}>
-                    Forgot Password?
-                  </Text>
-                </TouchableOpacity>
+                {/* Remember Me Checkbox */}
+                <View style={styles.rememberMeContainer}>
+                  <TouchableOpacity 
+                    style={styles.rememberMeCheckbox} 
+                    onPress={toggleRememberMe}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[
+                      styles.checkbox,
+                      { 
+                        borderColor: rememberMe ? colors.primary : colors.border,
+                        backgroundColor: rememberMe ? colors.primary : 'transparent'
+                      }
+                    ]}>
+                      {rememberMe && (
+                        <Ionicons name="checkmark" size={16} color="white" />
+                      )}
+                    </View>
+                    <Text style={[styles.rememberMeText, { color: colors.text }]}>
+                      Remember me
+                    </Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity style={styles.forgotPassword} onPress={onForgotPassword}>
+                    <Text style={[styles.forgotPasswordText, { color: colors.primary }]}>
+                      Forgot Password?
+                    </Text>
+                  </TouchableOpacity>
+                </View>
 
                 <TouchableOpacity
                   onPress={handleSubmit}
@@ -505,9 +617,31 @@ const styles = StyleSheet.create({
     zIndex: 1,
     padding: 4,
   },
-  forgotPassword: {
-    alignSelf: 'flex-end',
+  rememberMeContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 24,
+  },
+  rememberMeCheckbox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 4,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  rememberMeText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  forgotPassword: {
     padding: 4,
   },
   forgotPasswordText: {

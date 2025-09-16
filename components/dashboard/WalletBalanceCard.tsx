@@ -41,7 +41,7 @@ export const WalletBalanceCard: React.FC<WalletBalanceCardProps> = ({
     >
       <View style={styles.header}>
         <View style={styles.titleContainer}>
-          <Ionicons name="wallet" size={20} color="rgba(255, 255, 255, 0.9)" />
+          <Ionicons name="wallet" size={18} color="rgba(255, 255, 255, 0.9)" />
           <Text style={styles.title}>Wallet Balance</Text>
         </View>
         <TouchableOpacity
@@ -50,7 +50,7 @@ export const WalletBalanceCard: React.FC<WalletBalanceCardProps> = ({
         >
           <Ionicons 
             name={showBalance ? 'eye-off' : 'eye'} 
-            size={20} 
+            size={18} 
             color="rgba(255, 255, 255, 0.8)" 
           />
         </TouchableOpacity>
@@ -69,13 +69,13 @@ export const WalletBalanceCard: React.FC<WalletBalanceCardProps> = ({
         </Text>
       </View>
 
-      <TouchableOpacity
-        onPress={onAddFunds}
-        style={styles.addFundsButton}
-      >
-        <Ionicons name="add" size={20} color="white" />
-        <Text style={styles.addFundsText}>Add Funds</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          onPress={onAddFunds}
+          style={styles.addFundsButton}
+        >
+          <Ionicons name="add" size={18} color="white" />
+          <Text style={styles.addFundsText}>Add Funds</Text>
+        </TouchableOpacity>
     </LinearGradient>
   );
 };
@@ -83,56 +83,56 @@ export const WalletBalanceCard: React.FC<WalletBalanceCardProps> = ({
 const styles = StyleSheet.create({
   container: {
     marginHorizontal: 16,
-    marginBottom: 24,
-    padding: 24,
-    borderRadius: 20,
+    marginBottom: 16,
+    padding: 14,
+    borderRadius: 14,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 2,
     },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 12,
   },
   titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   title: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
     color: 'rgba(255, 255, 255, 0.9)',
-    marginLeft: 8,
+    marginLeft: 6,
   },
   toggleButton: {
     padding: 4,
   },
   balanceContainer: {
-    marginBottom: 24,
+    marginBottom: 12,
   },
   balance: {
-    fontSize: 32,
+    fontSize: 24,
     fontWeight: 'bold',
     color: 'white',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   balanceSubtitle: {
-    fontSize: 14,
+    fontSize: 12,
     color: 'rgba(255, 255, 255, 0.8)',
   },
   balanceSkeleton: {
-    width: 150,
-    height: 32,
+    width: 120,
+    height: 24,
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    borderRadius: 8,
-    marginBottom: 4,
+    borderRadius: 6,
+    marginBottom: 2,
   },
   addFundsButton: {
     flexDirection: 'row',
@@ -141,14 +141,14 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 16,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
   },
   addFundsText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: 'white',
-    marginLeft: 8,
+    marginLeft: 6,
   },
 });

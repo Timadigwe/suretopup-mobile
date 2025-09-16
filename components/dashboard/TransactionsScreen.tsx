@@ -8,17 +8,19 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useSafeArea } from '@/hooks/useSafeArea';
 import { BottomTabNavigator } from '@/components/navigation/BottomTabNavigator';
 import { dashboardCacheUtils } from '@/utils/dashboardCache';
 
 interface TransactionsScreenProps {
-  onNavigate: (page: string) => void;
+  onNavigate: (page: string, data?: any) => void;
 }
 
 export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
   onNavigate,
 }) => {
   const { colors } = useTheme();
+  const { safeAreaTop, safeAreaBottom } = useSafeArea();
   
   // Get transactions from global cache (already fetched in dashboard)
   const cachedData = dashboardCacheUtils.getData();
@@ -143,7 +145,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.card + 'F5' }]}>
+      <View style={[styles.header, { backgroundColor: colors.card + 'F5', paddingTop: safeAreaTop + 20 }]}>
         <View style={styles.headerContent}>
           <TouchableOpacity
             onPress={() => onNavigate('home')}
@@ -247,14 +249,16 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
       </ScrollView>
 
       {/* Bottom Navigation */}
-      <BottomTabNavigator
-        activeTab="transactions"
-        onTabPress={(tabId) => {
-          if (tabId !== 'transactions') {
-            onNavigate(tabId);
-          }
-        }}
-      />
+      <View style={{ paddingBottom: safeAreaBottom }}>
+        <BottomTabNavigator
+          activeTab="transactions"
+          onTabPress={(tabId) => {
+            if (tabId !== 'transactions') {
+              onNavigate(tabId);
+            }
+          }}
+        />
+      </View>
     </View>
   );
 };
@@ -264,7 +268,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingTop: 60,
     paddingBottom: 16,
     paddingHorizontal: 24,
   },

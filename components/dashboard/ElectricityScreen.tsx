@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useMobileFeatures } from '../../hooks/useMobileFeatures';
+import { useSafeArea } from '../../hooks/useSafeArea';
 import { apiService } from '../../services/api';
 import { CustomModal } from '../ui/CustomModal';
 import { Colors } from '@/constants/Colors';
@@ -51,9 +52,14 @@ interface CustomerVerification {
   };
 }
 
-const ElectricityScreen: React.FC<{ onNavigate: (screen: string, data?: any) => void }> = ({ onNavigate }) => {
+const ElectricityScreen: React.FC<{ 
+  onNavigate: (screen: string, data?: any) => void;
+  registerMultiStepInfo: (screen: string, currentStep: string, onStepBack: () => void) => void;
+  clearMultiStepInfo: () => void;
+}> = ({ onNavigate, registerMultiStepInfo, clearMultiStepInfo }) => {
   const { colors } = useTheme();
   const { triggerHapticFeedback } = useMobileFeatures();
+  const { safeAreaTop, safeAreaBottom } = useSafeArea();
   
   const [step, setStep] = useState<'company' | 'verify' | 'confirm' | 'purchase'>('company');
   const [powerCompanies, setPowerCompanies] = useState<PowerCompany[]>([]);
@@ -80,6 +86,22 @@ const ElectricityScreen: React.FC<{ onNavigate: (screen: string, data?: any) => 
   useEffect(() => {
     fetchPowerCompanies();
   }, []);
+
+  // Register multi-step info when step changes
+  useEffect(() => {
+    if (step !== 'company') {
+      registerMultiStepInfo('electricity', step, handleGoBack);
+    } else {
+      clearMultiStepInfo();
+    }
+  }, [step, registerMultiStepInfo, clearMultiStepInfo]);
+
+  // Clear multi-step info when component unmounts
+  useEffect(() => {
+    return () => {
+      clearMultiStepInfo();
+    };
+  }, [clearMultiStepInfo]);
 
   const fetchPowerCompanies = async () => {
     setIsLoadingCompanies(true);
@@ -232,7 +254,7 @@ const ElectricityScreen: React.FC<{ onNavigate: (screen: string, data?: any) => 
     setStep('company');
   };
 
-  const handleGoBack = () => {
+  const handleGoBack = useCallback(() => {
     if (step === 'company') {
       onNavigate('home');
     } else if (step === 'verify') {
@@ -244,7 +266,7 @@ const ElectricityScreen: React.FC<{ onNavigate: (screen: string, data?: any) => 
     } else if (step === 'purchase') {
       setStep('confirm');
     }
-  };
+  }, [step, onNavigate]);
 
   const renderStepIndicator = () => {
     const steps = [
@@ -571,7 +593,7 @@ const ElectricityScreen: React.FC<{ onNavigate: (screen: string, data?: any) => 
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
     >
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.card }]}>
+      <View style={[styles.header, { backgroundColor: colors.card, paddingTop: safeAreaTop }]}>
         <TouchableOpacity
           onPress={handleGoBack}
           style={styles.backButton}
@@ -586,7 +608,7 @@ const ElectricityScreen: React.FC<{ onNavigate: (screen: string, data?: any) => 
         style={styles.scrollView} 
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: safeAreaBottom + 20 }]}
       >
         <View style={styles.content}>
           {/* Hero Section */}
@@ -698,7 +720,6 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 60,
     paddingBottom: 16,
     paddingHorizontal: 24,
   },

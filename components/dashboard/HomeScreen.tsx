@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useMobileFeatures } from '@/hooks/useMobileFeatures';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSafeArea } from '@/hooks/useSafeArea';
 import { dashboardCacheUtils } from '@/utils/dashboardCache';
 import { BottomTabNavigator } from '@/components/navigation/BottomTabNavigator';
 import { WalletBalanceCard } from './WalletBalanceCard';
@@ -41,6 +42,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const { colors } = useTheme();
   const { triggerHapticFeedback } = useMobileFeatures();
   const { user, token, logout, onLoginSuccess } = useAuth();
+  const { safeAreaTop, safeAreaBottom } = useSafeArea();
   
   // Use cache for persistent state
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(dashboardCacheUtils.getData());
@@ -112,7 +114,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       const response = await apiService.getDashboard();
       
       if (response.success && response.data) {
-        console.log('Dashboard Data After Refresh:', JSON.stringify(response.data, null, 2));
+        //console.log('Dashboard Data After Refresh:', JSON.stringify(response.data, null, 2));
         setDashboardData(response.data);
         dashboardCacheUtils.setData(response.data);
         setHasInitialLoad(true);
@@ -184,29 +186,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     onNavigate('add-funds');
   };
 
-  const handleLogout = () => {
-    triggerHapticFeedback('medium');
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            triggerHapticFeedback('heavy');
-            await logout();
-            onLogout();
-          },
-        },
-      ]
-    );
-  };
-
   // Show inline skeletons for dynamic data while loading
   const showSkeleton = dashboardLoading && !hasInitialLoad;
 
@@ -255,7 +234,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.card + 'F5' }]}>
+      <View style={[styles.header, { backgroundColor: colors.card + 'F5', paddingTop: safeAreaTop + 20 }]}>
         <View style={styles.headerContent}>
           <View style={styles.userInfo}>
             <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
@@ -321,7 +300,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
         {/* Promotional Carousel */}
         <View style={styles.promoSection}>
-          <PromoCarousel />
+          <PromoCarousel onNavigate={onNavigate} />
         </View>
 
         {/* Quick Stats */}
@@ -332,7 +311,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <View style={styles.statsGrid}>
             <View style={[styles.statCard, { backgroundColor: colors.card }]}>
               <View style={[styles.statIconContainer, { backgroundColor: '#3B82F6' + '15' }]}>
-                <Ionicons name="analytics" size={20} color="#3B82F6" />
+                <Ionicons name="analytics" size={14} color="#3B82F6" />
               </View>
               {showSkeleton ? (
                 <SkeletonLoader width={40} height={24} style={styles.statValueSkeleton} />
@@ -347,7 +326,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             </View>
             <View style={[styles.statCard, { backgroundColor: colors.card }]}>
               <View style={[styles.statIconContainer, { backgroundColor: '#8B5CF6' + '15' }]}>
-                <Ionicons name="wallet" size={20} color="#8B5CF6" />
+                <Ionicons name="wallet" size={14} color="#8B5CF6" />
               </View>
               {showSkeleton ? (
                 <SkeletonLoader width={80} height={24} style={styles.statValueSkeleton} />
@@ -440,7 +419,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                     ]}>
                       <Ionicons 
                         name={getTransactionIcon(transaction)}
-                        size={20} 
+                        size={14} 
                         color={transactionColor}
                       />
                     </View>
@@ -521,14 +500,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       </ScrollView>
 
       {/* Bottom Navigation */}
-      <BottomTabNavigator
-        activeTab="home"
-        onTabPress={(tabId) => {
-          if (tabId !== 'home') {
-            onNavigate(tabId);
-          }
-        }}
-      />
+      <View style={{ paddingBottom: safeAreaBottom }}>
+        <BottomTabNavigator
+          activeTab="home"
+          onTabPress={(tabId) => {
+            if (tabId !== 'home') {
+              onNavigate(tabId);
+            }
+          }}
+        />
+      </View>
     </View>
   );
 };
@@ -538,7 +519,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingTop: 60,
     paddingBottom: 16,
     paddingHorizontal: 24,
   },
@@ -589,50 +569,50 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   serviceSection: {
-    marginTop: 24,
+    marginTop: 20,
   },
   promoSection: {
-    marginTop: 32,
+    marginTop: 24,
   },
   statsSection: {
-    marginTop: 32,
+    marginTop: 20,
     paddingHorizontal: 24,
   },
   transactionsSection: {
-    marginTop: 32,
+    marginTop: 20,
     paddingHorizontal: 24,
     paddingBottom: Platform.OS === 'android' ? 16 : 24,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   statsGrid: {
     flexDirection: 'row',
-    gap: 16,
+    gap: 8,
   },
   statCard: {
     flex: 1,
-    padding: 24,
-    borderRadius: 16,
+    padding: 12,
+    borderRadius: 10,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 1,
     },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 6,
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
   },
   statValue: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 4,
+    marginBottom: 1,
   },
   statLabel: {
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: '500',
   },
   transactionsHeader: {
@@ -651,34 +631,34 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   transactionsList: {
-    gap: 12,
+    gap: 6,
   },
   transactionCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    borderRadius: 16,
+    padding: 10,
+    borderRadius: 10,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 1,
     },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 6,
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
   },
   transactionInfo: {
     flex: 1,
   },
   transactionType: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '600',
-    marginBottom: 4,
+    marginBottom: 1,
   },
   transactionDate: {
-    fontSize: 14,
-    marginBottom: 2,
+    fontSize: 11,
+    marginBottom: 1,
   },
   transactionReference: {
     fontSize: 12,
@@ -687,17 +667,17 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   amountText: {
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: 'bold',
-    marginBottom: 4,
+    marginBottom: 1,
   },
   statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 6,
   },
   statusText: {
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '600',
   },
   errorContainer: {
@@ -794,12 +774,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   statIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 6,
   },
   emptyIconContainer: {
     width: 64,
@@ -810,11 +790,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   transactionIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 8,
   },
 });

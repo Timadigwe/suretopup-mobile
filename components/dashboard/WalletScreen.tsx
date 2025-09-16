@@ -9,6 +9,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useMobileFeatures } from '@/hooks/useMobileFeatures';
+import { useSafeArea } from '@/hooks/useSafeArea';
 import { BottomTabNavigator } from '@/components/navigation/BottomTabNavigator';
 import { WalletBalanceCard } from './WalletBalanceCard';
 
@@ -22,6 +23,7 @@ export const WalletScreen: React.FC<WalletScreenProps> = ({
   const [walletBalance] = useState(25750);
   const { colors } = useTheme();
   const { triggerHapticFeedback } = useMobileFeatures();
+  const { safeAreaTop, safeAreaBottom } = useSafeArea();
 
   const handleAddFunds = () => {
     triggerHapticFeedback('light');
@@ -79,7 +81,7 @@ export const WalletScreen: React.FC<WalletScreenProps> = ({
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.card + 'F5' }]}>
+      <View style={[styles.header, { backgroundColor: colors.card + 'F5', paddingTop: safeAreaTop + 20 }]}>
         <View style={styles.headerContent}>
           <TouchableOpacity
             onPress={() => onNavigate('home')}
@@ -224,14 +226,16 @@ export const WalletScreen: React.FC<WalletScreenProps> = ({
       </ScrollView>
 
       {/* Bottom Navigation */}
-      <BottomTabNavigator
-        activeTab="wallet"
-        onTabPress={(tabId) => {
-          if (tabId !== 'wallet') {
-            onNavigate(tabId);
-          }
-        }}
-      />
+      <View style={{ paddingBottom: safeAreaBottom }}>
+        <BottomTabNavigator
+          activeTab="wallet"
+          onTabPress={(tabId) => {
+            if (tabId !== 'wallet') {
+              onNavigate(tabId);
+            }
+          }}
+        />
+      </View>
     </View>
   );
 };
@@ -241,7 +245,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingTop: 60,
     paddingBottom: 16,
     paddingHorizontal: 24,
   },

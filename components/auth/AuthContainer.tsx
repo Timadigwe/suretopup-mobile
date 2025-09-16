@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SignInScreen } from './SignInScreen';
 import { SignUpScreen } from './SignUpScreen';
 import { ForgotPasswordScreen } from './ForgotPasswordScreen';
@@ -17,6 +17,12 @@ export const AuthContainer: React.FC<AuthContainerProps> = ({
   onEmailVerification,
 }) => {
   const [currentScreen, setCurrentScreen] = useState<AuthScreen>('signin');
+
+  // Reset to signin screen when AuthContainer mounts (e.g., after logout)
+  useEffect(() => {
+    console.log('AuthContainer mounted - resetting to signin screen');
+    setCurrentScreen('signin');
+  }, []);
 
   const handleSwitchToSignUp = () => {
     setCurrentScreen('signup');
@@ -39,6 +45,7 @@ export const AuthContainer: React.FC<AuthContainerProps> = ({
       case 'signin':
         return (
           <SignInScreen
+            key="signin-screen"
             onLogin={onLogin}
             onBack={onBack}
             onSwitchToSignUp={handleSwitchToSignUp}
@@ -63,6 +70,7 @@ export const AuthContainer: React.FC<AuthContainerProps> = ({
       default:
         return (
           <SignInScreen
+            key="signin-screen-default"
             onLogin={onLogin}
             onBack={onBack}
             onSwitchToSignUp={handleSwitchToSignUp}

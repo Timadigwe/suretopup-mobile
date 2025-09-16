@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { BackHandler, Alert } from 'react-native';
 import { OnboardingScreen } from './onboarding/OnboardingScreen';
 import { AuthContainer } from './auth/AuthContainer';
@@ -69,6 +69,11 @@ export const App: React.FC = () => {
   const [receiptSource, setReceiptSource] = useState<string>('home');
   const [isInAuthFlow, setIsInAuthFlow] = useState(false);
   const [navigationHistory, setNavigationHistory] = useState<AppScreen[]>(['onboarding']);
+  const [multiStepInfo, setMultiStepInfo] = useState<{
+    screen: AppScreen;
+    currentStep: string;
+    onStepBack: () => void;
+  } | null>(null);
   const { user, token, isInitialized, logout } = useAuth();
   
   // Determine if user is authenticated based on context
@@ -108,6 +113,13 @@ export const App: React.FC = () => {
   // Handle Android back button
   useEffect(() => {
     const backAction = () => {
+      // Check if we're in a multi-step screen and not on the first step
+      if (multiStepInfo && multiStepInfo.screen === currentScreen && multiStepInfo.currentStep !== 'company' && multiStepInfo.currentStep !== 'info') {
+        // Handle internal step navigation
+        multiStepInfo.onStepBack();
+        return true; // Prevent default behavior
+      }
+      
       // Define screens that should exit the app
       const exitScreens: AppScreen[] = ['onboarding', 'dashboard', 'home'];
       
@@ -153,7 +165,7 @@ export const App: React.FC = () => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
 
     return () => backHandler.remove();
-  }, [currentScreen, navigationHistory]);
+  }, [currentScreen, navigationHistory, multiStepInfo]);
 
   // Remove the problematic useEffect that was causing unwanted redirects
   // The authentication flow will be handled manually through the handlers
@@ -199,6 +211,16 @@ export const App: React.FC = () => {
     setNavigationHistory(prev => [...prev, page as AppScreen]);
     setCurrentScreen(page as AppScreen);
   };
+
+  // Function to register multi-step screen information
+  const registerMultiStepInfo = useCallback((screen: string, currentStep: string, onStepBack: () => void) => {
+    setMultiStepInfo({ screen: screen as AppScreen, currentStep, onStepBack });
+  }, []);
+
+  // Function to clear multi-step information
+  const clearMultiStepInfo = useCallback(() => {
+    setMultiStepInfo(null);
+  }, []);
 
   // Determine which receipt component to show based on transaction type
   const getReceiptComponent = (data: any) => {
@@ -275,20 +297,20 @@ export const App: React.FC = () => {
       );
     }
     
-    // Check for NIN transactions
-    if (service.includes('nin') || service.includes('slip') || service.includes('print')) {
+    // Check for CAC transactions (must come before NIN to avoid "CAC Print" matching NIN)
+    if (service.includes('cac') || service.includes('registration') || service.includes('business')) {
       return (
-        <NinReceiptScreen
+        <CacReceiptScreen
           receiptData={data}
           onClose={() => handleNavigate(receiptSource)}
         />
       );
     }
     
-    // Check for CAC transactions
-    if (service.includes('cac') || service.includes('registration') || service.includes('business')) {
+    // Check for NIN transactions (specific to avoid conflicts with CAC)
+    if (service.includes('nin') || service === 'nin print') {
       return (
-        <CacReceiptScreen
+        <NinReceiptScreen
           receiptData={data}
           onClose={() => handleNavigate(receiptSource)}
         />
@@ -394,7 +416,7 @@ export const App: React.FC = () => {
         return <DataPurchaseScreen onNavigate={handleNavigate} />;
         
       case 'electricity':
-        return <ElectricityScreen onNavigate={handleNavigate} />;
+        return <ElectricityScreen onNavigate={handleNavigate} registerMultiStepInfo={registerMultiStepInfo} clearMultiStepInfo={clearMultiStepInfo} />;
         
       case 'other-services':
         return <OtherServicesScreen onNavigate={handleNavigate} />;
@@ -402,8 +424,8 @@ export const App: React.FC = () => {
       case 'cable':
         return <CableScreen onNavigate={handleNavigate} />;
         
-              case 'nin':
-          return <NinScreen onNavigate={handleNavigate} />;
+      case 'nin':
+        return <NinScreen onNavigate={handleNavigate} />;
         case 'cac':
           return <CacScreen onNavigate={handleNavigate} />;
         
@@ -419,7 +441,7 @@ export const App: React.FC = () => {
         return <CardPrintingScreen onNavigate={handleNavigate} />;
         
       case 'betting-funding':
-        return <BettingFundingScreen onNavigate={handleNavigate} />;
+        return <BettingFundingScreen onNavigate={handleNavigate} registerMultiStepInfo={registerMultiStepInfo} clearMultiStepInfo={clearMultiStepInfo} />;
         
       case 'test-receipt':
         return <TestReceiptScreen onNavigate={handleNavigate} />;

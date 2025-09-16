@@ -14,11 +14,13 @@ import {
 } from 'react-native';
 import ViewShot from 'react-native-view-shot';
 import * as MediaLibrary from 'expo-media-library';
+import * as Print from 'expo-print';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useMobileFeatures } from '@/hooks/useMobileFeatures';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSafeArea } from '@/hooks/useSafeArea';
 
 interface DepositReceiptData {
   reference: string;
@@ -49,8 +51,10 @@ export const DepositReceiptScreen: React.FC<DepositReceiptScreenProps> = ({
   const { colors } = useTheme();
   const { triggerHapticFeedback } = useMobileFeatures();
   const { user } = useAuth();
+  const { safeAreaTop, safeAreaBottom } = useSafeArea();
   const viewShotRef = useRef<ViewShot>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
 
   const formatAmount = (amount: number) => {
     return `₦${amount.toLocaleString()}`;
@@ -92,6 +96,151 @@ export const DepositReceiptScreen: React.FC<DepositReceiptScreenProps> = ({
     }
   };
 
+  const generateReceiptHTML = () => {
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Receipt ${receiptData.reference}</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              margin: 0;
+              padding: 20px;
+              background: white;
+            }
+            .receipt {
+              max-width: 400px;
+              margin: 0 auto;
+              border: 2px solid #e0e0e0;
+              border-radius: 12px;
+              overflow: hidden;
+            }
+            .header {
+              background: linear-gradient(135deg, #00A900, #008000);
+              color: white;
+              padding: 20px;
+              text-align: center;
+            }
+            .logo {
+              width: 60px;
+              height: 60px;
+              margin: 0 auto 10px;
+              background: rgba(255,255,255,0.2);
+              border-radius: 30px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 24px;
+            }
+            .company-name {
+              font-size: 20px;
+              font-weight: bold;
+              margin-bottom: 5px;
+            }
+            .receipt-title {
+              font-size: 16px;
+              opacity: 0.9;
+            }
+            .content {
+              padding: 20px;
+            }
+            .success-icon {
+              text-align: center;
+              margin-bottom: 20px;
+            }
+            .success-text {
+              font-size: 18px;
+              font-weight: bold;
+              color: #00A900;
+              text-align: center;
+              margin-bottom: 20px;
+            }
+            .detail-row {
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 12px;
+              padding-bottom: 8px;
+              border-bottom: 1px solid #f0f0f0;
+            }
+            .detail-label {
+              color: #666;
+              font-weight: 500;
+            }
+            .detail-value {
+              font-weight: 600;
+              color: #333;
+            }
+            .amount {
+              font-size: 24px;
+              font-weight: bold;
+              color: #00A900;
+            }
+            .footer {
+              background: #f8f9fa;
+              padding: 15px 20px;
+              text-align: center;
+              color: #666;
+              font-size: 12px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="receipt">
+            <div class="header">
+              <div class="logo">📱</div>
+              <div class="company-name">${receiptData.businessName || 'SureTopUp'}</div>
+              <div class="receipt-title">Deposit Receipt</div>
+            </div>
+            
+            <div class="content">
+              <div class="success-icon">✅</div>
+              <div class="success-text">Deposit Successful!</div>
+              
+              <div class="detail-row">
+                <span class="detail-label">Reference:</span>
+                <span class="detail-value">${receiptData.reference}</span>
+              </div>
+              
+              <div class="detail-row">
+                <span class="detail-label">Amount:</span>
+                <span class="detail-value amount">${formatAmount(receiptData.amount)}</span>
+              </div>
+              
+              <div class="detail-row">
+                <span class="detail-label">Service:</span>
+                <span class="detail-value">${receiptData.service}</span>
+              </div>
+              
+              <div class="detail-row">
+                <span class="detail-label">Date:</span>
+                <span class="detail-value">${formatDate(receiptData.date)}</span>
+              </div>
+              
+              ${receiptData.oldBalance && receiptData.newBalance ? `
+              <div class="detail-row">
+                <span class="detail-label">Previous Balance:</span>
+                <span class="detail-value">${formatAmount(parseFloat(receiptData.oldBalance))}</span>
+              </div>
+              
+              <div class="detail-row">
+                <span class="detail-label">New Balance:</span>
+                <span class="detail-value">${formatAmount(parseFloat(receiptData.newBalance))}</span>
+              </div>
+              ` : ''}
+            </div>
+            
+            <div class="footer">
+              <p>Thank you for using ${receiptData.businessName || 'SureTopUp'}!</p>
+              <p>Keep this receipt for your records.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+  };
+
   const handleSave = async () => {
     try {
       triggerHapticFeedback('light');
@@ -123,23 +272,25 @@ export const DepositReceiptScreen: React.FC<DepositReceiptScreenProps> = ({
   const handleShare = async () => {
     try {
       triggerHapticFeedback('light');
-      setIsSaving(true);
+      setIsSharing(true);
 
-      const viewShot = viewShotRef.current;
-      if (viewShot && viewShot.capture) {
-        const uri = await viewShot.capture();
-        
-        // Share the image
-        await Share.share({
-          url: uri,
-          message: `Receipt for ${receiptData.service} - ${formatAmount(receiptData.amount)}`,
-        });
-      }
+      // Generate PDF using expo-print
+      const { uri } = await Print.printToFileAsync({
+        html: generateReceiptHTML(),
+        base64: false,
+      });
+
+      // Share the PDF
+      await Share.share({
+        url: uri,
+        message: `Receipt for ${receiptData.service} - ${formatAmount(receiptData.amount)}`,
+        title: `Receipt_${receiptData.reference}.pdf`,
+      });
     } catch (error) {
       console.error('Error sharing receipt:', error);
       Alert.alert('Error', 'Failed to share receipt. Please try again.');
     } finally {
-      setIsSaving(false);
+      setIsSharing(false);
     }
   };
 
@@ -151,7 +302,7 @@ export const DepositReceiptScreen: React.FC<DepositReceiptScreenProps> = ({
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.card }]}>
+      <View style={[styles.header, { backgroundColor: colors.card, paddingTop: safeAreaTop }]}>
         <TouchableOpacity
           onPress={handleDone}
           style={styles.backButton}
@@ -161,30 +312,43 @@ export const DepositReceiptScreen: React.FC<DepositReceiptScreenProps> = ({
         <Text style={[styles.headerTitle, { color: colors.text }]}>
           Deposit Receipt
         </Text>
-        <TouchableOpacity
-          onPress={handleSave}
-          style={styles.shareButton}
-          disabled={isSaving}
-        >
-          {isSaving ? (
-            <ActivityIndicator size="small" color={colors.primary} />
-          ) : (
-            <Ionicons name="download-outline" size={24} color={colors.primary} />
-          )}
-        </TouchableOpacity>
+        <View style={styles.headerIcons}>
+          <TouchableOpacity
+            onPress={handleSave}
+            style={styles.headerIconButton}
+            disabled={isSaving}
+          >
+            {isSaving ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <Ionicons name="download-outline" size={24} color={colors.primary} />
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleShare}
+            style={styles.headerIconButton}
+            disabled={isSharing}
+          >
+            {isSharing ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <Ionicons name="share-outline" size={24} color={colors.primary} />
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView 
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: safeAreaBottom + 20 }]}
       >
         {/* Receipt Content */}
         <ViewShot
           ref={viewShotRef}
           options={{
-            fileName: `deposit-receipt-${receiptData.reference}`,
-            format: 'jpg',
+            fileName: `Receipt_${receiptData.reference}`,
+            format: 'png',
             quality: 0.9,
           }}
           style={styles.receiptContainer}
@@ -426,21 +590,6 @@ export const DepositReceiptScreen: React.FC<DepositReceiptScreenProps> = ({
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
           <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: colors.primary }]}
-            onPress={handleShare}
-            disabled={isSaving}
-          >
-            {isSaving ? (
-              <ActivityIndicator color="white" size="small" />
-            ) : (
-              <>
-                <Ionicons name="share-outline" size={20} color="white" />
-                <Text style={styles.actionButtonText}>Share Receipt</Text>
-              </>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
             style={[styles.actionButton, styles.doneButton, { borderColor: colors.primary }]}
             onPress={handleDone}
           >
@@ -474,6 +623,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     flex: 1,
   },
+  headerIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  headerIconButton: {
+    padding: 8,
+  },
   shareButton: {
     padding: 8,
   },
@@ -481,7 +638,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: Platform.OS === 'android' ? 20 : 32,
+    flexGrow: 1,
   },
   receiptContainer: {
     alignItems: 'center',
