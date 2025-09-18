@@ -32,6 +32,7 @@ import { ServicePlaceholder } from './services/ServicePlaceholder';
 import { NotificationsScreen } from './dashboard/NotificationsScreen';
 import { HelpSupportScreen } from './dashboard/HelpSupportScreen';
 import { AboutScreen } from './dashboard/AboutScreen';
+import { AdminDashboard } from './admin/AdminDashboard';
 import { useAuth } from '@/contexts/AuthContext';
 
 type AppScreen = 
@@ -39,6 +40,7 @@ type AppScreen =
   | 'auth' 
   | 'email-verification'
   | 'dashboard' 
+  | 'admin'
   | 'home'
   | 'transactions'
   | 'wallet'
@@ -74,10 +76,11 @@ export const App: React.FC = () => {
     currentStep: string;
     onStepBack: () => void;
   } | null>(null);
-  const { user, token, isInitialized, logout } = useAuth();
+  const { user, admin, token, isInitialized, isAdmin, logout } = useAuth();
   
   // Determine if user is authenticated based on context
   const isAuthenticated = !!(user && token);
+  const isAdminAuthenticated = !!(admin && token && isAdmin);
   
   // Initialize wasAuthenticated based on current auth state
   const [wasAuthenticated, setWasAuthenticated] = useState(false);
@@ -92,7 +95,10 @@ export const App: React.FC = () => {
   // Set initial screen based on authentication state
   useEffect(() => {
     if (isInitialized && !isInAuthFlow) {
-      if (isAuthenticated) {
+      if (isAdminAuthenticated) {
+        setCurrentScreen('admin');
+        setNavigationHistory(['admin']);
+      } else if (isAuthenticated) {
         setCurrentScreen('dashboard');
         setNavigationHistory(['dashboard']);
       } else {
@@ -108,7 +114,7 @@ export const App: React.FC = () => {
         }
       }
     }
-  }, [isAuthenticated, isInitialized, isInAuthFlow, wasAuthenticated]);
+  }, [isAuthenticated, isAdminAuthenticated, isInitialized, isInAuthFlow, wasAuthenticated]);
 
   // Handle Android back button
   useEffect(() => {
@@ -393,6 +399,9 @@ export const App: React.FC = () => {
         
       case 'dashboard':
         return <HomeScreen onNavigate={handleNavigate} onLogout={handleLogout} />;
+        
+      case 'admin':
+        return <AdminDashboard onLogout={handleLogout} />;
         
       case 'home':
         return <HomeScreen onNavigate={handleNavigate} onLogout={handleLogout} />;

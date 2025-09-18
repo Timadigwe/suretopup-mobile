@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -139,6 +140,8 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
       oldBalance: transaction.old_balance,
       newBalance: transaction.new_balance,
       info: transaction.info,
+      // Transaction history metadata
+      metadata: transaction.metadata,
     });
   };
 
@@ -249,7 +252,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
       </ScrollView>
 
       {/* Bottom Navigation */}
-      <View style={{ paddingBottom: safeAreaBottom }}>
+      <View style={{ paddingBottom: Platform.OS === 'android' ? safeAreaBottom : 0 }}>
         <BottomTabNavigator
           activeTab="transactions"
           onTabPress={(tabId) => {

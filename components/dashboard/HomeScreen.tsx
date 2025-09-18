@@ -59,11 +59,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     onNavigate(serviceId);
   };
 
-  // Navigate to test receipt screen
-  const navigateToTestReceipt = () => {
-    triggerHapticFeedback('light');
-    onNavigate('test-receipt');
-  };
 
   // Handle transaction press to navigate to receipt
   const handleTransactionPress = (transaction: any) => {
@@ -98,6 +93,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       oldBalance: transaction.old_balance,
       newBalance: transaction.new_balance,
       info: transaction.info,
+      // Transaction history metadata
+      metadata: transaction.metadata,
     });
   };
 
@@ -114,7 +111,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       const response = await apiService.getDashboard();
       
       if (response.success && response.data) {
-        //console.log('Dashboard Data After Refresh:', JSON.stringify(response.data, null, 2));
+        console.log('Dashboard Data After Refresh:', JSON.stringify(response.data, null, 2));
         setDashboardData(response.data);
         dashboardCacheUtils.setData(response.data);
         setHasInitialLoad(true);
@@ -479,28 +476,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             )}
           </View>
         </View>
-
-        {/* Test Receipt Button */}
-        {/* <View style={styles.testReceiptSection}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            Test Receipt UI
-          </Text>
-          <Text style={[styles.testReceiptSubtitle, { color: colors.mutedForeground }]}>
-            Test the new receipt screen design
-          </Text>
-          <TouchableOpacity
-            style={[styles.testReceiptButton, { backgroundColor: '#10B981' }]}
-            onPress={navigateToTestReceipt}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="receipt" size={20} color="white" />
-            <Text style={styles.testReceiptButtonText}>Test Receipt UI</Text>
-          </TouchableOpacity>
-        </View> */}
       </ScrollView>
 
       {/* Bottom Navigation */}
-      <View style={{ paddingBottom: safeAreaBottom }}>
+      <View style={{ paddingBottom:  Platform.OS === 'android' ? safeAreaBottom : 0 }}>
         <BottomTabNavigator
           activeTab="home"
           onTabPress={(tabId) => {

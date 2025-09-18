@@ -14,13 +14,13 @@ import {
 } from 'react-native';
 import ViewShot from 'react-native-view-shot';
 import * as MediaLibrary from 'expo-media-library';
-import * as Print from 'expo-print';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useMobileFeatures } from '@/hooks/useMobileFeatures';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSafeArea } from '@/hooks/useSafeArea';
+import { shareReceiptAsPDF } from '@/utils/receiptPDFGenerator';
 
 interface DepositReceiptData {
   reference: string;
@@ -96,150 +96,6 @@ export const DepositReceiptScreen: React.FC<DepositReceiptScreenProps> = ({
     }
   };
 
-  const generateReceiptHTML = () => {
-    return `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <title>Receipt ${receiptData.reference}</title>
-          <style>
-            body {
-              font-family: Arial, sans-serif;
-              margin: 0;
-              padding: 20px;
-              background: white;
-            }
-            .receipt {
-              max-width: 400px;
-              margin: 0 auto;
-              border: 2px solid #e0e0e0;
-              border-radius: 12px;
-              overflow: hidden;
-            }
-            .header {
-              background: linear-gradient(135deg, #00A900, #008000);
-              color: white;
-              padding: 20px;
-              text-align: center;
-            }
-            .logo {
-              width: 60px;
-              height: 60px;
-              margin: 0 auto 10px;
-              background: rgba(255,255,255,0.2);
-              border-radius: 30px;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              font-size: 24px;
-            }
-            .company-name {
-              font-size: 20px;
-              font-weight: bold;
-              margin-bottom: 5px;
-            }
-            .receipt-title {
-              font-size: 16px;
-              opacity: 0.9;
-            }
-            .content {
-              padding: 20px;
-            }
-            .success-icon {
-              text-align: center;
-              margin-bottom: 20px;
-            }
-            .success-text {
-              font-size: 18px;
-              font-weight: bold;
-              color: #00A900;
-              text-align: center;
-              margin-bottom: 20px;
-            }
-            .detail-row {
-              display: flex;
-              justify-content: space-between;
-              margin-bottom: 12px;
-              padding-bottom: 8px;
-              border-bottom: 1px solid #f0f0f0;
-            }
-            .detail-label {
-              color: #666;
-              font-weight: 500;
-            }
-            .detail-value {
-              font-weight: 600;
-              color: #333;
-            }
-            .amount {
-              font-size: 24px;
-              font-weight: bold;
-              color: #00A900;
-            }
-            .footer {
-              background: #f8f9fa;
-              padding: 15px 20px;
-              text-align: center;
-              color: #666;
-              font-size: 12px;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="receipt">
-            <div class="header">
-              <div class="logo">📱</div>
-              <div class="company-name">${receiptData.businessName || 'SureTopUp'}</div>
-              <div class="receipt-title">Deposit Receipt</div>
-            </div>
-            
-            <div class="content">
-              <div class="success-icon">✅</div>
-              <div class="success-text">Deposit Successful!</div>
-              
-              <div class="detail-row">
-                <span class="detail-label">Reference:</span>
-                <span class="detail-value">${receiptData.reference}</span>
-              </div>
-              
-              <div class="detail-row">
-                <span class="detail-label">Amount:</span>
-                <span class="detail-value amount">${formatAmount(receiptData.amount)}</span>
-              </div>
-              
-              <div class="detail-row">
-                <span class="detail-label">Service:</span>
-                <span class="detail-value">${receiptData.service}</span>
-              </div>
-              
-              <div class="detail-row">
-                <span class="detail-label">Date:</span>
-                <span class="detail-value">${formatDate(receiptData.date)}</span>
-              </div>
-              
-              ${receiptData.oldBalance && receiptData.newBalance ? `
-              <div class="detail-row">
-                <span class="detail-label">Previous Balance:</span>
-                <span class="detail-value">${formatAmount(parseFloat(receiptData.oldBalance))}</span>
-              </div>
-              
-              <div class="detail-row">
-                <span class="detail-label">New Balance:</span>
-                <span class="detail-value">${formatAmount(parseFloat(receiptData.newBalance))}</span>
-              </div>
-              ` : ''}
-            </div>
-            
-            <div class="footer">
-              <p>Thank you for using ${receiptData.businessName || 'SureTopUp'}!</p>
-              <p>Keep this receipt for your records.</p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
-  };
 
   const handleSave = async () => {
     try {
@@ -274,18 +130,7 @@ export const DepositReceiptScreen: React.FC<DepositReceiptScreenProps> = ({
       triggerHapticFeedback('light');
       setIsSharing(true);
 
-      // Generate PDF using expo-print
-      const { uri } = await Print.printToFileAsync({
-        html: generateReceiptHTML(),
-        base64: false,
-      });
-
-      // Share the PDF
-      await Share.share({
-        url: uri,
-        message: `Receipt for ${receiptData.service} - ${formatAmount(receiptData.amount)}`,
-        title: `Receipt_${receiptData.reference}.pdf`,
-      });
+      await shareReceiptAsPDF(receiptData, 'Deposit Receipt', viewShotRef);
     } catch (error) {
       console.error('Error sharing receipt:', error);
       Alert.alert('Error', 'Failed to share receipt. Please try again.');
@@ -347,123 +192,76 @@ export const DepositReceiptScreen: React.FC<DepositReceiptScreenProps> = ({
         <ViewShot
           ref={viewShotRef}
           options={{
-            fileName: `Receipt_${receiptData.reference}`,
+            fileName: `Transaction-Reference-${receiptData.reference}`,
             format: 'png',
-            quality: 0.9,
+            quality: 1.0,
           }}
           style={styles.receiptContainer}
         >
           <View style={styles.receipt}>
-            {/* Multiple Logo Watermarks - Vertical Columns */}
+            {/* Watermark Images - Left and Right Columns */}
             <View style={styles.watermarkContainer}>
               {/* Left Column */}
               <Image 
-                source={require('@/assets/images/logo.png')} 
+                source={require('@/assets/images/full-logo.jpeg')} 
                 style={[styles.watermarkLogo, styles.watermarkLeft1]}
                 resizeMode="contain"
               />
               <Image 
-                source={require('@/assets/images/logo.png')} 
+                source={require('@/assets/images/full-logo.jpeg')} 
                 style={[styles.watermarkLogo, styles.watermarkLeft2]}
                 resizeMode="contain"
               />
               <Image 
-                source={require('@/assets/images/logo.png')} 
+                source={require('@/assets/images/full-logo.jpeg')} 
                 style={[styles.watermarkLogo, styles.watermarkLeft3]}
                 resizeMode="contain"
               />
               <Image 
-                source={require('@/assets/images/logo.png')} 
+                source={require('@/assets/images/full-logo.jpeg')} 
                 style={[styles.watermarkLogo, styles.watermarkLeft4]}
                 resizeMode="contain"
               />
               <Image 
-                source={require('@/assets/images/logo.png')} 
+                source={require('@/assets/images/full-logo.jpeg')} 
                 style={[styles.watermarkLogo, styles.watermarkLeft5]}
                 resizeMode="contain"
               />
               <Image 
-                source={require('@/assets/images/logo.png')} 
+                source={require('@/assets/images/full-logo.jpeg')} 
                 style={[styles.watermarkLogo, styles.watermarkLeft6]}
-                resizeMode="contain"
-              />
-              <Image 
-                source={require('@/assets/images/logo.png')} 
-                style={[styles.watermarkLogo, styles.watermarkLeft7]}
-                resizeMode="contain"
-              />
-              
-              {/* Middle Column */}
-              <Image 
-                source={require('@/assets/images/logo.png')} 
-                style={[styles.watermarkLogo, styles.watermarkMiddle1]}
-                resizeMode="contain"
-              />
-              <Image 
-                source={require('@/assets/images/logo.png')} 
-                style={[styles.watermarkLogo, styles.watermarkMiddle2]}
-                resizeMode="contain"
-              />
-              <Image 
-                source={require('@/assets/images/logo.png')} 
-                style={[styles.watermarkLogo, styles.watermarkMiddle3]}
-                resizeMode="contain"
-              />
-              <Image 
-                source={require('@/assets/images/logo.png')} 
-                style={[styles.watermarkLogo, styles.watermarkMiddle4]}
-                resizeMode="contain"
-              />
-              <Image 
-                source={require('@/assets/images/logo.png')} 
-                style={[styles.watermarkLogo, styles.watermarkMiddle5]}
-                resizeMode="contain"
-              />
-              <Image 
-                source={require('@/assets/images/logo.png')} 
-                style={[styles.watermarkLogo, styles.watermarkMiddle6]}
-                resizeMode="contain"
-              />
-              <Image 
-                source={require('@/assets/images/logo.png')} 
-                style={[styles.watermarkLogo, styles.watermarkMiddle7]}
                 resizeMode="contain"
               />
               
               {/* Right Column */}
               <Image 
-                source={require('@/assets/images/logo.png')} 
+                source={require('@/assets/images/full-logo.jpeg')} 
                 style={[styles.watermarkLogo, styles.watermarkRight1]}
                 resizeMode="contain"
               />
               <Image 
-                source={require('@/assets/images/logo.png')} 
+                source={require('@/assets/images/full-logo.jpeg')} 
                 style={[styles.watermarkLogo, styles.watermarkRight2]}
                 resizeMode="contain"
               />
               <Image 
-                source={require('@/assets/images/logo.png')} 
+                source={require('@/assets/images/full-logo.jpeg')} 
                 style={[styles.watermarkLogo, styles.watermarkRight3]}
                 resizeMode="contain"
               />
               <Image 
-                source={require('@/assets/images/logo.png')} 
+                source={require('@/assets/images/full-logo.jpeg')} 
                 style={[styles.watermarkLogo, styles.watermarkRight4]}
                 resizeMode="contain"
               />
               <Image 
-                source={require('@/assets/images/logo.png')} 
+                source={require('@/assets/images/full-logo.jpeg')} 
                 style={[styles.watermarkLogo, styles.watermarkRight5]}
                 resizeMode="contain"
               />
               <Image 
-                source={require('@/assets/images/logo.png')} 
+                source={require('@/assets/images/full-logo.jpeg')} 
                 style={[styles.watermarkLogo, styles.watermarkRight6]}
-                resizeMode="contain"
-              />
-              <Image 
-                source={require('@/assets/images/logo.png')} 
-                style={[styles.watermarkLogo, styles.watermarkRight7]}
                 resizeMode="contain"
               />
             </View>
@@ -473,16 +271,10 @@ export const DepositReceiptScreen: React.FC<DepositReceiptScreenProps> = ({
               <View style={styles.headerContent}>
                 <View style={styles.logoContainer}>
                   <Image 
-                    source={require('@/assets/images/logo.png')} 
+                    source={require('@/assets/images/full-logo.jpeg')} 
                     style={styles.logo}
                     resizeMode="contain"
                   />
-                </View>
-                <View style={styles.headerText}>
-                  <Text style={styles.businessName}>
-                    {receiptData.businessName || 'SureTopUp'}
-                  </Text>
-                  <Text style={styles.receiptTitle}>Deposit Receipt</Text>
                 </View>
               </View>
             </View>
@@ -492,15 +284,11 @@ export const DepositReceiptScreen: React.FC<DepositReceiptScreenProps> = ({
               <View style={[styles.successIcon, { backgroundColor: colors.success }]}>
                 <Ionicons name="checkmark" size={32} color="white" />
               </View>
-              <Text style={styles.successText}>Deposit Successful</Text>
-            </View>
-
-            {/* Amount */}
-            <View style={styles.amountContainer}>
-              <Text style={styles.amountLabel}>Amount Deposited</Text>
               <Text style={styles.amountValue}>
                 {formatAmount(receiptData.amount)}
               </Text>
+              <Text style={[styles.amountLabel, {fontSize: 20}]}>Successful Transaction</Text>
+              <Text style={[styles.detailValue, {fontWeight: '400'}]}>{formatDate(receiptData.date)}</Text>
             </View>
 
             {/* Dotted Line Before Details */}
@@ -669,37 +457,26 @@ const styles = StyleSheet.create({
     zIndex: 0,
   },
   watermarkLogo: {
-    width: 50,
-    height: 50,
+    width: 170,
+    height: 150,
     opacity: 0.06,
     position: 'absolute',
   },
-  // Left Column - Using percentage positioning to cover full height with proper margins
-  watermarkLeft1: { top: '8%', left: 10 },
-  watermarkLeft2: { top: '22%', left: 10 },
-  watermarkLeft3: { top: '36%', left: 10 },
+  // Left Column - Multiple watermarks stacked vertically
+  watermarkLeft1: { top: '5%', left: 10 },
+  watermarkLeft2: { top: '20%', left: 10 },
+  watermarkLeft3: { top: '35%', left: 10 },
   watermarkLeft4: { top: '50%', left: 10 },
-  watermarkLeft5: { top: '64%', left: 10 },
-  watermarkLeft6: { top: '78%', left: 10 },
-  watermarkLeft7: { top: '92%', left: 10 },
-  // Middle Column - Using percentage positioning to cover full height with proper margins
-  watermarkMiddle1: { top: '8%', left: '50%', marginLeft: -25 },
-  watermarkMiddle2: { top: '22%', left: '50%', marginLeft: -25 },
-  watermarkMiddle3: { top: '36%', left: '50%', marginLeft: -25 },
-  watermarkMiddle4: { top: '50%', left: '50%', marginLeft: -25 },
-  watermarkMiddle5: { top: '64%', left: '50%', marginLeft: -25 },
-  watermarkMiddle6: { top: '78%', left: '50%', marginLeft: -25 },
-  watermarkMiddle7: { top: '92%', left: '50%', marginLeft: -25 },
-  // Right Column - Using percentage positioning to cover full height with proper margins
-  watermarkRight1: { top: '8%', right: 10 },
-  watermarkRight2: { top: '22%', right: 10 },
-  watermarkRight3: { top: '36%', right: 10 },
+  watermarkLeft5: { top: '65%', left: 10 },
+  watermarkLeft6: { top: '80%', left: 10 },
+  // Right Column - Multiple watermarks stacked vertically
+  watermarkRight1: { top: '5%', right: 10 },
+  watermarkRight2: { top: '20%', right: 10 },
+  watermarkRight3: { top: '35%', right: 10 },
   watermarkRight4: { top: '50%', right: 10 },
-  watermarkRight5: { top: '64%', right: 10 },
-  watermarkRight6: { top: '78%', right: 10 },
-  watermarkRight7: { top: '92%', right: 10 },
+  watermarkRight5: { top: '65%', right: 10 },
+  watermarkRight6: { top: '80%', right: 10 },
   receiptHeader: {
-    marginBottom: 24,
     zIndex: 1,
   },
   headerContent: {
@@ -707,9 +484,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoContainer: {
-    width: 50,
-    height: 50,
-    marginRight: 12,
+    width: 200,
+    height: 100,
   },
   logo: {
     width: '100%',
@@ -737,8 +513,8 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   successIcon: {
-    width: 64,
-    height: 64,
+    width: 50,
+    height: 50,
     borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',

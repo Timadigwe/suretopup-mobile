@@ -17,6 +17,7 @@ import { useMobileFeatures } from '@/hooks/useMobileFeatures';
 import { useAuth } from '@/contexts/AuthContext';
 import ViewShot from 'react-native-view-shot';
 import * as MediaLibrary from 'expo-media-library';
+import { shareReceiptAsPDF } from '@/utils/receiptPDFGenerator';
 
 const { width } = Dimensions.get('window');
 
@@ -44,6 +45,8 @@ interface CardPrintingReceiptData {
     serial: string;
     instruction: string;
   }>;
+  // Transaction history metadata
+  metadata?: string;
 }
 
 interface CardPrintingReceiptScreenProps {
@@ -78,6 +81,27 @@ export const CardPrintingReceiptScreen: React.FC<CardPrintingReceiptScreenProps>
   const [isSaving, setIsSaving] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [selectedReceiptType, setSelectedReceiptType] = useState<'user' | 'seller'>('user');
+
+  // Get ePINs from metadata (transaction history) or direct field (purchase response)
+  const getEpinsData = (): Array<{
+    amount: string;
+    pin: string;
+    serial: string;
+    instruction: string;
+  }> => {
+    if (receiptData.metadata) {
+      try {
+        const metadata = JSON.parse(receiptData.metadata);
+        return metadata.epins || [];
+      } catch (error) {
+        console.error('Error parsing metadata:', error);
+        return [];
+      }
+    }
+    return receiptData.epins || [];
+  };
+
+  const epinsData = getEpinsData();
 
   const formatAmount = (amount: number) => {
     return `₦${amount.toLocaleString()}`;
@@ -143,16 +167,7 @@ export const CardPrintingReceiptScreen: React.FC<CardPrintingReceiptScreenProps>
       triggerHapticFeedback('light');
       setIsSharing(true);
 
-      const viewShot = viewShotRef.current;
-      if (viewShot && viewShot.capture) {
-        const uri = await viewShot.capture();
-
-        // Share the image
-        await Share.share({
-          url: uri,
-          message: `Card printing receipt for ${receiptData.business_name || receiptData.businessName || 'N/A'} - ${formatAmount(receiptData.amount)}`,
-        });
-      }
+      await shareReceiptAsPDF(receiptData, 'Card Printing Receipt', viewShotRef);
     } catch (error) {
       console.error('Error sharing receipt:', error);
       Alert.alert('Error', 'Failed to share receipt. Please try again.');
@@ -172,68 +187,73 @@ export const CardPrintingReceiptScreen: React.FC<CardPrintingReceiptScreenProps>
   };
 
   const renderWatermarks = () => {
-    // Create more watermarks to ensure full coverage for long receipts with multiple ePIN cards
-    // Using numeric values for better TypeScript compatibility and consistent spacing
-    const watermarkPositions = [
-      // Left column - 12 watermarks for better coverage
-      { left: 20, top: 50 },
-      { left: 20, top: 120 },
-      { left: 20, top: 190 },
-      { left: 20, top: 260 },
-      { left: 20, top: 330 },
-      { left: 20, top: 400 },
-      { left: 20, top: 470 },
-      { left: 20, top: 540 },
-      { left: 20, top: 610 },
-      { left: 20, top: 680 },
-      { left: 20, top: 750 },
-      { left: 20, top: 820 },
-      // Middle column - 12 watermarks
-      { left: width / 2 - 15, top: 50 },
-      { left: width / 2 - 15, top: 120 },
-      { left: width / 2 - 15, top: 190 },
-      { left: width / 2 - 15, top: 260 },
-      { left: width / 2 - 15, top: 330 },
-      { left: width / 2 - 15, top: 400 },
-      { left: width / 2 - 15, top: 470 },
-      { left: width / 2 - 15, top: 540 },
-      { left: width / 2 - 15, top: 610 },
-      { left: width / 2 - 15, top: 680 },
-      { left: width / 2 - 15, top: 750 },
-      { left: width / 2 - 15, top: 820 },
-      // Right column - 12 watermarks
-      { right: 20, top: 50 },
-      { right: 20, top: 120 },
-      { right: 20, top: 190 },
-      { right: 20, top: 260 },
-      { right: 20, top: 330 },
-      { right: 20, top: 400 },
-      { right: 20, top: 470 },
-      { right: 20, top: 540 },
-      { right: 20, top: 610 },
-      { right: 20, top: 680 },
-      { right: 20, top: 750 },
-      { right: 20, top: 820 },
-    ];
+    return (
+      <View style={styles.watermarkContainer}>
+        {/* Left Column */}
+        <Image 
+          source={require('@/assets/images/full-logo.jpeg')} 
+          style={[styles.watermarkLogo, styles.watermarkLeft1]} 
+          resizeMode="contain" 
+        />
+        <Image 
+          source={require('@/assets/images/full-logo.jpeg')} 
+          style={[styles.watermarkLogo, styles.watermarkLeft2]} 
+          resizeMode="contain" 
+        />
+        <Image 
+          source={require('@/assets/images/full-logo.jpeg')} 
+          style={[styles.watermarkLogo, styles.watermarkLeft3]} 
+          resizeMode="contain" 
+        />
+        <Image 
+          source={require('@/assets/images/full-logo.jpeg')} 
+          style={[styles.watermarkLogo, styles.watermarkLeft4]} 
+          resizeMode="contain" 
+        />
+        <Image 
+          source={require('@/assets/images/full-logo.jpeg')} 
+          style={[styles.watermarkLogo, styles.watermarkLeft5]} 
+          resizeMode="contain" 
+        />
+        <Image 
+          source={require('@/assets/images/full-logo.jpeg')} 
+          style={[styles.watermarkLogo, styles.watermarkLeft6]} 
+          resizeMode="contain" 
+        />
 
-    return watermarkPositions.map((position, index) => (
-      <View
-        key={index}
-        style={[
-          styles.watermark,
-          {
-            position: 'absolute',
-            ...position,
-          },
-        ]}
-      >
-        <Image
-          source={require('@/assets/images/logo.png')}
-          style={styles.watermarkImage}
-          resizeMode="contain"
+        {/* Right Column */}
+        <Image 
+          source={require('@/assets/images/full-logo.jpeg')} 
+          style={[styles.watermarkLogo, styles.watermarkRight1]} 
+          resizeMode="contain" 
+        />
+        <Image 
+          source={require('@/assets/images/full-logo.jpeg')} 
+          style={[styles.watermarkLogo, styles.watermarkRight2]} 
+          resizeMode="contain" 
+        />
+        <Image 
+          source={require('@/assets/images/full-logo.jpeg')} 
+          style={[styles.watermarkLogo, styles.watermarkRight3]} 
+          resizeMode="contain" 
+        />
+        <Image 
+          source={require('@/assets/images/full-logo.jpeg')} 
+          style={[styles.watermarkLogo, styles.watermarkRight4]} 
+          resizeMode="contain" 
+        />
+        <Image 
+          source={require('@/assets/images/full-logo.jpeg')} 
+          style={[styles.watermarkLogo, styles.watermarkRight5]} 
+          resizeMode="contain" 
+        />
+        <Image 
+          source={require('@/assets/images/full-logo.jpeg')} 
+          style={[styles.watermarkLogo, styles.watermarkRight6]} 
+          resizeMode="contain" 
         />
       </View>
-    ));
+    );
   };
 
   return (
@@ -287,33 +307,33 @@ export const CardPrintingReceiptScreen: React.FC<CardPrintingReceiptScreenProps>
 
             {/* Header */}
             <View style={styles.receiptHeader}>
-              <View style={styles.headerContent}>
-                <View style={styles.logoContainer}>
-                  <Image
-                    source={require('@/assets/images/logo.png')}
-                    style={styles.logo}
-                    resizeMode="contain"
-                  />
-                </View>
-                <View style={styles.headerText}>
-                  <Text style={styles.businessName}>
-                    {receiptData.businessName || 'SureTopUp'}
-                  </Text>
-                  <Text style={styles.receiptTitle}>Card Printing Receipt</Text>
-                </View>
+              <View style={styles.logoContainer}>
+                <Image
+                  source={require('@/assets/images/full-logo.jpeg')}
+                  style={styles.logo}
+                  resizeMode="contain"
+                />
               </View>
             </View>
 
-
-            {/* Success Message */}
-            <View style={styles.successContainer}>
-              <Text style={styles.successText}>
-                Card Printing Successful!
+            {/* Success Section */}
+            <View style={styles.successIconContainer}>
+              <View style={[styles.networkIconContainer, { backgroundColor: getNetworkColor(receiptData.network) }]}>
+                <Image 
+                  source={getNetworkImage(receiptData.network)} 
+                  style={styles.networkIcon}
+                  resizeMode="contain"
+                />
+              </View>
+              <Text style={styles.amountValue}>
+                {formatAmount(receiptData.amount)}
               </Text>
-              <Text style={styles.successSubtext}>
-                Your recharge cards have been generated successfully
-              </Text>
+              <Text style={[styles.amountLabel, {fontSize: 20}]}>Successful Transaction</Text>
+              <Text style={[styles.detailValue, {fontWeight: '400'}]}>{formatDate(receiptData.date)}</Text>
             </View>
+
+            {/* Dotted Line Before Details */}
+            <View style={styles.dottedLine} />
 
             {/* Receipt Details */}
             <View style={styles.receiptDetails}>
@@ -358,52 +378,52 @@ export const CardPrintingReceiptScreen: React.FC<CardPrintingReceiptScreenProps>
                 </>
               )}
 
-              {/* Card Details Section */}
-              {receiptData.epins && receiptData.epins.length > 0 && (
-                <View style={styles.cardDetailsSection}>
+              {/* ePINs Section */}
+              {epinsData && epinsData.length > 0 && (
+                <View style={styles.epinsSection}>
                   <View style={styles.dottedLine} />
-                  <Text style={styles.sectionTitle}>Card Details</Text>
+                  <Text style={styles.epinsTitle}>Your ePIN(s)</Text>
 
-                  {receiptData.epins.map((epin, index) => (
-                    <View key={index} style={styles.cardDetailItem}>
-                      {/* Network and Business Info */}
-                      <View style={styles.cardHeader}>
-                        <View style={styles.cardNetworkInfo}>
-                          <View style={[styles.cardNetworkIconContainer, { backgroundColor: getNetworkColor(receiptData.network) }]}>
+                  {epinsData.map((epin, index) => (
+                    <View key={index} style={styles.epinCard}>
+                      {/* Network Logo and Business Name */}
+                      <View style={styles.epinHeader}>
+                        <View style={styles.epinNetworkInfo}>
+                          <View style={[styles.epinNetworkIconContainer, { backgroundColor: getNetworkColor(receiptData.network) }]}>
                             <Image
                               source={getNetworkImage(receiptData.network)}
-                              style={styles.cardNetworkIcon}
+                              style={styles.epinNetworkIcon}
                               resizeMode="contain"
                             />
                           </View>
-                          <View style={styles.cardNetworkText}>
-                            <Text style={styles.cardNetworkName}>{receiptData.network?.toUpperCase() || 'N/A'}</Text>
-                            <Text style={styles.cardBusinessName}>{receiptData.business_name || receiptData.businessName || 'SureTopUp'}</Text>
+                          <View style={styles.epinNetworkText}>
+                            <Text style={styles.epinNetworkName}>{receiptData.network?.toUpperCase() || 'N/A'}</Text>
+                            <Text style={styles.epinBusinessName}>{receiptData.business_name || receiptData.businessName || 'SureTopUp'}</Text>
                           </View>
                         </View>
                       </View>
 
-                      <View style={styles.cardDetailRow}>
-                        <Text style={styles.cardDetailLabel}>Card {index + 1}</Text>
-                        <Text style={styles.cardDetailValue}>{formatAmount(parseFloat(epin.amount))}</Text>
-                      </View>
-                      <View style={styles.cardDetailRow}>
-                        <Text style={styles.cardDetailLabel}>Serial</Text>
-                        <Text style={styles.cardDetailValue}>{epin.serial}</Text>
-                      </View>
-                      <View style={styles.cardDetailRow}>
-                        <Text style={styles.cardDetailLabel}>PIN</Text>
-                        <Text style={[styles.cardDetailValue,{fontSize: 15, fontWeight: 'bold'}]}>{epin.pin}</Text>
-                      </View>
-                      {epin.instruction && (
-                        <View style={styles.cardDetailRow}>
-                          <Text style={styles.cardDetailLabel}>Instructions</Text>
-                          <Text style={styles.cardDetailValue}>{epin.instruction}</Text>
+                      {/* ePIN Details */}
+                      <View style={styles.epinDetails}>
+                        <View style={styles.epinRow}>
+                          <Text style={styles.epinLabel}>PIN:</Text>
+                          <Text style={styles.epinValue}>{epin.pin}</Text>
                         </View>
-                      )}
-                      {index < (receiptData.epins?.length || 0) - 1 && (
-                        <View style={styles.cardSeparator} />
-                      )}
+                        <View style={styles.epinRow}>
+                          <Text style={styles.epinLabel}>Amount:</Text>
+                          <Text style={styles.epinValue}>{formatAmount(parseFloat(epin.amount))}</Text>
+                        </View>
+                        <View style={styles.epinRow}>
+                          <Text style={styles.epinLabel}>Serial:</Text>
+                          <Text style={styles.epinValue}>{epin.serial}</Text>
+                        </View>
+                        {epin.instruction && (
+                          <View style={styles.epinRow}>
+                            <Text style={styles.epinLabel}>Instruction:</Text>
+                            <Text style={styles.epinValue}>{epin.instruction}</Text>
+                          </View>
+                        )}
+                      </View>
                     </View>
                   ))}
                 </View>
@@ -498,29 +518,76 @@ const styles = StyleSheet.create({
     elevation: 8,
     minHeight: 600,
   },
-  watermark: {
-    opacity: 0.05,
-    zIndex: 1,
+  watermarkContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 0,
   },
-  watermarkImage: {
-    width: 30,
-    height: 30,
+  watermarkLogo: {
+    width: 170,
+    height: 150,
+    opacity: 0.06,
+    position: 'absolute',
+  },
+  watermarkLeft1: {
+    top: '5%',
+    left: 10,
+  },
+  watermarkLeft2: {
+    top: '20%',
+    left: 10,
+  },
+  watermarkLeft3: {
+    top: '35%',
+    left: 10,
+  },
+  watermarkLeft4: {
+    top: '50%',
+    left: 10,
+  },
+  watermarkLeft5: {
+    top: '65%',
+    left: 10,
+  },
+  watermarkLeft6: {
+    top: '80%',
+    left: 10,
+  },
+  watermarkRight1: {
+    top: '5%',
+    right: 10,
+  },
+  watermarkRight2: {
+    top: '20%',
+    right: 10,
+  },
+  watermarkRight3: {
+    top: '35%',
+    right: 10,
+  },
+  watermarkRight4: {
+    top: '50%',
+    right: 10,
+  },
+  watermarkRight5: {
+    top: '65%',
+    right: 10,
+  },
+  watermarkRight6: {
+    top: '80%',
+    right: 10,
   },
   receiptHeader: {
-    marginBottom: 24,
     zIndex: 1,
   },
-  headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
   logoContainer: {
-    width: 50,
-    height: 50,
-    marginRight: 12,
-  },
-  headerText: {
-    flex: 1,
+    width: 200,
+    height: 100,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
   },
   logo: {
     width: '100%',
@@ -540,10 +607,12 @@ const styles = StyleSheet.create({
   },
   successIconContainer: {
     alignItems: 'center',
+    marginBottom: 24,
+    zIndex: 1,
   },
   networkIconContainer: {
-    width: 64,
-    height: 64,
+    width: 50,
+    height: 50,
     borderRadius: 32,
     alignItems: 'center',
     justifyContent: 'center',
@@ -556,6 +625,25 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+  },
+  amountValue: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+  },
+  amountLabel: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 4,
+  },
+  dottedLine: {
+    width: '100%',
+    height: 1,
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    marginBottom: 16,
   },
   networkIcon: {
     width: 40,
@@ -604,30 +692,34 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'right',
   },
-  cardDetailsSection: {
-    marginTop: 24,
+  epinsSection: {
+    marginTop: 20,
+    zIndex: 2,
   },
-  sectionTitle: {
-    fontSize: 16,
+  epinsTitle: {
+    fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#00A651',
     marginBottom: 16,
     textAlign: 'center',
   },
-  cardDetailItem: {
+  epinCard: {
+    backgroundColor: '#FDF6E3',
+    borderRadius: 12,
+    padding: 16,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    zIndex: 2,
   },
-  cardHeader: {
+  epinHeader: {
     marginBottom: 12,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
   },
-  cardNetworkInfo: {
+  epinNetworkInfo: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  cardNetworkIconContainer: {
+  epinNetworkIconContainer: {
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -635,55 +727,45 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 12,
   },
-  cardNetworkIcon: {
-    width: 24,
-    height: 24,
+  epinNetworkIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
   },
-  cardNetworkText: {
+  epinNetworkText: {
     flex: 1,
   },
-  cardNetworkName: {
+  epinNetworkName: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 2,
   },
-  cardBusinessName: {
+  epinBusinessName: {
     fontSize: 14,
     color: '#666',
   },
-  cardDetailRow: {
+  epinDetails: {
+    marginTop: 8,
+  },
+  epinRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
+    marginBottom: 8,
   },
-  cardDetailLabel: {
-    fontSize: 13,
+  epinLabel: {
+    fontSize: 14,
     fontWeight: '500',
     color: '#666',
     flex: 1,
   },
-  cardDetailValue: {
-    fontSize: 13,
+  epinValue: {
+    fontSize: 14,
     fontWeight: '600',
     color: '#333',
-    flex: 1,
+    flex: 2,
     textAlign: 'right',
-  },
-  cardSeparator: {
-    height: 1,
-    backgroundColor: '#E5E5E5',
-    marginVertical: 8,
-    borderStyle: 'dotted',
-  },
-  dottedLine: {
-    width: '100%',
-    height: 1,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
-    borderStyle: 'dotted',
-    marginBottom: 16,
   },
   receiptFooter: {
     alignItems: 'center',

@@ -167,6 +167,43 @@ class ApiService {
     });
   }
 
+  // Admin login
+  async adminLogin(credentials: { username: string; password: string }): Promise<ApiResponse<{
+    token: string;
+    token_type: string;
+    admin: {
+      id: number;
+      username: string;
+      status: string;
+      created_at: string;
+      updated_at: string;
+    };
+    expires_in: number;
+  }>> {
+    return this.makeRequest<{
+      token: string;
+      token_type: string;
+      admin: {
+        id: number;
+        username: string;
+        status: string;
+        created_at: string;
+        updated_at: string;
+      };
+      expires_in: number;
+    }>('/auth/admin/login', {
+      method: 'POST',
+      body: JSON.stringify(credentials),
+    });
+  }
+
+  // Admin logout
+  async adminLogout(): Promise<ApiResponse> {
+    return this.makeRequest('/auth/logout', {
+      method: 'POST',
+    });
+  }
+
   async forgotPassword(email: string): Promise<ApiResponse> {
     return this.makeRequest('/auth/forgot-password', {
       method: 'POST',

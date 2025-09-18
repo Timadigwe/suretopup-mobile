@@ -9,6 +9,7 @@ import {
   TextInput,
   ActivityIndicator,
   Modal,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -433,7 +434,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       </ScrollView>
 
       {/* Bottom Navigation */}
-      <View style={{ paddingBottom: safeAreaBottom }}>
+      <View style={{ paddingBottom: Platform.OS === 'android' ? safeAreaBottom : 0 }}>
         <BottomTabNavigator
           activeTab="profile"
           onTabPress={(tabId) => {

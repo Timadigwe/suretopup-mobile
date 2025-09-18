@@ -924,8 +924,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   companyDetails: {
-    flex: 1,
-    marginLeft: 12,
+    marginLeft: 20,
   },
   inputSection: {
     marginBottom: 20,

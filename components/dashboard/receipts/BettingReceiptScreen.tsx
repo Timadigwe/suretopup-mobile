@@ -17,6 +17,7 @@ import { useMobileFeatures } from '@/hooks/useMobileFeatures';
 import { useAuth } from '@/contexts/AuthContext';
 import ViewShot from 'react-native-view-shot';
 import * as MediaLibrary from 'expo-media-library';
+import { shareReceiptAsPDF } from '@/utils/receiptPDFGenerator';
 
 const { width } = Dimensions.get('window');
 
@@ -137,16 +138,7 @@ export const BettingReceiptScreen: React.FC<BettingReceiptScreenProps> = ({
       triggerHapticFeedback('light');
       setIsSharing(true);
 
-      const viewShot = viewShotRef.current;
-      if (viewShot && viewShot.capture) {
-        const uri = await viewShot.capture();
-        
-        // Share the image
-        await Share.share({
-          url: uri,
-          message: `Betting account funding receipt for ${receiptData.company_name || receiptData.service || 'N/A'} - ${formatAmount(receiptData.amount)}`,
-        });
-      }
+      await shareReceiptAsPDF(receiptData, 'Betting Receipt', viewShotRef);
     } catch (error) {
       console.error('Error sharing receipt:', error);
       Alert.alert('Error', 'Failed to share receipt. Please try again.');
@@ -166,48 +158,73 @@ export const BettingReceiptScreen: React.FC<BettingReceiptScreenProps> = ({
   };
 
   const renderWatermarks = () => {
-    const watermarkPositions = [
-      // Left column
-      { left: 20, top: 50 },
-      { left: 20, top: 150 },
-      { left: 20, top: 250 },
-      { left: 20, top: 350 },
-      { left: 20, top: 450 },
-      { left: 20, top: 550 },
-      // Middle column
-      { left: width / 2 - 15, top: 50 },
-      { left: width / 2 - 15, top: 150 },
-      { left: width / 2 - 15, top: 250 },
-      { left: width / 2 - 15, top: 350 },
-      { left: width / 2 - 15, top: 450 },
-      { left: width / 2 - 15, top: 550 },
-      // Right column
-      { right: 20, top: 50 },
-      { right: 20, top: 150 },
-      { right: 20, top: 250 },
-      { right: 20, top: 350 },
-      { right: 20, top: 450 },
-      { right: 20, top: 550 },
-    ];
+    return (
+      <View style={styles.watermarkContainer}>
+        {/* Left Column */}
+        <Image 
+          source={require('@/assets/images/full-logo.jpeg')} 
+          style={[styles.watermarkLogo, styles.watermarkLeft1]} 
+          resizeMode="contain" 
+        />
+        <Image 
+          source={require('@/assets/images/full-logo.jpeg')} 
+          style={[styles.watermarkLogo, styles.watermarkLeft2]} 
+          resizeMode="contain" 
+        />
+        <Image 
+          source={require('@/assets/images/full-logo.jpeg')} 
+          style={[styles.watermarkLogo, styles.watermarkLeft3]} 
+          resizeMode="contain" 
+        />
+        <Image 
+          source={require('@/assets/images/full-logo.jpeg')} 
+          style={[styles.watermarkLogo, styles.watermarkLeft4]} 
+          resizeMode="contain" 
+        />
+        <Image 
+          source={require('@/assets/images/full-logo.jpeg')} 
+          style={[styles.watermarkLogo, styles.watermarkLeft5]} 
+          resizeMode="contain" 
+        />
+        <Image 
+          source={require('@/assets/images/full-logo.jpeg')} 
+          style={[styles.watermarkLogo, styles.watermarkLeft6]} 
+          resizeMode="contain" 
+        />
 
-    return watermarkPositions.map((position, index) => (
-      <View
-        key={index}
-        style={[
-          styles.watermark,
-          {
-            position: 'absolute',
-            ...position,
-          },
-        ]}
-      >
-        <Image
-          source={require('@/assets/images/logo.png')}
-          style={styles.watermarkImage}
-          resizeMode="contain"
+        {/* Right Column */}
+        <Image 
+          source={require('@/assets/images/full-logo.jpeg')} 
+          style={[styles.watermarkLogo, styles.watermarkRight1]} 
+          resizeMode="contain" 
+        />
+        <Image 
+          source={require('@/assets/images/full-logo.jpeg')} 
+          style={[styles.watermarkLogo, styles.watermarkRight2]} 
+          resizeMode="contain" 
+        />
+        <Image 
+          source={require('@/assets/images/full-logo.jpeg')} 
+          style={[styles.watermarkLogo, styles.watermarkRight3]} 
+          resizeMode="contain" 
+        />
+        <Image 
+          source={require('@/assets/images/full-logo.jpeg')} 
+          style={[styles.watermarkLogo, styles.watermarkRight4]} 
+          resizeMode="contain" 
+        />
+        <Image 
+          source={require('@/assets/images/full-logo.jpeg')} 
+          style={[styles.watermarkLogo, styles.watermarkRight5]} 
+          resizeMode="contain" 
+        />
+        <Image 
+          source={require('@/assets/images/full-logo.jpeg')} 
+          style={[styles.watermarkLogo, styles.watermarkRight6]} 
+          resizeMode="contain" 
         />
       </View>
-    ));
+    );
   };
 
   return (
@@ -261,24 +278,16 @@ export const BettingReceiptScreen: React.FC<BettingReceiptScreenProps> = ({
 
             {/* Header */}
             <View style={styles.receiptHeader}>
-              <View style={styles.headerContent}>
-                <View style={styles.logoContainer}>
-                  <Image
-                    source={require('@/assets/images/logo.png')}
-                    style={styles.logo}
-                    resizeMode="contain"
-                  />
-                </View>
-                <View style={styles.headerText}>
-                  <Text style={styles.businessName}>
-                    {receiptData.businessName || 'SureTopUp'}
-                  </Text>
-                  <Text style={styles.receiptTitle}>Betting Receipt</Text>
-                </View>
+              <View style={styles.logoContainer}>
+                <Image
+                  source={require('@/assets/images/full-logo.jpeg')}
+                  style={styles.logo}
+                  resizeMode="contain"
+                />
               </View>
             </View>
 
-            {/* Company Icon */}
+            {/* Success Section */}
             <View style={styles.successIconContainer}>
               <View style={[styles.companyIconContainer, { backgroundColor: getBettingCompanyColor(receiptData.company_name || receiptData.service || '') }]}>
                 {receiptData.company_name && getBettingCompanyImage(receiptData.company_name) ? (
@@ -295,17 +304,15 @@ export const BettingReceiptScreen: React.FC<BettingReceiptScreenProps> = ({
                   />
                 )}
               </View>
+              <Text style={styles.amountValue}>
+                {formatAmount(receiptData.amount)}
+              </Text>
+              <Text style={[styles.amountLabel, {fontSize: 20}]}>Successful Transaction</Text>
+              <Text style={[styles.detailValue, {fontWeight: '400'}]}>{formatDate(receiptData.date)}</Text>
             </View>
 
-            {/* Success Message */}
-            <View style={styles.successContainer}>
-              <Text style={styles.successText}>
-                Betting Account Funded Successfully!
-              </Text>
-              <Text style={styles.successSubtext}>
-                Your betting account has been funded successfully
-              </Text>
-            </View>
+            {/* Dotted Line Before Details */}
+            <View style={styles.dottedLine} />
 
             {/* Receipt Details */}
             <View style={styles.receiptDetails}>
@@ -487,29 +494,76 @@ const styles = StyleSheet.create({
     elevation: 8,
     minHeight: 600,
   },
-  watermark: {
-    opacity: 0.05,
-    zIndex: 1,
+  watermarkContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 0,
   },
-  watermarkImage: {
-    width: 30,
-    height: 30,
+  watermarkLogo: {
+    width: 170,
+    height: 150,
+    opacity: 0.06,
+    position: 'absolute',
+  },
+  watermarkLeft1: {
+    top: '5%',
+    left: 10,
+  },
+  watermarkLeft2: {
+    top: '20%',
+    left: 10,
+  },
+  watermarkLeft3: {
+    top: '35%',
+    left: 10,
+  },
+  watermarkLeft4: {
+    top: '50%',
+    left: 10,
+  },
+  watermarkLeft5: {
+    top: '65%',
+    left: 10,
+  },
+  watermarkLeft6: {
+    top: '80%',
+    left: 10,
+  },
+  watermarkRight1: {
+    top: '5%',
+    right: 10,
+  },
+  watermarkRight2: {
+    top: '20%',
+    right: 10,
+  },
+  watermarkRight3: {
+    top: '35%',
+    right: 10,
+  },
+  watermarkRight4: {
+    top: '50%',
+    right: 10,
+  },
+  watermarkRight5: {
+    top: '65%',
+    right: 10,
+  },
+  watermarkRight6: {
+    top: '80%',
+    right: 10,
   },
   receiptHeader: {
-    marginBottom: 24,
     zIndex: 1,
   },
-  headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
   logoContainer: {
-    width: 50,
-    height: 50,
-    marginRight: 12,
-  },
-  headerText: {
-    flex: 1,
+    width: 200,
+    height: 100,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
   },
   logo: {
     width: '100%',
@@ -529,10 +583,12 @@ const styles = StyleSheet.create({
   },
   successIconContainer: {
     alignItems: 'center',
+    marginBottom: 24,
+    zIndex: 1,
   },
   companyIconContainer: {
-    width: 64,
-    height: 64,
+    width: 50,
+    height: 50,
     borderRadius: 32,
     backgroundColor: 'white',
     alignItems: 'center',
@@ -546,6 +602,25 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+  },
+  amountValue: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+  },
+  amountLabel: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 4,
+  },
+  dottedLine: {
+    width: '100%',
+    height: 1,
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    marginBottom: 16,
   },
   companyLogo: {
     width: 40,
@@ -594,14 +669,6 @@ const styles = StyleSheet.create({
     color: '#333',
     flex: 1,
     textAlign: 'right',
-  },
-  dottedLine: {
-    width: '100%',
-    height: 1,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
-    borderStyle: 'dotted',
-    marginBottom: 16,
   },
   receiptFooter: {
     alignItems: 'center',

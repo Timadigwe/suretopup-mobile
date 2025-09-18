@@ -17,6 +17,7 @@ import { useMobileFeatures } from '@/hooks/useMobileFeatures';
 import { useAuth } from '@/contexts/AuthContext';
 import ViewShot from 'react-native-view-shot';
 import * as MediaLibrary from 'expo-media-library';
+import { shareReceiptAsPDF } from '@/utils/receiptPDFGenerator';
 
 const { width } = Dimensions.get('window');
 
@@ -120,16 +121,7 @@ export const CacReceiptScreen: React.FC<CacReceiptScreenProps> = ({
       triggerHapticFeedback('light');
       setIsSharing(true);
 
-      const viewShot = viewShotRef.current;
-      if (viewShot && viewShot.capture) {
-        const uri = await viewShot.capture();
-        
-        // Share the image
-        await Share.share({
-          url: uri,
-          message: `CAC registration request receipt - ${formatAmount(receiptData.amount)}`,
-        });
-      }
+      await shareReceiptAsPDF(receiptData, 'CAC Receipt', viewShotRef);
     } catch (error) {
       console.error('Error sharing receipt:', error);
       Alert.alert('Error', 'Failed to share receipt. Please try again.');

@@ -20,6 +20,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useMobileFeatures } from '@/hooks/useMobileFeatures';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSafeArea } from '@/hooks/useSafeArea';
+import { shareReceiptAsPDF } from '@/utils/receiptPDFGenerator';
 
 interface AirtimeReceiptData {
   reference: string;
@@ -159,16 +160,7 @@ export const AirtimeReceiptScreen: React.FC<AirtimeReceiptScreenProps> = ({
       triggerHapticFeedback('light');
       setIsSharing(true);
 
-      const viewShot = viewShotRef.current;
-      if (viewShot && viewShot.capture) {
-        const uri = await viewShot.capture();
-        
-        // Share the image
-        await Share.share({
-          url: uri,
-          message: `Airtime receipt for ${receiptData.info || receiptData.phone || 'N/A'} - ${formatAmount(receiptData.amount)}`,
-        });
-      }
+      await shareReceiptAsPDF(receiptData, 'Airtime Receipt', viewShotRef);
     } catch (error) {
       console.error('Error sharing receipt:', error);
       Alert.alert('Error', 'Failed to share receipt. Please try again.');
@@ -233,123 +225,76 @@ export const AirtimeReceiptScreen: React.FC<AirtimeReceiptScreenProps> = ({
         <ViewShot
           ref={viewShotRef}
           options={{
-            fileName: `airtime-receipt-${receiptData.reference}`,
-            format: 'jpg',
-            quality: 0.9,
+            fileName: `Transaction-Reference-${receiptData.reference}`,
+            format: 'png',
+            quality: 1.0,
           }}
           style={styles.receiptContainer}
         >
           <View style={styles.receipt}>
-            {/* Multiple Logo Watermarks - Vertical Columns */}
+            {/* Watermark Images - Left and Right Columns */}
             <View style={styles.watermarkContainer}>
               {/* Left Column */}
               <Image 
-                source={require('@/assets/images/logo.png')} 
+                source={require('@/assets/images/full-logo.jpeg')} 
                 style={[styles.watermarkLogo, styles.watermarkLeft1]}
                 resizeMode="contain"
               />
               <Image 
-                source={require('@/assets/images/logo.png')} 
+                source={require('@/assets/images/full-logo.jpeg')} 
                 style={[styles.watermarkLogo, styles.watermarkLeft2]}
                 resizeMode="contain"
               />
               <Image 
-                source={require('@/assets/images/logo.png')} 
+                source={require('@/assets/images/full-logo.jpeg')} 
                 style={[styles.watermarkLogo, styles.watermarkLeft3]}
                 resizeMode="contain"
               />
               <Image 
-                source={require('@/assets/images/logo.png')} 
+                source={require('@/assets/images/full-logo.jpeg')} 
                 style={[styles.watermarkLogo, styles.watermarkLeft4]}
                 resizeMode="contain"
               />
               <Image 
-                source={require('@/assets/images/logo.png')} 
+                source={require('@/assets/images/full-logo.jpeg')} 
                 style={[styles.watermarkLogo, styles.watermarkLeft5]}
                 resizeMode="contain"
               />
               <Image 
-                source={require('@/assets/images/logo.png')} 
+                source={require('@/assets/images/full-logo.jpeg')} 
                 style={[styles.watermarkLogo, styles.watermarkLeft6]}
-                resizeMode="contain"
-              />
-              <Image 
-                source={require('@/assets/images/logo.png')} 
-                style={[styles.watermarkLogo, styles.watermarkLeft7]}
-                resizeMode="contain"
-              />
-              
-              {/* Middle Column */}
-              <Image 
-                source={require('@/assets/images/logo.png')} 
-                style={[styles.watermarkLogo, styles.watermarkMiddle1]}
-                resizeMode="contain"
-              />
-              <Image 
-                source={require('@/assets/images/logo.png')} 
-                style={[styles.watermarkLogo, styles.watermarkMiddle2]}
-                resizeMode="contain"
-              />
-              <Image 
-                source={require('@/assets/images/logo.png')} 
-                style={[styles.watermarkLogo, styles.watermarkMiddle3]}
-                resizeMode="contain"
-              />
-              <Image 
-                source={require('@/assets/images/logo.png')} 
-                style={[styles.watermarkLogo, styles.watermarkMiddle4]}
-                resizeMode="contain"
-              />
-              <Image 
-                source={require('@/assets/images/logo.png')} 
-                style={[styles.watermarkLogo, styles.watermarkMiddle5]}
-                resizeMode="contain"
-              />
-              <Image 
-                source={require('@/assets/images/logo.png')} 
-                style={[styles.watermarkLogo, styles.watermarkMiddle6]}
-                resizeMode="contain"
-              />
-              <Image 
-                source={require('@/assets/images/logo.png')} 
-                style={[styles.watermarkLogo, styles.watermarkMiddle7]}
                 resizeMode="contain"
               />
               
               {/* Right Column */}
               <Image 
-                source={require('@/assets/images/logo.png')} 
+                source={require('@/assets/images/full-logo.jpeg')} 
                 style={[styles.watermarkLogo, styles.watermarkRight1]}
                 resizeMode="contain"
               />
               <Image 
-                source={require('@/assets/images/logo.png')} 
+                source={require('@/assets/images/full-logo.jpeg')} 
                 style={[styles.watermarkLogo, styles.watermarkRight2]}
                 resizeMode="contain"
               />
               <Image 
-                source={require('@/assets/images/logo.png')} 
+                source={require('@/assets/images/full-logo.jpeg')} 
                 style={[styles.watermarkLogo, styles.watermarkRight3]}
                 resizeMode="contain"
               />
               <Image 
-                source={require('@/assets/images/logo.png')} 
+                source={require('@/assets/images/full-logo.jpeg')} 
                 style={[styles.watermarkLogo, styles.watermarkRight4]}
                 resizeMode="contain"
               />
               <Image 
-                source={require('@/assets/images/logo.png')} 
+                source={require('@/assets/images/full-logo.jpeg')} 
                 style={[styles.watermarkLogo, styles.watermarkRight5]}
                 resizeMode="contain"
               />
               <Image 
-                source={require('@/assets/images/logo.png')} 
+                source={require('@/assets/images/full-logo.jpeg')} 
                 style={[styles.watermarkLogo, styles.watermarkRight6]}
-                resizeMode="contain"
-              />
-              <Image 
-                source={require('@/assets/images/logo.png')} 
-                style={[styles.watermarkLogo, styles.watermarkRight7]}
                 resizeMode="contain"
               />
             </View>
@@ -359,16 +304,10 @@ export const AirtimeReceiptScreen: React.FC<AirtimeReceiptScreenProps> = ({
               <View style={styles.headerContent}>
                 <View style={styles.logoContainer}>
                   <Image 
-                    source={require('@/assets/images/logo.png')} 
+                    source={require('@/assets/images/full-logo.jpeg')} 
                     style={styles.logo}
                     resizeMode="contain"
                   />
-                </View>
-                <View style={styles.headerText}>
-                  <Text style={styles.businessName}>
-                    {receiptData.businessName || 'SureTopUp'}
-                  </Text>
-                  <Text style={styles.receiptTitle}>Airtime Receipt</Text>
                 </View>
               </View>
             </View>
@@ -382,15 +321,11 @@ export const AirtimeReceiptScreen: React.FC<AirtimeReceiptScreenProps> = ({
                   resizeMode="contain"
                 />
               </View>
-              <Text style={styles.successText}>Airtime Purchase Successful</Text>
-            </View>
-
-            {/* Amount */}
-            <View style={styles.amountContainer}>
-              <Text style={styles.amountLabel}>Amount Recharged</Text>
               <Text style={styles.amountValue}>
                 {formatAmount(receiptData.amount)}
               </Text>
+              <Text style={[styles.amountLabel, {fontSize: 20}]}>Successful Transaction</Text>
+              <Text style={[styles.detailValue, {fontWeight: '400'}]}>{formatDate(receiptData.date)}</Text>
             </View>
 
             {/* Dotted Line Before Details */}
@@ -636,37 +571,26 @@ const styles = StyleSheet.create({
     zIndex: 0,
   },
   watermarkLogo: {
-    width: 50,
-    height: 50,
+    width: 170,
+    height: 150,
     opacity: 0.06,
     position: 'absolute',
   },
-  // Left Column - Using percentage positioning to cover full height with proper margins
-  watermarkLeft1: { top: '8%', left: 10 },
-  watermarkLeft2: { top: '22%', left: 10 },
-  watermarkLeft3: { top: '36%', left: 10 },
+  // Left Column - Multiple watermarks stacked vertically
+  watermarkLeft1: { top: '5%', left: 10 },
+  watermarkLeft2: { top: '20%', left: 10 },
+  watermarkLeft3: { top: '35%', left: 10 },
   watermarkLeft4: { top: '50%', left: 10 },
-  watermarkLeft5: { top: '64%', left: 10 },
-  watermarkLeft6: { top: '78%', left: 10 },
-  watermarkLeft7: { top: '92%', left: 10 },
-  // Middle Column - Using percentage positioning to cover full height with proper margins
-  watermarkMiddle1: { top: '8%', left: '50%', marginLeft: -25 },
-  watermarkMiddle2: { top: '22%', left: '50%', marginLeft: -25 },
-  watermarkMiddle3: { top: '36%', left: '50%', marginLeft: -25 },
-  watermarkMiddle4: { top: '50%', left: '50%', marginLeft: -25 },
-  watermarkMiddle5: { top: '64%', left: '50%', marginLeft: -25 },
-  watermarkMiddle6: { top: '78%', left: '50%', marginLeft: -25 },
-  watermarkMiddle7: { top: '92%', left: '50%', marginLeft: -25 },
-  // Right Column - Using percentage positioning to cover full height with proper margins
-  watermarkRight1: { top: '8%', right: 10 },
-  watermarkRight2: { top: '22%', right: 10 },
-  watermarkRight3: { top: '36%', right: 10 },
+  watermarkLeft5: { top: '65%', left: 10 },
+  watermarkLeft6: { top: '80%', left: 10 },
+  // Right Column - Multiple watermarks stacked vertically
+  watermarkRight1: { top: '5%', right: 10 },
+  watermarkRight2: { top: '20%', right: 10 },
+  watermarkRight3: { top: '35%', right: 10 },
   watermarkRight4: { top: '50%', right: 10 },
-  watermarkRight5: { top: '64%', right: 10 },
-  watermarkRight6: { top: '78%', right: 10 },
-  watermarkRight7: { top: '92%', right: 10 },
+  watermarkRight5: { top: '65%', right: 10 },
+  watermarkRight6: { top: '80%', right: 10 },
   receiptHeader: {
-    marginBottom: 24,
     zIndex: 1,
   },
   headerContent: {
@@ -674,9 +598,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoContainer: {
-    width: 50,
-    height: 50,
-    marginRight: 12,
+    width: 200,
+    height: 100,
   },
   logo: {
     width: '100%',
@@ -712,8 +635,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   networkIconContainer: {
-    width: 64,
-    height: 64,
+    width: 50,
+    height: 50,
     borderRadius: 32,
     alignItems: 'center',
     justifyContent: 'center',

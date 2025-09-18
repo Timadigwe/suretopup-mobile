@@ -42,6 +42,7 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
+    username: '',
     password: '',
   });
   
@@ -50,6 +51,7 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
   
   const [errors, setErrors] = useState({
     email: '',
+    username: '',
     password: '',
   });
   
@@ -64,7 +66,7 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
   
   const { colors } = useTheme();
   const { triggerHapticFeedback, triggerNotificationHaptic } = useMobileFeatures();
-  const { login, isLoading: authLoading } = useAuth();
+  const { login, adminLogin, isLoading: authLoading } = useAuth();
   const scrollViewRef = useRef<ScrollView>(null);
   
   // Animation for loading spinner
@@ -80,19 +82,22 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
         console.log('All AsyncStorage keys:', allKeys);
         
         const savedEmail = await AsyncStorage.getItem('remembered_email');
+        const savedUsername = await AsyncStorage.getItem('remembered_username');
         const savedPassword = await AsyncStorage.getItem('remembered_password');
         const rememberMeStatus = await AsyncStorage.getItem('remember_me');
         
         console.log('Loading saved credentials:', {
           savedEmail: savedEmail ? 'Found' : 'Not found',
+          savedUsername: savedUsername ? 'Found' : 'Not found',
           savedPassword: savedPassword ? 'Found' : 'Not found',
           rememberMeStatus
         });
         
-        if (savedEmail && savedPassword && rememberMeStatus === 'true') {
+        if ((savedEmail || savedUsername) && savedPassword && rememberMeStatus === 'true') {
           console.log('Auto-filling credentials');
           setFormData({
-            email: savedEmail,
+            email: savedEmail || '',
+            username: savedUsername || '',
             password: savedPassword,
           });
           setRememberMe(true);
@@ -149,7 +154,17 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
   };
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    if (field === 'email') {
+      // Handle combined email/username field
+      const isEmail = value.includes('@');
+      if (isEmail) {
+        setFormData(prev => ({ ...prev, email: value, username: '' }));
+      } else {
+        setFormData(prev => ({ ...prev, username: value, email: '' }));
+      }
+    } else {
+      setFormData(prev => ({ ...prev, [field]: value }));
+    }
     
     // Clear error when user starts typing
     if (errors[field as keyof typeof errors]) {
@@ -171,10 +186,14 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
     switch (field) {
       case 'email':
         if (value.length > 0) {
-          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-          if (!emailRegex.test(value)) {
-            error = 'Please enter a valid email address';
+          // Only validate email format if it contains @
+          if (value.includes('@')) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(value)) {
+              error = 'Please enter a valid email address';
+            }
           }
+          // For usernames (no @), no validation needed
         }
         break;
       case 'password':
@@ -198,19 +217,29 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
   };
 
   const handleSubmit = () => {
+    // Get the input value (either email or username)
+    const inputValue = formData.email || formData.username;
+    const isEmailLogin = inputValue.includes('@');
+    
     // Validate all fields
     const newErrors = {
       email: '',
+      username: '',
       password: '',
     };
     
-    if (!formData.email) newErrors.email = 'Email is required';
-    if (!formData.password) newErrors.password = 'Password is required';
+    if (!inputValue) {
+      newErrors.email = 'Email or username is required';
+    }
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    }
     
-    // Additional validation for filled fields
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    // Additional validation for email (only when it's an email)
+    if (isEmailLogin && inputValue && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inputValue)) {
       newErrors.email = 'Please enter a valid email address';
     }
+    
     if (formData.password && formData.password.length < 6) {
       newErrors.password = 'Password must be at least 6 characters';
     }
@@ -228,53 +257,68 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
     setIsLoading(true);
     triggerNotificationHaptic();
     
-    // Handle login
-    login(formData.email, formData.password).then(async (result) => {
-      setIsLoading(false);
-      if (result.success) {
-        // Save credentials if remember me is checked
-        if (rememberMe) {
-          try {
-            console.log('Saving credentials for remember me:', {
-              email: formData.email,
-              password: formData.password,
-              rememberMe: true
-            });
-            await AsyncStorage.setItem('remembered_email', formData.email);
-            await AsyncStorage.setItem('remembered_password', formData.password);
-            await AsyncStorage.setItem('remember_me', 'true');
-            
-            // Verify the data was saved
-            const savedEmail = await AsyncStorage.getItem('remembered_email');
-            const savedPassword = await AsyncStorage.getItem('remembered_password');
-            const savedRememberMe = await AsyncStorage.getItem('remember_me');
-            console.log('Verification - saved data:', {
-              savedEmail,
-              savedPassword: savedPassword ? 'Found' : 'Not found',
-              savedRememberMe
-            });
-            console.log('Credentials saved successfully');
-          } catch (error) {
-            console.log('Error saving credentials:', error);
+    // Handle login based on input type
+    if (isEmailLogin) {
+      // User login with email
+      login(inputValue, formData.password).then(async (result) => {
+        setIsLoading(false);
+        if (result.success) {
+          // Save credentials if remember me is checked
+          if (rememberMe) {
+            try {
+              await AsyncStorage.setItem('remembered_email', inputValue);
+              await AsyncStorage.setItem('remembered_password', formData.password);
+              await AsyncStorage.setItem('remember_me', 'true');
+            } catch (error) {
+              console.log('Error saving credentials:', error);
+            }
+          } else {
+            // Clear saved credentials if remember me is unchecked
+            try {
+              await AsyncStorage.removeItem('remembered_email');
+              await AsyncStorage.removeItem('remembered_password');
+              await AsyncStorage.removeItem('remember_me');
+            } catch (error) {
+              console.log('Error clearing credentials:', error);
+            }
           }
+          onLogin();
         } else {
-          // Clear saved credentials if remember me is unchecked
-          try {
-            console.log('Clearing saved credentials');
-            await AsyncStorage.removeItem('remembered_email');
-            await AsyncStorage.removeItem('remembered_password');
-            await AsyncStorage.removeItem('remember_me');
-            console.log('Credentials cleared successfully');
-          } catch (error) {
-            console.log('Error clearing credentials:', error);
-          }
+          const errorMessage = getUserFriendlyError(result.message);
+          showModal('Login Failed', errorMessage, 'error');
         }
-        onLogin();
-      } else {
-        const errorMessage = getUserFriendlyError(result.message);
-        showModal('Login Failed', errorMessage, 'error');
-      }
-    });
+      });
+    } else {
+      // Admin login with username
+      adminLogin(inputValue, formData.password).then(async (result) => {
+        setIsLoading(false);
+        if (result.success) {
+          // Save credentials if remember me is checked
+          if (rememberMe) {
+            try {
+              await AsyncStorage.setItem('remembered_username', inputValue);
+              await AsyncStorage.setItem('remembered_password', formData.password);
+              await AsyncStorage.setItem('remember_me', 'true');
+            } catch (error) {
+              console.log('Error saving credentials:', error);
+            }
+          } else {
+            // Clear saved credentials if remember me is unchecked
+            try {
+              await AsyncStorage.removeItem('remembered_username');
+              await AsyncStorage.removeItem('remembered_password');
+              await AsyncStorage.removeItem('remember_me');
+            } catch (error) {
+              console.log('Error clearing credentials:', error);
+            }
+          }
+          onLogin();
+        } else {
+          const errorMessage = getUserFriendlyError(result.message);
+          showModal('Login Failed', errorMessage, 'error');
+        }
+      });
+    }
   };
 
   const togglePasswordVisibility = () => {
@@ -422,7 +466,7 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
 
               {/* Form */}
               <View style={styles.form}>
-                {renderInput('mail', 'Enter your email', formData.email, 'email', 'email-address', false, 'Email')}
+                {renderInput('person', 'Enter your email or username', formData.email || formData.username, 'email', 'default', false, 'Email or Username')}
                 {renderInput('lock-closed', 'Enter your password', formData.password, 'password', 'default', !showPassword, 'Password')}
 
                 {/* Remember Me Checkbox */}

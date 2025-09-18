@@ -6,10 +6,19 @@ import { dashboardCacheUtils } from '@/utils/dashboardCache';
 
 interface AuthContextType {
   user: AuthResponse['user'] | null;
+  admin: {
+    id: number;
+    username: string;
+    status: string;
+    created_at: string;
+    updated_at: string;
+  } | null;
   token: string | null;
   isLoading: boolean;
   isInitialized: boolean;
+  isAdmin: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
+  adminLogin: (username: string, password: string) => Promise<{ success: boolean; message: string }>;
   register: (userData: any) => Promise<{ success: boolean; message: string; data?: any; userData?: any }>;
   logout: () => Promise<void>;
   handleTokenExpiration: () => Promise<void>;
@@ -39,23 +48,45 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<AuthResponse['user'] | null>(null);
+  const [admin, setAdmin] = useState<{
+    id: number;
+    username: string;
+    status: string;
+    created_at: string;
+    updated_at: string;
+  } | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Check for existing auth data on app startup
   React.useEffect(() => {
     const checkAuthData = async () => {
       try {
         const storedUser = await AsyncStorage.getItem('user');
+        const storedAdmin = await AsyncStorage.getItem('admin');
         const storedToken = await AsyncStorage.getItem('token');
+        const storedIsAdmin = await AsyncStorage.getItem('isAdmin');
         
-        if (storedUser && storedToken) {
-          const userData = JSON.parse(storedUser);
-          setUser(userData);
-          setToken(storedToken);
-          // Set token in API service for future requests
-          apiService.setToken(storedToken);
+        if (storedToken) {
+          if (storedIsAdmin === 'true' && storedAdmin) {
+            // Admin authentication
+            const adminData = JSON.parse(storedAdmin);
+            setAdmin(adminData);
+            setUser(null);
+            setIsAdmin(true);
+            setToken(storedToken);
+            apiService.setToken(storedToken);
+          } else if (storedUser) {
+            // User authentication
+            const userData = JSON.parse(storedUser);
+            setUser(userData);
+            setAdmin(null);
+            setIsAdmin(false);
+            setToken(storedToken);
+            apiService.setToken(storedToken);
+          }
         }
         
         // Set up token expiration callback
@@ -76,8 +107,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await AsyncStorage.setItem('token', authData.token);
       setUser(authData.user);
       setToken(authData.token);
+      setIsAdmin(false);
       // Set token in API service for future requests
       apiService.setToken(authData.token);
+    } catch (error) {
+      // Error handling without console logs
+    }
+  };
+
+  const storeAdminAuthData = async (adminData: {
+    token: string;
+    token_type: string;
+    admin: {
+      id: number;
+      username: string;
+      status: string;
+      created_at: string;
+      updated_at: string;
+    };
+    expires_in: number;
+  }) => {
+    try {
+      await AsyncStorage.setItem('admin', JSON.stringify(adminData.admin));
+      await AsyncStorage.setItem('token', adminData.token);
+      await AsyncStorage.setItem('isAdmin', 'true');
+      setAdmin(adminData.admin);
+      setToken(adminData.token);
+      setIsAdmin(true);
+      // Set token in API service for future requests
+      apiService.setToken(adminData.token);
     } catch (error) {
       // Error handling without console logs
     }
@@ -86,11 +144,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const clearAuthData = async () => {
     try {
       await AsyncStorage.removeItem('user');
+      await AsyncStorage.removeItem('admin');
       await AsyncStorage.removeItem('token');
+      await AsyncStorage.removeItem('isAdmin');
       // Clear wallet balance visibility state on logout
       await AsyncStorage.removeItem('wallet_show_balance');
       setUser(null);
+      setAdmin(null);
       setToken(null);
+      setIsAdmin(false);
       // Clear token from API service
       apiService.clearToken();
     } catch (error) {
@@ -111,6 +173,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     } catch (error) {
       // Error handling without console logs
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      return { success: false, message: `Network error: ${errorMessage}` };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const adminLogin = async (username: string, password: string) => {
+    setIsLoading(true);
+    try {
+      const response = await apiService.adminLogin({ username, password });
+
+      if (response.success && response.data) {
+        await storeAdminAuthData(response.data);
+        return { success: true, message: 'Admin login successful' };
+      } else {
+        return { success: false, message: response.message || 'Admin login failed' };
+      }
+    } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       return { success: false, message: `Network error: ${errorMessage}` };
     } finally {
@@ -149,16 +230,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsLoading(true);
     try {
       if (token) {
-        const response = await fetch(`${BASE_URL}/auth/logout`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-        });
+        // Use appropriate logout endpoint based on user type
+        if (isAdmin) {
+          await apiService.adminLogout();
+        } else {
+          const response = await fetch(`${BASE_URL}/auth/logout`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+          });
 
-        const data = await response.json();
+          const data = await response.json();
+        }
       }
 
       // Clear dashboard cache
@@ -339,10 +425,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const value: AuthContextType = {
     user,
+    admin,
     token,
     isLoading,
     isInitialized,
+    isAdmin,
     login,
+    adminLogin,
     register,
     logout,
     handleTokenExpiration,
