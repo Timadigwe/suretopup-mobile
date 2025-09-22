@@ -20,7 +20,6 @@ export const AuthContainer: React.FC<AuthContainerProps> = ({
 
   // Reset to signin screen when AuthContainer mounts (e.g., after logout)
   useEffect(() => {
-    console.log('AuthContainer mounted - resetting to signin screen');
     setCurrentScreen('signin');
   }, []);
 

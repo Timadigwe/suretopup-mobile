@@ -6,11 +6,9 @@ import {
   StyleSheet,
   ScrollView,
   Dimensions,
-  Alert,
   RefreshControl,
   Platform,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useMobileFeatures } from '@/hooks/useMobileFeatures';
@@ -21,7 +19,7 @@ import { BottomTabNavigator } from '@/components/navigation/BottomTabNavigator';
 import { WalletBalanceCard } from './WalletBalanceCard';
 import { ServiceGrid } from './ServiceGrid';
 import { PromoCarousel } from './PromoCarousel';
-import { HomeScreenSkeleton, SkeletonLoader } from '@/components/ui/SkeletonLoader';
+import { SkeletonLoader } from '@/components/ui/SkeletonLoader';
 
 import { apiService, DashboardData } from '@/services/api';
 
@@ -111,7 +109,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       const response = await apiService.getDashboard();
       
       if (response.success && response.data) {
-        console.log('Dashboard Data After Refresh:', JSON.stringify(response.data, null, 2));
+        //console.log('Dashboard Data After Refresh:', JSON.stringify(response.data, null, 2));
         setDashboardData(response.data);
         dashboardCacheUtils.setData(response.data);
         setHasInitialLoad(true);
@@ -152,6 +150,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   useEffect(() => {
     // Check if user has changed (new login)
     if (user && user.id !== lastUserId) {
+      if (__DEV__) {
+        console.log('HomeScreen: New user detected, resetting cache for user ID:', user.id);
+      }
       setLastUserId(user.id);
       setHasInitialLoad(false);
       dashboardCacheUtils.resetForNewUser(user.id);
@@ -164,7 +165,18 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   useEffect(() => {
     // Only fetch data if we haven't fetched it before AND we have a user/token
     const cachedHasFetched = dashboardCacheUtils.getHasFetched();
+    if (__DEV__) {
+      console.log('HomeScreen: useEffect triggered', {
+        cachedHasFetched,
+        hasUser: !!user,
+        hasToken: !!token,
+        userId: user?.id
+      });
+    }
     if (!cachedHasFetched && user && token) {
+      if (__DEV__) {
+        console.log('HomeScreen: Fetching dashboard data for new user');
+      }
       fetchDashboardData();
     } else if (cachedHasFetched) {
       // Restore cached data

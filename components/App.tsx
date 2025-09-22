@@ -41,6 +41,7 @@ import { AdminTransactionsScreen } from './admin/AdminTransactionsScreen';
 import { AdminSlipTypesScreen } from './admin/AdminSlipTypesScreen';
 import { AdminOtherServicesScreen } from './admin/AdminOtherServicesScreen';
 import { useAuth } from '@/contexts/AuthContext';
+import { RememberMeProvider } from '@/contexts/RememberMeContext';
 
 type AppScreen = 
   | 'onboarding' 
@@ -230,6 +231,9 @@ export const App: React.FC = () => {
   };
 
   const handleLogin = () => {
+    if (__DEV__) {
+      console.log('App: handleLogin called - navigating to dashboard');
+    }
     setIsInAuthFlow(false);
     setCurrentScreen('dashboard');
     setNavigationHistory(['auth', 'dashboard']);
@@ -552,5 +556,9 @@ export const App: React.FC = () => {
     }
   };
 
-  return renderScreen();
+  return (
+    <RememberMeProvider>
+      {renderScreen()}
+    </RememberMeProvider>
+  );
 };

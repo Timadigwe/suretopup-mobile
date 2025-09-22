@@ -150,6 +150,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await AsyncStorage.removeItem('isAdmin');
       // Clear wallet balance visibility state on logout
       await AsyncStorage.removeItem('wallet_show_balance');
+      
       setUser(null);
       setAdmin(null);
       setToken(null);
@@ -251,6 +252,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Clear dashboard cache
       dashboardCacheUtils.reset();
       adminDashboardCacheUtils.reset();
+      
       // Always clear local auth data regardless of server response
       await clearAuthData();
     } catch (error) {

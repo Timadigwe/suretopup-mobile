@@ -14,11 +14,11 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useMobileFeatures } from '@/hooks/useMobileFeatures';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRememberMe } from '@/contexts/RememberMeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'react-native';
 import { CustomModal } from '@/components/ui/CustomModal';
@@ -47,7 +47,15 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
   });
   
   // Remember me functionality
-  const [rememberMe, setRememberMe] = useState(false);
+  const { 
+    rememberMe, 
+    savedCredentials, 
+    setRememberMe, 
+    saveCredentials, 
+    loadCredentials, 
+    clearCredentials, 
+    toggleRememberMe 
+  } = useRememberMe();
   
   const [errors, setErrors] = useState({
     email: '',
@@ -74,48 +82,29 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
   
   // Load saved credentials on component mount
   useEffect(() => {
-    console.log('SignInScreen mounted - loading saved credentials');
     const loadSavedCredentials = async () => {
-      try {
-        // Check all AsyncStorage keys for debugging
-        const allKeys = await AsyncStorage.getAllKeys();
-        console.log('All AsyncStorage keys:', allKeys);
-        
-        const savedEmail = await AsyncStorage.getItem('remembered_email');
-        const savedUsername = await AsyncStorage.getItem('remembered_username');
-        const savedPassword = await AsyncStorage.getItem('remembered_password');
-        const rememberMeStatus = await AsyncStorage.getItem('remember_me');
-        
-        console.log('Loading saved credentials:', {
-          savedEmail: savedEmail ? 'Found' : 'Not found',
-          savedUsername: savedUsername ? 'Found' : 'Not found',
-          savedPassword: savedPassword ? 'Found' : 'Not found',
-          rememberMeStatus
-        });
-        
-        if ((savedEmail || savedUsername) && savedPassword && rememberMeStatus === 'true') {
-          console.log('Auto-filling credentials');
-          setFormData({
-            email: savedEmail || '',
-            username: savedUsername || '',
-            password: savedPassword,
-          });
-          setRememberMe(true);
-        } else {
-          console.log('No saved credentials found or remember me not enabled');
-          // In development mode, AsyncStorage might be cleared on reload
-          // This is normal behavior and doesn't affect production
-          if (__DEV__ && allKeys.length === 0) {
-            console.log('Development mode: AsyncStorage cleared on reload (normal behavior)');
-          }
+      if (__DEV__) {
+        console.log('SignInScreen: Loading saved credentials via RememberMeContext');
+      }
+      const credentials = await loadCredentials();
+      if (credentials) {
+        if (__DEV__) {
+          console.log('SignInScreen: Credentials loaded, updating form data');
         }
-      } catch (error) {
-        console.log('Error loading saved credentials:', error);
+        setFormData({
+          email: credentials.email,
+          username: credentials.username,
+          password: credentials.password,
+        });
+      } else {
+        if (__DEV__) {
+          console.log('SignInScreen: No credentials found');
+        }
       }
     };
     
     loadSavedCredentials();
-  }, []);
+  }, []); // Remove loadCredentials dependency to prevent re-rendering
 
   React.useEffect(() => {
     if (isLoading) {
@@ -263,24 +252,17 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
       login(inputValue, formData.password).then(async (result) => {
         setIsLoading(false);
         if (result.success) {
-          // Save credentials if remember me is checked
+          // Handle remember me functionality
           if (rememberMe) {
-            try {
-              await AsyncStorage.setItem('remembered_email', inputValue);
-              await AsyncStorage.setItem('remembered_password', formData.password);
-              await AsyncStorage.setItem('remember_me', 'true');
-            } catch (error) {
-              console.log('Error saving credentials:', error);
+            if (__DEV__) {
+              console.log('SignInScreen: Saving credentials for email login');
             }
+            await saveCredentials(inputValue, '', formData.password);
           } else {
-            // Clear saved credentials if remember me is unchecked
-            try {
-              await AsyncStorage.removeItem('remembered_email');
-              await AsyncStorage.removeItem('remembered_password');
-              await AsyncStorage.removeItem('remember_me');
-            } catch (error) {
-              console.log('Error clearing credentials:', error);
+            if (__DEV__) {
+              console.log('SignInScreen: Clearing credentials for email login');
             }
+            await clearCredentials();
           }
           onLogin();
         } else {
@@ -293,24 +275,17 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
       adminLogin(inputValue, formData.password).then(async (result) => {
         setIsLoading(false);
         if (result.success) {
-          // Save credentials if remember me is checked
+          // Handle remember me functionality
           if (rememberMe) {
-            try {
-              await AsyncStorage.setItem('remembered_username', inputValue);
-              await AsyncStorage.setItem('remembered_password', formData.password);
-              await AsyncStorage.setItem('remember_me', 'true');
-            } catch (error) {
-              console.log('Error saving credentials:', error);
+            if (__DEV__) {
+              console.log('SignInScreen: Saving credentials for admin login');
             }
+            await saveCredentials('', inputValue, formData.password);
           } else {
-            // Clear saved credentials if remember me is unchecked
-            try {
-              await AsyncStorage.removeItem('remembered_username');
-              await AsyncStorage.removeItem('remembered_password');
-              await AsyncStorage.removeItem('remember_me');
-            } catch (error) {
-              console.log('Error clearing credentials:', error);
+            if (__DEV__) {
+              console.log('SignInScreen: Clearing credentials for admin login');
             }
+            await clearCredentials();
           }
           onLogin();
         } else {
@@ -326,9 +301,12 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
     setShowPassword(!showPassword);
   };
 
-  const toggleRememberMe = () => {
+  const handleToggleRememberMe = () => {
+    if (__DEV__) {
+      console.log('SignInScreen: Toggling remember me checkbox');
+    }
     triggerHapticFeedback('light');
-    setRememberMe(!rememberMe);
+    toggleRememberMe();
   };
 
   const renderLogo = () => (
@@ -473,7 +451,7 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
                 <View style={styles.rememberMeContainer}>
                   <TouchableOpacity 
                     style={styles.rememberMeCheckbox} 
-                    onPress={toggleRememberMe}
+                    onPress={handleToggleRememberMe}
                     activeOpacity={0.7}
                   >
                     <View style={[

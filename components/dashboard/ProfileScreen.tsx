@@ -19,6 +19,7 @@ import { useSafeArea } from '@/hooks/useSafeArea';
 import { BottomTabNavigator } from '@/components/navigation/BottomTabNavigator';
 import { apiService } from '@/services/api';
 import { dashboardCacheUtils } from '@/utils/dashboardCache';
+import { useRememberMe } from '@/contexts/RememberMeContext';
 
 interface ProfileScreenProps {
   onNavigate: (page: string, data?: any) => void;
@@ -33,7 +34,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 }) => {
   const { colors } = useTheme();
   const { triggerHapticFeedback } = useMobileFeatures();
-  const { user, clearAllStoredData } = useAuth();
+  const { user } = useAuth();
   const { safeAreaTop, safeAreaBottom } = useSafeArea();
   
   // Profile editing states
@@ -70,6 +71,11 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   // Get user data from global dashboard cache
   const cachedData = dashboardCacheUtils.getData();
   const userData = cachedData?.user;
+
+  const { rememberMe, savedCredentials } = useRememberMe();
+
+  console.log('rememberMe', rememberMe);
+  console.log('savedCredentials', savedCredentials);
   
   // Initialize edit form with current user data
   useEffect(() => {
@@ -327,8 +333,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           style: 'destructive',
           onPress: async () => {
             await onLogout();
-            // For development: also clear all stored data
-            await clearAllStoredData();
           },
         },
       ]
