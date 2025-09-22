@@ -8,6 +8,7 @@ import {
   Animated,
   Dimensions,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -29,6 +30,9 @@ interface CustomModalProps {
   onSecondaryPress?: () => void;
   singleButton?: boolean;
   customContent?: React.ReactNode;
+  primaryButtonDisabled?: boolean;
+  primaryButtonLoading?: boolean;
+  primaryButtonColor?: string;
 }
 
 export const CustomModal: React.FC<CustomModalProps> = ({
@@ -44,6 +48,9 @@ export const CustomModal: React.FC<CustomModalProps> = ({
   onSecondaryPress,
   singleButton = true,
   customContent,
+  primaryButtonDisabled = false,
+  primaryButtonLoading = false,
+  primaryButtonColor,
 }) => {
   const { colors } = useTheme();
   const { triggerHapticFeedback } = useMobileFeatures();
@@ -134,6 +141,8 @@ export const CustomModal: React.FC<CustomModalProps> = ({
   const typeConfig = getTypeConfig();
 
   const handlePrimaryPress = () => {
+    if (primaryButtonDisabled || primaryButtonLoading) return;
+    
     triggerHapticFeedback('light');
     if (onPrimaryPress) {
       onPrimaryPress();
@@ -252,17 +261,31 @@ export const CustomModal: React.FC<CustomModalProps> = ({
                   
                   <TouchableOpacity
                     onPress={handlePrimaryPress}
-                    style={[styles.button, styles.primaryButton]}
+                    style={[
+                      styles.button, 
+                      styles.primaryButton,
+                      (primaryButtonDisabled || primaryButtonLoading) && styles.disabledButton
+                    ]}
+                    disabled={primaryButtonDisabled || primaryButtonLoading}
                   >
                     <LinearGradient
-                      colors={typeConfig.gradientColors as any}
+                      colors={primaryButtonColor ? [primaryButtonColor, primaryButtonColor] : typeConfig.gradientColors as any}
                       style={styles.primaryButtonGradient}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 0 }}
                     >
-                      <Text style={[styles.primaryButtonText, { color: 'white' }]}>
-                        {primaryButtonText}
-                      </Text>
+                      {primaryButtonLoading ? (
+                        <View style={styles.loadingContainer}>
+                          <ActivityIndicator size="small" color="white" />
+                          <Text style={[styles.primaryButtonText, { color: 'white', marginLeft: 8 }]}>
+                            Loading...
+                          </Text>
+                        </View>
+                      ) : (
+                        <Text style={[styles.primaryButtonText, { color: 'white' }]}>
+                          {primaryButtonText}
+                        </Text>
+                      )}
                     </LinearGradient>
                   </TouchableOpacity>
                 </View>
@@ -375,5 +398,13 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  disabledButton: {
+    opacity: 0.6,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

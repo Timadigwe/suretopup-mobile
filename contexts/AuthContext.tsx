@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthResponse, BASE_URL, apiService } from '@/services/api';
 import { dashboardCacheUtils } from '@/utils/dashboardCache';
+import { adminDashboardCacheUtils } from '@/utils/adminDashboardCache';
 
 
 interface AuthContextType {
@@ -249,12 +250,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // Clear dashboard cache
       dashboardCacheUtils.reset();
+      adminDashboardCacheUtils.reset();
       // Always clear local auth data regardless of server response
       await clearAuthData();
     } catch (error) {
       // Error handling without console logs
       // Clear dashboard cache even if server call fails
       dashboardCacheUtils.reset();
+      adminDashboardCacheUtils.reset();
       // Still clear local auth data even if server call fails
       await clearAuthData();
     } finally {

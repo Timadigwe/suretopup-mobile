@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { BackHandler, Alert } from 'react-native';
+import { BackHandler, Alert, Platform } from 'react-native';
 import { OnboardingScreen } from './onboarding/OnboardingScreen';
 import { AuthContainer } from './auth/AuthContainer';
 import { EmailVerificationScreen } from './auth/EmailVerificationScreen';
@@ -33,6 +33,13 @@ import { NotificationsScreen } from './dashboard/NotificationsScreen';
 import { HelpSupportScreen } from './dashboard/HelpSupportScreen';
 import { AboutScreen } from './dashboard/AboutScreen';
 import { AdminDashboard } from './admin/AdminDashboard';
+import { AdminUsersScreen } from './admin/AdminUsersScreen';
+import { BulkEmailScreen } from './admin/BulkEmailScreen';
+import { DataVariationScreen } from './admin/DataVariationScreen';
+import { CableVariationScreen } from './admin/CableVariationScreen';
+import { AdminTransactionsScreen } from './admin/AdminTransactionsScreen';
+import { AdminSlipTypesScreen } from './admin/AdminSlipTypesScreen';
+import { AdminOtherServicesScreen } from './admin/AdminOtherServicesScreen';
 import { useAuth } from '@/contexts/AuthContext';
 
 type AppScreen = 
@@ -41,6 +48,13 @@ type AppScreen =
   | 'email-verification'
   | 'dashboard' 
   | 'admin'
+  | 'admin-users'
+  | 'bulk-email'
+  | 'data-variations'
+  | 'cable-variations'
+  | 'admin-transactions'
+  | 'admin-slip-types'
+  | 'admin-other-services'
   | 'home'
   | 'transactions'
   | 'wallet'
@@ -128,6 +142,39 @@ export const App: React.FC = () => {
       
       // Define screens that should exit the app
       const exitScreens: AppScreen[] = ['onboarding', 'dashboard', 'home'];
+      
+              // Admin screens that should go back to admin dashboard
+              const adminScreens: AppScreen[] = [
+                'admin-users', 'bulk-email', 'data-variations', 'cable-variations', 
+                'admin-transactions', 'admin-slip-types', 'admin-other-services'
+              ];
+      
+      // If we're on an admin screen, go back to admin dashboard
+      if (adminScreens.includes(currentScreen)) {
+        setCurrentScreen('admin');
+        setNavigationHistory(prev => [...prev.slice(0, -1), 'admin']);
+        return true; // Prevent default behavior
+      }
+      
+      // If we're on the admin dashboard, show exit confirmation
+      if (currentScreen === 'admin') {
+        Alert.alert(
+          'Exit App',
+          'Are you sure you want to exit the app?',
+          [
+            {
+              text: 'Cancel',
+              onPress: () => null,
+              style: 'cancel',
+            },
+            {
+              text: 'Exit',
+              onPress: () => BackHandler.exitApp(),
+            },
+          ]
+        );
+        return true; // Prevent default behavior
+      }
       
       // If we're on an exit screen or have no history, show exit confirmation
       if (exitScreens.includes(currentScreen) || navigationHistory.length <= 1) {
@@ -401,7 +448,28 @@ export const App: React.FC = () => {
         return <HomeScreen onNavigate={handleNavigate} onLogout={handleLogout} />;
         
       case 'admin':
-        return <AdminDashboard onLogout={handleLogout} />;
+        return <AdminDashboard onLogout={handleLogout} onNavigate={(screen: string) => setCurrentScreen(screen as AppScreen)} adminData={admin} />;
+        
+      case 'admin-users':
+        return <AdminUsersScreen onBack={() => setCurrentScreen('admin')} />;
+        
+      case 'bulk-email':
+        return <BulkEmailScreen onBack={() => setCurrentScreen('admin')} />;
+        
+      case 'data-variations':
+        return <DataVariationScreen onBack={() => setCurrentScreen('admin')} />;
+        
+      case 'cable-variations':
+        return <CableVariationScreen onBack={() => setCurrentScreen('admin')} />;
+        
+      case 'admin-transactions':
+        return <AdminTransactionsScreen onBack={() => setCurrentScreen('admin')} />;
+        
+      case 'admin-slip-types':
+        return <AdminSlipTypesScreen onBack={() => setCurrentScreen('admin')} />;
+        
+      case 'admin-other-services':
+        return <AdminOtherServicesScreen onBack={() => setCurrentScreen('admin')} />;
         
       case 'home':
         return <HomeScreen onNavigate={handleNavigate} onLogout={handleLogout} />;
