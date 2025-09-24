@@ -329,6 +329,57 @@ class ApiService {
     });
   }
 
+  // Admin ban user
+  async banUser(data: {
+    id?: number;
+    email?: string;
+  }): Promise<ApiResponse<{
+    user_id: number;
+    email: string;
+  }>> {
+    return this.makeRequest<{
+      user_id: number;
+      email: string;
+    }>('/admin/users/ban', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Admin unban user
+  async unbanUser(data: {
+    id?: number;
+    email?: string;
+  }): Promise<ApiResponse<{
+    user_id: number;
+    email: string;
+  }>> {
+    return this.makeRequest<{
+      user_id: number;
+      email: string;
+    }>('/admin/users/unban', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Admin delete user
+  async deleteUser(data: {
+    id?: number;
+    email?: string;
+  }): Promise<ApiResponse<{
+    user_id: number;
+    email: string;
+  }>> {
+    return this.makeRequest<{
+      user_id: number;
+      email: string;
+    }>('/admin/users/delete', {
+      method: 'DELETE',
+      body: JSON.stringify(data),
+    });
+  }
+
   // Admin bulk email - send
   async sendBulkEmail(data: {
     subject: string;
