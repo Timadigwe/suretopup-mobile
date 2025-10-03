@@ -22,6 +22,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { apiService } from '@/services/api';
 import { CustomModal } from '@/components/ui/CustomModal';
 import { TransactionReceiptScreen } from './TransactionReceiptScreen';
+import { NETWORK_PROVIDERS } from './DataPurchaseScreen';
 
 interface AirtimeRechargeScreenProps {
   onNavigate: (page: string, data?: any) => void;
@@ -29,33 +30,6 @@ interface AirtimeRechargeScreenProps {
 
 const { width } = Dimensions.get('window');
 
-// Network provider constants
-const NETWORK_PROVIDERS = {
-  mtn: {
-    name: 'MTN',
-    color: '#fbc404',
-    logo: require('@/assets/images/mtn.jpeg'),
-    prefixes: ['0803', '0806', '0813', '0816', '0814', '0810', '0814', '0903', '0906', '0703', '0706', '0704', '0706', '07025', '07026', '0704'],
-  },
-  airtel: {
-    name: 'Airtel',
-    color: '#ec1c24',
-    logo: require('@/assets/images/airtel.jpg'),
-    prefixes: ['0802', '0808', '0812', '0701', '0708', '0902', '0907', '0809', '0818', '0817', '0708', '0702'],
-  },
-  glo: {
-    name: 'Glo',
-    color: '#1daa10',
-    logo: require('@/assets/images/glo.jpg'),
-    prefixes: ['0805', '0807', '0811', '0815', '0705', '0905', '0805', '0815', '0811', '0705'],
-  },
-  '9mobile': {
-    name: '9mobile',
-    color: '#040404',
-    logo: require('@/assets/images/9mobile.png'),
-    prefixes: ['0809', '0817', '0818', '0908', '0909', '0817', '0818', '0809'],
-  },
-};
 
 export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ onNavigate }) => {
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -307,15 +281,14 @@ export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ on
                   <View style={styles.networkInfo}>
                     <View style={[
                       styles.networkIconContainer,
-                      { backgroundColor: getNetworkInfo(selectedNetwork).color + '20' }
                     ]}>
                       <Image 
                         source={getNetworkInfo(selectedNetwork).logo}
                         style={styles.networkLogo}
-                        resizeMode="contain"
+                        resizeMode="cover"
                       />
                     </View>
-                    <Text style={[styles.networkName, { color: colors.text }]}>
+                    <Text style={[styles.networkName, { color: colors.text }]}>     
                       {getNetworkInfo(selectedNetwork).name}
                     </Text>
                     <Text style={[styles.networkDetected, { color: colors.success }]}>
@@ -482,12 +455,11 @@ export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ on
               >
                 <View style={[
                   styles.networkOptionIcon,
-                  { backgroundColor: data.color + '20' }
                 ]}>
                   <Image 
                     source={data.logo}
                     style={styles.networkLogo}
-                    resizeMode="contain"
+                    resizeMode="cover"
                   />
                 </View>
                 <Text style={[
@@ -658,16 +630,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   networkIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 40,
+    height: 40,
     marginRight: 8,
   },
   networkLogo: {
-    width: 24,
-    height: 24,
+    width: '100%',
+    height: '100%',
+    borderRadius: 20,
   },
   networkDetails: {
     flex: 1,

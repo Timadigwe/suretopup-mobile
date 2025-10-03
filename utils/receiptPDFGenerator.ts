@@ -243,19 +243,25 @@ export const shareReceiptAsPDF = async (receiptData: ReceiptData, receiptType: s
               background: white;
               padding: 0;
               margin: 0;
+              overflow: hidden;
             }
             .receipt-container {
               width: 100%;
-              page-break-inside: avoid;
+              height: 100vh;
               display: flex;
               justify-content: center;
               align-items: center;
-              min-height: 100vh;
+              page-break-inside: avoid;
+              page-break-after: avoid;
+              page-break-before: avoid;
             }
             .receipt-image {
               max-width: 100%;
+              max-height: 100vh;
+              width: auto;
               height: auto;
               display: block;
+              object-fit: contain;
               border-radius: 8px;
               box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
               image-rendering: -webkit-optimize-contrast;
@@ -264,6 +270,21 @@ export const shareReceiptAsPDF = async (receiptData: ReceiptData, receiptType: s
             @page {
               margin: 0;
               padding: 0;
+              size: A4;
+            }
+            @media print {
+              body {
+                margin: 0;
+                padding: 0;
+              }
+              .receipt-container {
+                height: 100vh;
+                overflow: hidden;
+              }
+              .receipt-image {
+                max-height: 100vh;
+                max-width: 100%;
+              }
             }
           </style>
         </head>
@@ -283,6 +304,16 @@ export const shareReceiptAsPDF = async (receiptData: ReceiptData, receiptType: s
       height: 842, // A4 height in points
     });
     
+    // Create a new file with the desired name
+    const fileName = `SureTopUp-${receiptData.reference}.pdf`;
+    const newUri = `${FileSystem.documentDirectory}${fileName}`;
+    
+    // Copy the generated PDF to the new location with proper name
+    await FileSystem.copyAsync({
+      from: uri,
+      to: newUri,
+    });
+    
     // Check if sharing is available
     const isAvailable = await Sharing.isAvailableAsync();
     if (!isAvailable) {
@@ -290,9 +321,10 @@ export const shareReceiptAsPDF = async (receiptData: ReceiptData, receiptType: s
     }
 
     // Use expo-sharing for proper PDF file sharing on both platforms
-    await Sharing.shareAsync(uri, {
+    await Sharing.shareAsync(newUri, {
       mimeType: 'application/pdf',
-      dialogTitle: `Transaction-Reference-${receiptData.reference}`,
+      dialogTitle: fileName,
+      UTI: 'com.adobe.pdf',
     });
     
     return { success: true, uri };

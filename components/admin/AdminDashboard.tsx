@@ -418,6 +418,72 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onNavi
                   <Text style={styles.heroStatLabel}>Documents</Text>
                 </View>
               </View>
+              
+              {/* Third Row - Additional Metrics */}
+              <View style={styles.heroStatsRow}>
+                <View style={styles.heroStatCard}>
+                  <View style={styles.heroStatIcon}>
+                    <Ionicons name="arrow-up-circle" size={20} color="white" />
+                  </View>
+                  <Text style={styles.heroStatValue}>
+                    {dashboardData ? formatAmount(dashboardData.total_credited_amount) : '₦0'}
+                  </Text>
+                  <Text style={styles.heroStatLabel}>Total Credited</Text>
+                </View>
+                
+                <View style={styles.heroStatCard}>
+                  <View style={styles.heroStatIcon}>
+                    <Ionicons name="arrow-down-circle" size={20} color="white" />
+                  </View>
+                  <Text style={styles.heroStatValue}>
+                    {dashboardData ? formatAmount(dashboardData.total_debited_amount) : '₦0'}
+                  </Text>
+                  <Text style={styles.heroStatLabel}>Total Debited</Text>
+                </View>
+                
+                <View style={styles.heroStatCard}>
+                  <View style={styles.heroStatIcon}>
+                    <Ionicons name="today" size={20} color="white" />
+                  </View>
+                  <Text style={styles.heroStatValue}>
+                    {dashboardData ? formatAmount(dashboardData.total_credited_amount_today) : '₦0'}
+                  </Text>
+                  <Text style={styles.heroStatLabel}>Today's Credit</Text>
+                </View>
+              </View>
+              
+              {/* Fourth Row - Today's Metrics */}
+              <View style={styles.heroStatsRow}>
+                <View style={styles.heroStatCard}>
+                  <View style={styles.heroStatIcon}>
+                    <Ionicons name="remove-circle" size={20} color="white" />
+                  </View>
+                  <Text style={styles.heroStatValue}>
+                    {dashboardData ? formatAmount(dashboardData.total_debited_amount_today) : '₦0'}
+                  </Text>
+                  <Text style={styles.heroStatLabel}>Today's Debit</Text>
+                </View>
+                
+                <View style={styles.heroStatCard}>
+                  <View style={styles.heroStatIcon}>
+                    <Ionicons name="finger-print" size={20} color="white" />
+                  </View>
+                  <Text style={styles.heroStatValue}>
+                    {dashboardData?.total_nin || 0}
+                  </Text>
+                  <Text style={styles.heroStatLabel}>NIN Verifications</Text>
+                </View>
+                
+                <View style={styles.heroStatCard}>
+                  <View style={styles.heroStatIcon}>
+                    <Ionicons name="business" size={20} color="white" />
+                  </View>
+                  <Text style={styles.heroStatValue}>
+                    {dashboardData?.total_cac || 0}
+                  </Text>
+                  <Text style={styles.heroStatLabel}>CAC Registrations</Text>
+                </View>
+              </View>
             </View>
           )}
         </View>

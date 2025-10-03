@@ -492,7 +492,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 8,
-    minHeight: 600,
+    minHeight: 400,
+    maxHeight: 800,
   },
   watermarkContainer: {
     position: 'absolute',

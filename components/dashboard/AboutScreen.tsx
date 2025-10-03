@@ -10,6 +10,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useMobileFeatures } from '@/hooks/useMobileFeatures';
+import { configRegExp } from 'expo-router/build/fork/getStateFromPath-forks';
+import { config } from '@/config';
 
 interface AboutScreenProps {
   onNavigate: (page: string, data?: any) => void;
@@ -36,7 +38,7 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({
   const appInfo = {
     company: 'SureTopUp Nigeria Limited',
     website: 'suretopup.com.ng',
-    phone: '+234 902 281 8497',
+    phone: config.whatsappNumber,
     address: 'Lagos, Nigeria',
   };
 

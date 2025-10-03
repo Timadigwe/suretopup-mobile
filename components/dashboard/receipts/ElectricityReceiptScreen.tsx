@@ -266,7 +266,7 @@ export const ElectricityReceiptScreen: React.FC<ElectricityReceiptScreenProps> =
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        <ViewShot ref={viewShotRef} options={{ format: 'jpg', quality: 0.8 }}>
+        <ViewShot ref={viewShotRef} options={{ format: 'png', quality: 1.0 }}>
           <View style={[styles.receiptContainer, { backgroundColor: 'white' }]}>
             {/* Watermarks */}
             {renderWatermarks()}
@@ -505,7 +505,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 8,
-    minHeight: 600,
+    minHeight: 400,
+    maxHeight: 800,
   },
   watermarkContainer: {
     position: 'absolute',

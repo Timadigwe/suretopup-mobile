@@ -272,10 +272,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const response = await apiService.forgotPassword(email);
 
-      if (response.success) {
-        return { success: true, message: response.message || 'OTP has been sent to your email.' };
+      // Check for success based on the new API response structure
+      // The API now returns: { status: 200, response: "Successful", message: "..." }
+      if (response.status === 'success' || (typeof response.status === 'number' && response.status === 200)) {
+        const message = response.message || 'OTP has been sent to your email.';
+        return { success: true, message };
       } else {
-        return { success: false, message: response.message || 'Failed to send OTP' };
+        const message = response.message || 'Failed to send OTP';
+        return { success: false, message };
       }
     } catch (error) {
       // Error handling without console logs
@@ -300,7 +304,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       const data = await response.json();
 
-      if (data.status === 200 || data.success) {
+      if (data.status === 200) {
         return { success: true, message: data.message || 'OTP verified successfully.' };
       } else {
         return { success: false, message: data.message || 'OTP verification failed' };
@@ -317,7 +321,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const resetPassword = async (email: string, otp: string, password: string, password_confirmation: string) => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${BASE_URL}/auth/forgot-password-verify`, {
+      const response = await fetch(`${BASE_URL}/auth/password-reset`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -328,7 +332,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       const data = await response.json();
 
-      if (data.status === 200 || data.success) {
+      if (data.status === 200) {
         return { success: true, message: data.message || 'Password has been successfully reset.' };
       } else {
         return { success: false, message: data.message || 'Password reset failed' };

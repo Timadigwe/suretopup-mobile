@@ -48,9 +48,9 @@ interface DataReceiptScreenProps {
 
 // Network images
 const NETWORK_IMAGES = {
-  mtn: require('@/assets/images/mtn.jpeg'),
-  airtel: require('@/assets/images/airtel.jpg'),
-  glo: require('@/assets/images/glo.jpg'),
+  mtn: require('@/assets/images/mtn.png'),
+  airtel: require('@/assets/images/airtel.png'),
+  glo: require('@/assets/images/glo.png'),
   '9mobile': require('@/assets/images/9mobile.png'),
 };
 
@@ -271,7 +271,7 @@ export const DataReceiptScreen: React.FC<DataReceiptScreenProps> = ({
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        <ViewShot ref={viewShotRef} options={{ format: 'jpg', quality: 0.8 }}>
+        <ViewShot ref={viewShotRef} options={{ format: 'png', quality: 1.0 }}>
           <View style={[styles.receiptContainer, { backgroundColor: 'white' }]}>
             {/* Watermarks */}
             {renderWatermarks()}
@@ -289,11 +289,11 @@ export const DataReceiptScreen: React.FC<DataReceiptScreenProps> = ({
 
             {/* Success Section */}
             <View style={styles.successIconContainer}>
-              <View style={[styles.networkIconContainer, { backgroundColor: getNetworkColor(receiptData.network) }]}>
+              <View style={[styles.networkIconContainer]}>
                 <Image 
                   source={getNetworkImage(receiptData.network)} 
                   style={styles.networkIcon}
-                  resizeMode="contain"
+                  resizeMode="cover"
                 />
               </View>
               <Text style={styles.amountValue}>
@@ -439,7 +439,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 8,
-    minHeight: 600,
+    minHeight: 400,
+    maxHeight: 800,
   },
   watermarkContainer: {
     position: 'absolute',
@@ -534,8 +535,8 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   networkIconContainer: {
-    width: 50,
-    height: 50,
+    width: 40,
+    height: 40,
     borderRadius: 32,
     alignItems: 'center',
     justifyContent: 'center',
@@ -550,8 +551,8 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   networkIcon: {
-    width: 40,
-    height: 40,
+    width: '100%',
+    height: '100%',
     borderRadius: 20,
   },
   amountValue: {

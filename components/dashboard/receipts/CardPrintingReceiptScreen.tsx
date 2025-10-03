@@ -56,9 +56,9 @@ interface CardPrintingReceiptScreenProps {
 
 // Network images
 const NETWORK_IMAGES = {
-  mtn: require('@/assets/images/mtn.jpeg'),
-  airtel: require('@/assets/images/airtel.jpg'),
-  glo: require('@/assets/images/glo.jpg'),
+  mtn: require('@/assets/images/mtn.png'),
+  airtel: require('@/assets/images/airtel.png'),
+  glo: require('@/assets/images/glo.png'),
   '9mobile': require('@/assets/images/9mobile.png'),
 };
 
@@ -300,7 +300,7 @@ export const CardPrintingReceiptScreen: React.FC<CardPrintingReceiptScreenProps>
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        <ViewShot ref={viewShotRef} options={{ format: 'jpg', quality: 0.8 }}>
+        <ViewShot ref={viewShotRef} options={{ format: 'png', quality: 1.0 }}>
           <View style={[styles.receiptContainer, { backgroundColor: 'white' }]}>
             {/* Watermarks */}
             {renderWatermarks()}
@@ -318,11 +318,11 @@ export const CardPrintingReceiptScreen: React.FC<CardPrintingReceiptScreenProps>
 
             {/* Success Section */}
             <View style={styles.successIconContainer}>
-              <View style={[styles.networkIconContainer, { backgroundColor: getNetworkColor(receiptData.network) }]}>
+              <View style={[styles.networkIconContainer]}>
                 <Image 
                   source={getNetworkImage(receiptData.network)} 
                   style={styles.networkIcon}
-                  resizeMode="contain"
+                  resizeMode="cover"
                 />
               </View>
               <Text style={styles.amountValue}>
@@ -389,11 +389,11 @@ export const CardPrintingReceiptScreen: React.FC<CardPrintingReceiptScreenProps>
                       {/* Network Logo and Business Name */}
                       <View style={styles.epinHeader}>
                         <View style={styles.epinNetworkInfo}>
-                          <View style={[styles.epinNetworkIconContainer, { backgroundColor: getNetworkColor(receiptData.network) }]}>
+                          <View style={[styles.epinNetworkIconContainer]}>
                             <Image
                               source={getNetworkImage(receiptData.network)}
                               style={styles.epinNetworkIcon}
-                              resizeMode="contain"
+                              resizeMode="cover"
                             />
                           </View>
                           <View style={styles.epinNetworkText}>
@@ -507,7 +507,7 @@ const styles = StyleSheet.create({
   },
   receiptContainer: {
     borderRadius: 16,
-    padding: 24,
+    padding: 10,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -516,7 +516,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 8,
-    minHeight: 600,
+    minHeight: 300,
+    maxHeight: 1000,
   },
   watermarkContainer: {
     position: 'absolute',
@@ -611,8 +612,8 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   networkIconContainer: {
-    width: 50,
-    height: 50,
+    width: 40,
+    height: 40,
     borderRadius: 32,
     alignItems: 'center',
     justifyContent: 'center',
@@ -646,8 +647,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   networkIcon: {
-    width: 40,
-    height: 40,
+    width: '100%',
+    height: '100%',
     borderRadius: 20,
   },
   successContainer: {
@@ -667,7 +668,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   receiptDetails: {
-    marginBottom: 32,
+    marginBottom: 12,
     zIndex: 2,
   },
   detailRow: {
@@ -693,27 +694,27 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   epinsSection: {
-    marginTop: 20,
+    marginTop: 16,
     zIndex: 2,
   },
   epinsTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#00A651',
-    marginBottom: 16,
+    marginBottom: 12,
     textAlign: 'center',
   },
   epinCard: {
     backgroundColor: '#FDF6E3',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
+    borderRadius: 8,
+    padding: 8,
+    marginBottom: 5,
     borderWidth: 1,
     borderColor: '#E5E5E5',
     zIndex: 2,
   },
   epinHeader: {
-    marginBottom: 12,
+    marginBottom: 8,
   },
   epinNetworkInfo: {
     flexDirection: 'row',
@@ -746,13 +747,13 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   epinDetails: {
-    marginTop: 8,
+    marginTop: 6,
   },
   epinRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   epinLabel: {
     fontSize: 14,

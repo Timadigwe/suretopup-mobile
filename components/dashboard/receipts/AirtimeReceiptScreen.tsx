@@ -48,9 +48,9 @@ const { width } = Dimensions.get('window');
 
 // Network provider images
 const NETWORK_IMAGES = {
-  mtn: require('@/assets/images/mtn.jpeg'),
-  airtel: require('@/assets/images/airtel.jpg'),
-  glo: require('@/assets/images/glo.jpg'),
+  mtn: require('@/assets/images/mtn.png'),
+  airtel: require('@/assets/images/airtel.png'),
+  glo: require('@/assets/images/glo.png'),
   '9mobile': require('@/assets/images/9mobile.png'),
 };
 
@@ -314,11 +314,11 @@ export const AirtimeReceiptScreen: React.FC<AirtimeReceiptScreenProps> = ({
 
             {/* Network Icon */}
             <View style={styles.successIconContainer}>
-              <View style={[styles.networkIconContainer, { backgroundColor: getNetworkColor(receiptData.network) }]}>
+              <View style={[styles.networkIconContainer]}>
                 <Image 
                   source={getNetworkImage(receiptData.network)} 
                   style={styles.networkIcon}
-                  resizeMode="contain"
+                  resizeMode="cover"
                 />
               </View>
               <Text style={styles.amountValue}>
@@ -635,8 +635,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   networkIconContainer: {
-    width: 50,
-    height: 50,
+    width: 40,
+    height: 40,
     borderRadius: 32,
     alignItems: 'center',
     justifyContent: 'center',
@@ -651,8 +651,8 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   networkIcon: {
-    width: 40,
-    height: 40,
+    width: '100%',
+    height: '100%',
     borderRadius: 20,
   },
   successText: {

@@ -12,6 +12,7 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   ScrollView,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -291,6 +292,8 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
             onChangeText={onChangeText}
             onFocus={() => setFocusedField(field)}
             onBlur={() => setFocusedField(null)}
+            textAlignVertical="center"
+            underlineColorAndroid="transparent"
           />
           {(field === 'newPassword' || field === 'confirmPassword') && (
             <TouchableOpacity
@@ -347,7 +350,7 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
           Forgot Password?
         </Text>
         <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
-          Enter your email address and we'll send you a verification code to reset your password
+          Enter your email address and we will send you a verification code to reset your password
         </Text>
       </View>
 
@@ -394,10 +397,10 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
     <>
       <View style={styles.titleContainer}>
         <Text style={[styles.title, { color: colors.text }]}>
-          Verify Your Email 📧
+          Verify Your Email
         </Text>
         <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
-          We've sent a 5-digit verification code to
+          We have sent a 5-digit verification code to
         </Text>
         <Text style={[styles.emailText, { color: colors.primary }]}>
           {email}
@@ -445,7 +448,7 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
 
         <View style={styles.resendContainer}>
           <Text style={[styles.resendText, { color: colors.mutedForeground }]}>
-            Didn't receive the code?
+            Did not receive the code?
           </Text>
           <TouchableOpacity
             onPress={handleResendOtp}
@@ -475,7 +478,7 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
     <>
       <View style={styles.titleContainer}>
         <Text style={[styles.title, { color: colors.text }]}>
-          Reset Your Password 🔒
+          Reset Your Password
         </Text>
         <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
           Enter your new password below
@@ -547,21 +550,27 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
         <View style={styles.headerSpacer} />
       </View>
 
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <ScrollView 
-          style={styles.content}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          {renderLogo()}
-          {renderStepIndicator()}
+      <KeyboardAvoidingView 
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <ScrollView 
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            {renderLogo()}
+            {renderStepIndicator()}
 
-          {currentStep === 'email' && renderEmailStep()}
-          {currentStep === 'otp' && renderOtpStep()}
-          {currentStep === 'password' && renderPasswordStep()}
-        </ScrollView>
-      </TouchableWithoutFeedback>
+            {currentStep === 'email' && renderEmailStep()}
+            {currentStep === 'otp' && renderOtpStep()}
+            {currentStep === 'password' && renderPasswordStep()}
+          </ScrollView>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
 
       <CustomModal
         visible={modalVisible}
@@ -594,13 +603,16 @@ const styles = StyleSheet.create({
   headerSpacer: {
     width: 40,
   },
-  content: {
+  keyboardAvoidingView: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 20,
+  },
+  scrollView: {
+    flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: 20,
     paddingBottom: 50,
   },
   logoContainer: {

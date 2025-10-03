@@ -264,12 +264,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           </View>
           <View style={styles.headerActions}>
             <TouchableOpacity
-              onPress={() => onNavigate('notifications')}
-              style={styles.headerButton}
-            >
-              <Ionicons name="notifications" size={20} color={colors.text} />
-            </TouchableOpacity>
-            <TouchableOpacity
               onPress={() => onNavigate('profile')}
               style={styles.headerButton}
             >

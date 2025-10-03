@@ -11,6 +11,8 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
+  KeyboardAvoidingView,
+  ScrollView,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -188,107 +190,128 @@ export const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = (
         <View style={styles.headerSpacer} />
       </View>
 
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={styles.content}>
-          {renderLogo()}
-
-          <View style={styles.titleContainer}>
-            <Text style={[styles.title, { color: colors.text }]}>
-              Verify Your Email
-            </Text>
-            <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
-              We've sent a 5-digit verification code to
-            </Text>
-            <Text style={[styles.emailText, { color: colors.primary }]}>
-              {userEmail}
-            </Text>
-            <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
-              Please enter the code to verify your email address
-            </Text>
-          </View>
-
-        <View style={styles.form}>
-          <View style={styles.inputContainer}>
-            <Text style={[styles.inputLabel, { color: colors.text }]}>
-              Verification Code
-            </Text>
-            <View style={styles.inputWrapper}>
-              <Ionicons 
-                name="key" 
-                size={20} 
-                color={focusedField === 'code' ? colors.primary : colors.mutedForeground} 
-                style={styles.inputIcon} 
-              />
-              <TextInput
-                style={[styles.input, { 
-                  color: colors.text,
-                  backgroundColor: colors.card,
-                  borderColor: focusedField === 'code' ? colors.primary : colors.border,
-                  borderWidth: focusedField === 'code' ? 2 : 1,
-                }]}
-                placeholder="Enter 5-digit code"
-                placeholderTextColor={colors.mutedForeground}
-                keyboardType="number-pad"
-                maxLength={5}
-                value={verificationCode}
-                onChangeText={setVerificationCode}
-                onFocus={() => setFocusedField('code')}
-                onBlur={() => setFocusedField(null)}
-              />
-            </View>
-          </View>
-
-          <TouchableOpacity
-            onPress={handleVerification}
-            disabled={isLoading}
-            style={[
-              styles.verifyButton,
-              isLoading && styles.verifyButtonDisabled
-            ]}
+      <KeyboardAvoidingView 
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <ScrollView 
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
           >
-            <LinearGradient
-              colors={[colors.primary, colors.primaryHover || '#008000']}
-              style={styles.verifyButtonGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-            >
-              {isLoading ? (
-                <Animated.View style={[styles.loadingSpinner, { transform: [{ rotate: spin }] }]} />
-              ) : (
-                <Text style={[styles.verifyButtonText, { color: 'white' }]}>
-                  Verify Email
-                </Text>
-              )}
-            </LinearGradient>
-          </TouchableOpacity>
+            {renderLogo()}
 
-          <View style={styles.resendContainer}>
-            <Text style={[styles.resendText, { color: colors.mutedForeground }]}>
-              Didn't receive the code?
-            </Text>
-            <TouchableOpacity
-              onPress={handleResendCode}
-              disabled={resendCountdown > 0 || isResending}
-              style={styles.resendButton}
-            >
-              <Text style={[
-                styles.resendButtonText, 
-                { 
-                  color: resendCountdown > 0 ? colors.mutedForeground : colors.primary 
-                }
-              ]}>
-                {resendCountdown > 0 
-                  ? `Resend in ${resendCountdown}s` 
-                  : isResending 
-                    ? 'Sending...' 
-                    : 'Resend Code'
-                }
+            <View style={styles.titleContainer}>
+              <Text style={[styles.title, { color: colors.text }]}>
+                Verify Your Email
               </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-        </View>
-      </TouchableWithoutFeedback>
+              <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
+                We have sent a 5-digit verification code to
+              </Text>
+              <Text style={[styles.emailText, { color: colors.primary }]}>
+                {userEmail}
+              </Text>
+              <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
+                Please enter the code to verify your email address
+              </Text>
+              
+              {/* Spam folder note */}
+              <View style={styles.spamNoteContainer}>
+                <Ionicons name="mail" size={16} color={colors.warning || '#F59E0B'} />
+                <Text style={[styles.spamNoteText, { color: colors.mutedForeground }]}>
+                  Can't find the email? Check your spam/junk folder
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.form}>
+              <View style={styles.inputContainer}>
+                <Text style={[styles.inputLabel, { color: colors.text }]}>
+                  Verification Code
+                </Text>
+                <View style={styles.inputWrapper}>
+                  <Ionicons 
+                    name="key" 
+                    size={20} 
+                    color={focusedField === 'code' ? colors.primary : colors.mutedForeground} 
+                    style={styles.inputIcon} 
+                  />
+                  <TextInput
+                    style={[styles.input, { 
+                      color: colors.text,
+                      backgroundColor: colors.card,
+                      borderColor: focusedField === 'code' ? colors.primary : colors.border,
+                      borderWidth: focusedField === 'code' ? 2 : 1,
+                    }]}
+                    placeholder="Enter 5-digit code"
+                    placeholderTextColor={colors.mutedForeground}
+                    keyboardType="number-pad"
+                    maxLength={5}
+                    value={verificationCode}
+                    onChangeText={setVerificationCode}
+                    onFocus={() => setFocusedField('code')}
+                    onBlur={() => setFocusedField(null)}
+                    textAlignVertical="center"
+                    underlineColorAndroid="transparent"
+                  />
+                </View>
+              </View>
+
+              <TouchableOpacity
+                onPress={handleVerification}
+                disabled={isLoading}
+                style={[
+                  styles.verifyButton,
+                  isLoading && styles.verifyButtonDisabled
+                ]}
+              >
+                <LinearGradient
+                  colors={[colors.primary, colors.primaryHover || '#008000']}
+                  style={styles.verifyButtonGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                >
+                  {isLoading ? (
+                    <Animated.View style={[styles.loadingSpinner, { transform: [{ rotate: spin }] }]} />
+                  ) : (
+                    <Text style={[styles.verifyButtonText, { color: 'white' }]}>
+                      Verify Email
+                    </Text>
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
+
+              <View style={styles.resendContainer}>
+                <Text style={[styles.resendText, { color: colors.mutedForeground }]}>
+                  Did not receive the code?
+                </Text>
+                <TouchableOpacity
+                  onPress={handleResendCode}
+                  disabled={resendCountdown > 0 || isResending}
+                  style={styles.resendButton}
+                >
+                  <Text style={[
+                    styles.resendButtonText, 
+                    { 
+                      color: resendCountdown > 0 ? colors.mutedForeground : colors.primary 
+                    }
+                  ]}>
+                    {resendCountdown > 0 
+                      ? `Resend in ${resendCountdown}s` 
+                      : isResending 
+                        ? 'Sending...' 
+                        : 'Resend Code'
+                    }
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
 
       <CustomModal
         visible={modalVisible}
@@ -321,10 +344,17 @@ const styles = StyleSheet.create({
   headerSpacer: {
     width: 40,
   },
-  content: {
+  keyboardAvoidingView: {
     flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: 24,
     paddingTop: 20,
+    paddingBottom: 32,
   },
   logoContainer: {
     alignItems: 'center',
@@ -440,5 +470,23 @@ const styles = StyleSheet.create({
   resendButtonText: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  spamNoteContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.2)',
+  },
+  spamNoteText: {
+    fontSize: 13,
+    marginLeft: 8,
+    textAlign: 'center',
+    lineHeight: 18,
   },
 });

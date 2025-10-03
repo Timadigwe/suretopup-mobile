@@ -10,6 +10,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useMobileFeatures } from '@/hooks/useMobileFeatures';
+import { config } from '../../config';
 
 interface HelpSupportScreenProps {
   onNavigate: (page: string, data?: any) => void;
@@ -35,19 +36,12 @@ export const HelpSupportScreen: React.FC<HelpSupportScreenProps> = ({
   const handleWhatsAppSupport = () => {
     triggerHapticFeedback('light');
     // You can replace this with actual WhatsApp number
-    Linking.openURL('https://wa.me/2349022818497');
+    Linking.openURL('https://wa.me/${config.whatsappNumber}');
   };
 
 
 
   const contactMethods = [
-    {
-      title: 'Email Support',
-      subtitle: 'Get help via email',
-      icon: 'mail',
-      action: handleContactSupport,
-      color: colors.primary,
-    },
     {
       title: 'WhatsApp Support',
       subtitle: 'Chat with us on WhatsApp',
