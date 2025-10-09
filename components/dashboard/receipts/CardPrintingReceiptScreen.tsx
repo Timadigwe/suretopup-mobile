@@ -397,8 +397,8 @@ export const CardPrintingReceiptScreen: React.FC<CardPrintingReceiptScreenProps>
                             />
                           </View>
                           <View style={styles.epinNetworkText}>
-                            <Text style={styles.epinNetworkName}>{receiptData.network?.toUpperCase() || 'N/A'}</Text>
-                            <Text style={styles.epinBusinessName}>{receiptData.business_name || receiptData.businessName || 'SureTopUp'}</Text>
+                            <Text style={styles.epinNetworkName}>{receiptData.business_name || receiptData.businessName || 'SureTopUp'}</Text>
+                            <Text style={styles.epinBusinessName}>{receiptData.network?.toUpperCase() || 'N/A'}</Text>
                           </View>
                         </View>
                       </View>
@@ -418,7 +418,7 @@ export const CardPrintingReceiptScreen: React.FC<CardPrintingReceiptScreenProps>
                           <Text style={styles.epinValue}>{epin.serial}</Text>
                         </View>
                         {epin.instruction && (
-                          <View style={styles.epinRow}>
+                          <View style={[styles.epinRow, {backgroundColor: 'white', padding: 4, borderRadius: 10}]}>
                             <Text style={styles.epinLabel}>Instruction:</Text>
                             <Text style={styles.epinValue}>{epin.instruction}</Text>
                           </View>
@@ -729,9 +729,9 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   epinNetworkIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
   epinNetworkText: {
     flex: 1,

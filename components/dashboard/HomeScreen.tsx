@@ -109,7 +109,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       const response = await apiService.getDashboard();
       
       if (response.success && response.data) {
-        //console.log('Dashboard Data After Refresh:', JSON.stringify(response.data, null, 2));
+        console.log('Dashboard Data After Refresh:', JSON.stringify(response.data, null, 2));
         setDashboardData(response.data);
         dashboardCacheUtils.setData(response.data);
         setHasInitialLoad(true);

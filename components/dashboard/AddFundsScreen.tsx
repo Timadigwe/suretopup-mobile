@@ -569,22 +569,6 @@ export const AddFundsScreen: React.FC<AddFundsScreenProps> = ({ onNavigate }) =>
                   ₦{chargeData.amount.toLocaleString()}
                 </Text>
               </View>
-              <View style={styles.chargeRow}>
-                <Text style={[styles.chargeLabel, { color: colors.mutedForeground }]}>
-                  Service Charge ({chargeData.percentage}%):
-                </Text>
-                <Text style={[styles.chargeValue, { color: colors.text }]}>
-                  ₦{chargeData.percentage_charge.toLocaleString()}
-                </Text>
-              </View>
-              <View style={styles.chargeRow}>
-                <Text style={[styles.chargeLabel, { color: colors.mutedForeground }]}>
-                  Flat Fee:
-                </Text>
-                <Text style={[styles.chargeValue, { color: colors.text }]}>
-                  ₦{chargeData.flat_fee.toLocaleString()}
-                </Text>
-              </View>
               <View style={[styles.chargeRow, styles.totalRow]}>
                 <Text style={[styles.totalLabel, { color: colors.text }]}>
                   Total to Pay:

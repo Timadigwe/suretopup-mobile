@@ -1990,6 +1990,17 @@ class ApiService {
       body: JSON.stringify(data),
     });
   }
+
+  async calculateCardDiscount(data: {
+    network: string;
+    amount: number;
+    quantity: number;
+  }): Promise<ApiResponse<any>> {
+    return this.makeRequest('/user/printcard/calculate-discount', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
 }
 
 export const apiService = new ApiService();

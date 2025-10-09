@@ -59,8 +59,10 @@ export const CardPrintingScreen: React.FC<CardPrintingScreenProps> = ({ onNaviga
   const [amountp, setAmountp] = useState('110');
   const [transactionPin, setTransactionPin] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isCalculatingDiscount, setIsCalculatingDiscount] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
+  const [discountData, setDiscountData] = useState<any>(null);
 
   const [errorMessage, setErrorMessage] = useState('');
   const [successData, setSuccessData] = useState<any>(null);
@@ -70,18 +72,43 @@ export const CardPrintingScreen: React.FC<CardPrintingScreenProps> = ({ onNaviga
   const { safeAreaTop, safeAreaBottom } = useSafeArea();
   const { user } = useAuth();
 
-  // Calculate amountp when denomination or quantity changes
+  // Calculate discount when denomination, quantity, or network changes
+  const calculateDiscount = async () => {
+    if (!selectedNetwork || !amount || !quantity) {
+      setDiscountData(null);
+      setAmountp('0');
+      return;
+    }
+
+    setIsCalculatingDiscount(true);
+    try {
+      const response = await apiService.calculateCardDiscount({
+        network: selectedNetwork,
+        amount: parseFloat(amount),
+        quantity: parseInt(quantity),
+      });
+
+      if ((response.success || response.status === 'success') && response.data) {
+        setDiscountData(response.data);
+        setAmountp(response.data.amountp.toString());
+      } else {
+        console.log('Discount calculation failed:', response.message);
+        setDiscountData(null);
+        setAmountp('0');
+      }
+    } catch (error) {
+      console.log('Discount calculation error:', error);
+      setDiscountData(null);
+      setAmountp('0');
+    } finally {
+      setIsCalculatingDiscount(false);
+    }
+  };
+
+  // Calculate discount when denomination, quantity, or network changes
   useEffect(() => {
-    const denominationValue = parseFloat(amount) || 0;
-    const quantityValue = parseInt(quantity) || 0;
-    const total = denominationValue * quantityValue;
-    
-    // Add 10% service charge
-    const serviceCharge = total * 0.10;
-    const finalAmount = total + serviceCharge;
-    
-    setAmountp(finalAmount.toFixed(2));
-  }, [amount, quantity]);
+    calculateDiscount();
+  }, [amount, quantity, selectedNetwork]);
 
   const validateForm = () => {
     if (!businessName.trim()) {
@@ -357,14 +384,13 @@ export const CardPrintingScreen: React.FC<CardPrintingScreenProps> = ({ onNaviga
             <View style={[styles.inputContainer, { backgroundColor: colors.card }]}>
               <View style={styles.inputWrapper}>
                 <Text style={styles.currencySymbol}>₦</Text>
-                <TextInput
-                  style={[styles.amountInput, { color: colors.text }]}
-                  value={amountp}
-                  onChangeText={setAmountp}
-                  placeholder="0"
-                  placeholderTextColor={colors.mutedForeground}
-                  keyboardType="numeric"
-                />
+                {isCalculatingDiscount ? (
+                  <ActivityIndicator size="small" color={colors.primary} style={{ marginLeft: 8 }} />
+                ) : (
+                  <Text style={[styles.amountInput, { color: colors.text }]}>
+                    {amountp}
+                  </Text>
+                )}
               </View>
             </View>
           </View>
@@ -389,7 +415,6 @@ export const CardPrintingScreen: React.FC<CardPrintingScreenProps> = ({ onNaviga
             </View>
           </View>
         </View>
-
 
 
         {/* Transaction PIN */}

@@ -171,7 +171,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
       >
         {/* Transactions List */}
         {transactions.length > 0 ? (
-          <View style={styles.transactionsList}>
+        <View style={styles.transactionsList}>
             {transactions.map((transaction, index) => {
               const transactionColor = getTransactionColor(index);
               const isCredit = transaction.type === 'Credit';
@@ -179,12 +179,12 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
               
               return (
                 <TouchableOpacity 
-                  key={transaction.id} 
-                  style={[styles.transactionCard, { backgroundColor: colors.card }]}
+              key={transaction.id} 
+              style={[styles.transactionCard, { backgroundColor: colors.card }]}
                   onPress={() => handleTransactionPress(transaction)}
                   activeOpacity={0.7}
-                >
-                  <View style={styles.transactionInfo}>
+            >
+              <View style={styles.transactionInfo}>
                     <View style={[
                       styles.transactionIconContainer, 
                       { backgroundColor: transactionColor + '15' }
@@ -197,41 +197,41 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                     </View>
                     
                     <View style={styles.transactionText}>
-                      <Text style={[styles.transactionType, { color: colors.text }]}>
+                <Text style={[styles.transactionType, { color: colors.text }]}>
                         {getTransactionTitle(transaction)}
-                      </Text>
-                      <Text style={[styles.transactionDate, { color: colors.mutedForeground }]}>
+                </Text>
+                <Text style={[styles.transactionDate, { color: colors.mutedForeground }]}>
                         {formatDate(transaction.created_at)} • {formatTime(transaction.created_at)}
-                      </Text>
-                    </View>
+                </Text>
+              </View>
                   </View>
 
-                  <View style={styles.transactionAmount}>
-                    <Text style={[
-                      styles.amountText, 
+              <View style={styles.transactionAmount}>
+                <Text style={[
+                  styles.amountText, 
                       { color: isCredit ? colors.success : colors.text }
-                    ]}>
+                ]}>
                       {isCredit ? '+' : '-'}₦{amount.toLocaleString()}
-                    </Text>
+                </Text>
                     
-                    <View style={[
-                      styles.statusBadge,
+                <View style={[
+                  styles.statusBadge,
                       { backgroundColor: transaction.status === 'Completed' 
                         ? colors.success + '15' 
                         : colors.destructive + '15'
-                      }
-                    ]}>
-                      <Text style={[
-                        styles.statusText,
+                  }
+                ]}>
+                  <Text style={[
+                    styles.statusText,
                         { color: transaction.status === 'Completed' 
                           ? colors.success 
-                          : colors.destructive
-                        }
-                      ]}>
-                        {transaction.status}
-                      </Text>
-                    </View>
-                  </View>
+                      : colors.destructive
+                    }
+                  ]}>
+                    {transaction.status}
+                  </Text>
+                </View>
+              </View>
                 </TouchableOpacity>
               );
             })}
@@ -247,20 +247,20 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
             <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
               Your transaction history will appear here once you make your first transaction.
             </Text>
-          </View>
+        </View>
         )}
       </ScrollView>
 
       {/* Bottom Navigation */}
       <View style={{ paddingBottom: Platform.OS === 'android' ? safeAreaBottom : 0 }}>
-        <BottomTabNavigator
-          activeTab="transactions"
-          onTabPress={(tabId) => {
-            if (tabId !== 'transactions') {
-              onNavigate(tabId);
-            }
-          }}
-        />
+      <BottomTabNavigator
+        activeTab="transactions"
+        onTabPress={(tabId) => {
+          if (tabId !== 'transactions') {
+            onNavigate(tabId);
+          }
+        }}
+      />
       </View>
     </View>
   );
