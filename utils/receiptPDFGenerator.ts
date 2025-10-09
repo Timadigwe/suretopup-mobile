@@ -304,8 +304,9 @@ export const shareReceiptAsPDF = async (receiptData: ReceiptData, receiptType: s
       height: 842, // A4 height in points
     });
     
-    // Create a new file with the desired name
-    const fileName = `SureTopUp-${receiptData.reference}.pdf`;
+    // Create a new file with the desired name including service type
+    const serviceName = receiptData.service || 'Receipt';
+    const fileName = `SureTopUp-${serviceName}-${receiptData.reference}.pdf`;
     const newUri = `${FileSystem.documentDirectory}${fileName}`;
     
     // Copy the generated PDF to the new location with proper name

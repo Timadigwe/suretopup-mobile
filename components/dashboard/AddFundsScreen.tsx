@@ -41,6 +41,15 @@ export const AddFundsScreen: React.FC<AddFundsScreenProps> = ({ onNavigate }) =>
   const [errorMessage, setErrorMessage] = useState('');
   const [successData, setSuccessData] = useState<any>(null);
   const [webViewStartTime, setWebViewStartTime] = useState<number | null>(null);
+  const [chargeData, setChargeData] = useState<{
+    amount: number;
+    percentage: number;
+    percentage_charge: number;
+    flat_fee: number;
+    service_charge: number;
+    total_to_pay: number;
+  } | null>(null);
+  const [isCalculatingCharge, setIsCalculatingCharge] = useState(false);
   
   const { colors } = useTheme();
   const { triggerHapticFeedback } = useMobileFeatures();
@@ -49,6 +58,8 @@ export const AddFundsScreen: React.FC<AddFundsScreenProps> = ({ onNavigate }) =>
   const paymentCheckInterval = useRef<number | null>(null);
   const webViewTimeout = useRef<number | null>(null);
   const webViewCloseTimeout = useRef<number | null>(null);
+  const lastCallbackTime = useRef<number>(0);
+  const callbackCount = useRef<number>(0);
 
   // Set user email on component mount
   useEffect(() => {
@@ -56,6 +67,30 @@ export const AddFundsScreen: React.FC<AddFundsScreenProps> = ({ onNavigate }) =>
       setEmail(user.email);
     }
   }, [user]);
+
+  // Calculate charge when amount changes
+  const calculateCharge = async (amountValue: number) => {
+    if (amountValue <= 0) {
+      setChargeData(null);
+      return;
+    }
+
+    setIsCalculatingCharge(true);
+    try {
+      const response = await apiService.calculateCharge(amountValue);
+      if ((response.success || response.status === 'success') && response.data) {
+        setChargeData(response.data);
+      } else {
+        console.log('Charge calculation failed:', response.message);
+        setChargeData(null);
+      }
+    } catch (error) {
+      console.log('Charge calculation error:', error);
+      setChargeData(null);
+    } finally {
+      setIsCalculatingCharge(false);
+    }
+  };
 
   // Cleanup payment check interval on unmount
   useEffect(() => {
@@ -102,7 +137,9 @@ export const AddFundsScreen: React.FC<AddFundsScreenProps> = ({ onNavigate }) =>
     triggerHapticFeedback('light');
     
     try {
-      const response = await apiService.initializeDeposit(email, parseFloat(amount));
+      // Use total_to_pay if charge data is available, otherwise use original amount
+      const paymentAmount = chargeData?.total_to_pay || parseFloat(amount);
+      const response = await apiService.initializeDeposit(email, paymentAmount, chargeData || undefined);
       
       // Check if the response indicates success (API returns "status": "success")
       if ((response.success || response.status === 'success') && response.data) {
@@ -156,34 +193,47 @@ export const AddFundsScreen: React.FC<AddFundsScreenProps> = ({ onNavigate }) =>
       console.log(`Payment status check #${pollCount} for reference: ${reference}`);
       
       try {
-        const response = await apiService.checkPaymentStatus(reference);
-        console.log('Payment status response:', JSON.stringify(response, null, 2));
+        // Check if 50 seconds have passed since last callback
+        const currentTime = Date.now();
+        const timeSinceLastCallback = currentTime - lastCallbackTime.current;
         
-        if ((response.success || response.status === 'success') && response.data) {
-          const transaction = response.data.transaction;
-          console.log('Transaction status:', transaction.status);
+        if (timeSinceLastCallback >= 50000) { // 50 seconds = 50000ms
+          console.log(`Making payment callback #${callbackCount.current + 1} for reference: ${reference}`);
+          callbackCount.current++;
+          lastCallbackTime.current = currentTime;
           
-          if (transaction.status === 'Completed') {
-            console.log('Payment completed successfully!');
-            setPaymentStatus('success');
-            setSuccessData(response.data);
-            setShowSuccessModal(true);
-            stopPaymentStatusCheck();
-            // Close WebView when payment is successful
-            setShowWebView(false);
-          } else if (transaction.status === 'Failed') {
-            console.log('Payment failed!');
-            setPaymentStatus('failed');
-            setErrorMessage('Payment failed. Please try again.');
-            setShowErrorModal(true);
-            stopPaymentStatusCheck();
-            // Close WebView when payment fails
-            setShowWebView(false);
+          const response = await apiService.checkPaymentStatus(reference);
+          console.log('Payment status response:', JSON.stringify(response, null, 2));
+          
+          if ((response.success || response.status === 'success') && response.data) {
+            const transaction = response.data.transaction;
+            console.log('Transaction status:', transaction.status);
+            
+            if (transaction.status === 'Completed') {
+              console.log('Payment completed successfully!');
+              setPaymentStatus('success');
+              setSuccessData(response.data);
+              setShowSuccessModal(true);
+              stopPaymentStatusCheck();
+              // Close WebView when payment is successful
+              setShowWebView(false);
+            } else if (transaction.status === 'Failed') {
+              console.log('Payment failed!');
+              setPaymentStatus('failed');
+              setErrorMessage('Payment failed. Please try again.');
+              setShowErrorModal(true);
+              stopPaymentStatusCheck();
+              // Close WebView when payment fails
+              setShowWebView(false);
+            } else {
+              console.log('Payment still pending, status:', transaction.status);
+            }
           } else {
-            console.log('Payment still pending, status:', transaction.status);
+            console.log('Payment status check failed:', response.message);
           }
         } else {
-          console.log('Payment status check failed:', response.message);
+          const remainingTime = Math.ceil((50000 - timeSinceLastCallback) / 1000);
+          console.log(`Skipping callback - ${remainingTime}s remaining until next allowed call`);
         }
         
         // Stop polling after max attempts
@@ -213,6 +263,9 @@ export const AddFundsScreen: React.FC<AddFundsScreenProps> = ({ onNavigate }) =>
       clearTimeout(webViewCloseTimeout.current);
       webViewCloseTimeout.current = null;
     }
+    // Reset callback tracking
+    lastCallbackTime.current = 0;
+    callbackCount.current = 0;
   };
 
   const handleWebViewNavigationStateChange = (navState: any) => {
@@ -240,6 +293,20 @@ export const AddFundsScreen: React.FC<AddFundsScreenProps> = ({ onNavigate }) =>
 
   const checkFinalPaymentStatus = async (reference: string) => {
     console.log('Checking final payment status for reference:', reference);
+    
+    // Check if 50 seconds have passed since last callback
+    const currentTime = Date.now();
+    const timeSinceLastCallback = currentTime - lastCallbackTime.current;
+    
+    if (timeSinceLastCallback < 50000) { // 50 seconds = 50000ms
+      const remainingTime = Math.ceil((50000 - timeSinceLastCallback) / 1000);
+      console.log(`Skipping final check - ${remainingTime}s remaining until next allowed call`);
+      return;
+    }
+    
+    console.log(`Making final payment callback #${callbackCount.current + 1} for reference: ${reference}`);
+    callbackCount.current++;
+    lastCallbackTime.current = currentTime;
     
     try {
       const response = await apiService.checkPaymentStatus(reference);
@@ -356,7 +423,6 @@ export const AddFundsScreen: React.FC<AddFundsScreenProps> = ({ onNavigate }) =>
           )}
         />
         
-        {/* Payment Complete Button */}
 
         {/* Error Modal */}
         <CustomModal
@@ -435,7 +501,15 @@ export const AddFundsScreen: React.FC<AddFundsScreenProps> = ({ onNavigate }) =>
               <TextInput
                 style={[styles.amountInput, { color: colors.text }]}
                 value={amount}
-                onChangeText={setAmount}
+                onChangeText={(text) => {
+                  setAmount(text);
+                  const amountValue = parseFloat(text);
+                  if (!isNaN(amountValue)) {
+                    calculateCharge(amountValue);
+                  } else {
+                    setChargeData(null);
+                  }
+                }}
                 placeholder="0.00"
                 placeholderTextColor={colors.mutedForeground}
                 keyboardType="numeric"
@@ -461,6 +535,7 @@ export const AddFundsScreen: React.FC<AddFundsScreenProps> = ({ onNavigate }) =>
                 ]}
                 onPress={() => {
                   setAmount(quickAmount.toString());
+                  calculateCharge(quickAmount);
                   triggerHapticFeedback('light');
                 }}
                 activeOpacity={0.7}
@@ -475,6 +550,52 @@ export const AddFundsScreen: React.FC<AddFundsScreenProps> = ({ onNavigate }) =>
             ))}
           </View>
         </View>
+
+        {/* Charge Calculation Display */}
+        {chargeData && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Payment Summary
+            </Text>
+            <LinearGradient
+              colors={[colors.card, colors.card + 'F0']}
+              style={styles.chargeContainer}
+            >
+              <View style={styles.chargeRow}>
+                <Text style={[styles.chargeLabel, { color: colors.mutedForeground }]}>
+                  Amount:
+                </Text>
+                <Text style={[styles.chargeValue, { color: colors.text }]}>
+                  ₦{chargeData.amount.toLocaleString()}
+                </Text>
+              </View>
+              <View style={styles.chargeRow}>
+                <Text style={[styles.chargeLabel, { color: colors.mutedForeground }]}>
+                  Service Charge ({chargeData.percentage}%):
+                </Text>
+                <Text style={[styles.chargeValue, { color: colors.text }]}>
+                  ₦{chargeData.percentage_charge.toLocaleString()}
+                </Text>
+              </View>
+              <View style={styles.chargeRow}>
+                <Text style={[styles.chargeLabel, { color: colors.mutedForeground }]}>
+                  Flat Fee:
+                </Text>
+                <Text style={[styles.chargeValue, { color: colors.text }]}>
+                  ₦{chargeData.flat_fee.toLocaleString()}
+                </Text>
+              </View>
+              <View style={[styles.chargeRow, styles.totalRow]}>
+                <Text style={[styles.totalLabel, { color: colors.text }]}>
+                  Total to Pay:
+                </Text>
+                <Text style={[styles.totalValue, { color: colors.primary }]}>
+                  ₦{chargeData.total_to_pay.toLocaleString()}
+                </Text>
+              </View>
+            </LinearGradient>
+          </View>
+        )}
 
         {/* Email Input Section */}
         <View style={styles.section}>
@@ -623,7 +744,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 24,
     paddingTop: 24,
-    paddingBottom: 40,
+    paddingBottom: 60,
   },
   heroSection: {
     marginBottom: 32,
@@ -886,6 +1007,47 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 14,
     fontWeight: '600',
+  },
+  chargeContainer: {
+    padding: 20,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  chargeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  totalRow: {
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    paddingTop: 12,
+    marginTop: 8,
+    marginBottom: 0,
+  },
+  chargeLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  chargeValue: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  totalLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  totalValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 
 

@@ -31,17 +31,17 @@ const NETWORK_PROVIDERS = {
   mtn: {
     name: 'MTN',
     color: '#fbc404',
-    logo: require('@/assets/images/mtn.jpeg'),
+    logo: require('@/assets/images/mtn.png'),
   },
   airtel: {
     name: 'Airtel',
     color: '#ec1c24',
-    logo: require('@/assets/images/airtel.jpg'),
+    logo: require('@/assets/images/airtel.png'),
   },
   glo: {
     name: 'Glo',
     color: '#1daa10',
-    logo: require('@/assets/images/glo.jpg'),
+    logo: require('@/assets/images/glo.png'),
   },
   '9mobile': {
     name: '9mobile',
@@ -299,7 +299,7 @@ export const CardPrintingScreen: React.FC<CardPrintingScreenProps> = ({ onNaviga
                 <Image 
                   source={getNetworkInfo(selectedNetwork).logo}
                   style={styles.networkLogo}
-                  resizeMode="contain"
+                  resizeMode="cover"
                 />
                 <Text style={[styles.networkName, { color: colors.text }]}>
                   {getNetworkInfo(selectedNetwork).name}
@@ -492,12 +492,11 @@ export const CardPrintingScreen: React.FC<CardPrintingScreenProps> = ({ onNaviga
               >
                 <View style={[
                   styles.networkOptionIcon,
-                  { backgroundColor: data.color }
                 ]}>
                   <Image 
                     source={data.logo}
                     style={styles.networkLogoModal}
-                    resizeMode="contain"
+                    resizeMode="cover"
                   />
                 </View>
                 <Text style={[
@@ -705,10 +704,12 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     marginRight: 12,
+    borderRadius: 20,
   },
   networkLogoModal: {
     width: 24,
     height: 24,
+    borderRadius: 20,
   },
   networkName: {
     fontSize: 14,

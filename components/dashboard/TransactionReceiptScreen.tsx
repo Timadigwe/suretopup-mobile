@@ -80,9 +80,9 @@ const { width } = Dimensions.get('window');
 
 // Network provider images
 const NETWORK_IMAGES = {
-  mtn: require('@/assets/images/mtn.jpeg'),
-  airtel: require('@/assets/images/airtel.jpg'),
-  glo: require('@/assets/images/glo.jpg'),
+  mtn: require('@/assets/images/mtn.png'),
+  airtel: require('@/assets/images/airtel.png'),
+  glo: require('@/assets/images/glo.png'),
   '9mobile': require('@/assets/images/9mobile.png'),
 };
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,7 +6,9 @@ import {
   ScrollView,
   TouchableOpacity,
   Linking,
+  Dimensions,
 } from 'react-native';
+import { WebView } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useMobileFeatures } from '@/hooks/useMobileFeatures';
@@ -21,6 +23,7 @@ export const HelpSupportScreen: React.FC<HelpSupportScreenProps> = ({
 }) => {
   const { colors } = useTheme();
   const { triggerHapticFeedback } = useMobileFeatures();
+  const [showChat, setShowChat] = useState(false);
 
   const handleGoBack = () => {
     triggerHapticFeedback('light');
@@ -39,9 +42,25 @@ export const HelpSupportScreen: React.FC<HelpSupportScreenProps> = ({
     Linking.openURL('https://wa.me/${config.whatsappNumber}');
   };
 
+  const handleTawkToChat = () => {
+    triggerHapticFeedback('light');
+    setShowChat(true);
+  };
+
+  const handleCloseChat = () => {
+    setShowChat(false);
+  };
+
 
 
   const contactMethods = [
+    {
+      title: 'Live Chat Support',
+      subtitle: 'Chat with our support team instantly',
+      icon: 'chatbubbles',
+      action: handleTawkToChat,
+      color: '#007AFF',
+    },
     {
       title: 'WhatsApp Support',
       subtitle: 'Chat with us on WhatsApp',
@@ -122,6 +141,41 @@ export const HelpSupportScreen: React.FC<HelpSupportScreenProps> = ({
 
 
       </ScrollView>
+
+      {/* Tawk.to Chat WebView */}
+      {showChat && (
+        <View style={styles.chatContainer}>
+          <View style={styles.chatHeader}>
+            <Text style={[styles.chatTitle, { color: colors.text }]}>
+              Live Chat Support
+            </Text>
+            <TouchableOpacity
+              onPress={handleCloseChat}
+              style={styles.closeButton}
+            >
+              <Ionicons name="close" size={24} color={colors.text} />
+            </TouchableOpacity>
+          </View>
+          <WebView
+            source={{ 
+              uri: 'https://tawk.to/chat/67ebef547a5384190935b64b/1inoptpce'
+            }}
+            style={styles.webView}
+            javaScriptEnabled={true}
+            domStorageEnabled={true}
+            startInLoadingState={true}
+            scalesPageToFit={false}
+            allowsInlineMediaPlayback={true}
+            mediaPlaybackRequiresUserAction={false}
+            onLoad={() => console.log('Tawk.to chat loaded')}
+            onError={(error) => console.log('WebView error:', error)}
+            onMessage={(event) => console.log('WebView message:', event.nativeEvent.data)}
+            mixedContentMode="compatibility"
+            thirdPartyCookiesEnabled={true}
+            allowsBackForwardNavigationGestures={false}
+          />
+        </View>
+      )}
     </View>
   );
 };
@@ -295,6 +349,46 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginRight: 8,
+  },
+  chatContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'white',
+    zIndex: 1000,
+    flex: 1,
+    flexDirection: 'column',
+  },
+  chatHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    paddingTop: 50,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    backgroundColor: 'white',
+    flexShrink: 0,
+  },
+  chatTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  closeButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
+  },
+  webView: {
+    flex: 1,
+    backgroundColor: 'white',
+    minHeight: 0,
+    height: Dimensions.get('window').height - 100, // Subtract header height
+    //paddingBottom: 60,
+    marginBottom: 80,
   },
 });
 

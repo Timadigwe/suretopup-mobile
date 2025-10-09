@@ -1233,21 +1233,65 @@ class ApiService {
     });
   }
 
-  async initializeDeposit(email: string, amount: number): Promise<ApiResponse<{
+  async calculateCharge(amount: number): Promise<ApiResponse<{
+    amount: number;
+    percentage: number;
+    percentage_charge: number;
+    flat_fee: number;
+    service_charge: number;
+    total_to_pay: number;
+  }>> {
+    return this.makeRequest<{
+      amount: number;
+      percentage: number;
+      percentage_charge: number;
+      flat_fee: number;
+      service_charge: number;
+      total_to_pay: number;
+    }>('/user/deposit/calculate-charge', {
+      method: 'POST',
+      body: JSON.stringify({
+        amount,
+      }),
+    });
+  }
+
+  async initializeDeposit(
+    email: string, 
+    amount: number, 
+    chargeData?: {
+      percentage: number;
+      percentage_charge: number;
+      flat_fee: number;
+      service_charge: number;
+      total_to_pay: number;
+    }
+  ): Promise<ApiResponse<{
     authorization_url: string;
     access_code: string;
     reference: string;
   }>> {
+    const requestBody: any = {
+      email,
+      amount,
+    };
+
+    // Add charge calculation fields if provided
+    if (chargeData) {
+      requestBody.percentage = chargeData.percentage;
+      requestBody.percentage_charge = chargeData.percentage_charge;
+      requestBody.flat_fee = chargeData.flat_fee;
+      requestBody.service_charge = chargeData.service_charge;
+      requestBody.total_to_pay = chargeData.total_to_pay;
+    }
+
     return this.makeRequest<{
       authorization_url: string;
       access_code: string;
       reference: string;
     }>('/user/deposit/initalize-deposit', {
       method: 'POST',
-      body: JSON.stringify({
-        email,
-        amount,
-      }),
+      body: JSON.stringify(requestBody),
     });
   }
 
