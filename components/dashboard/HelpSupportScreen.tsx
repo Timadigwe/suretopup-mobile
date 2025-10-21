@@ -39,7 +39,7 @@ export const HelpSupportScreen: React.FC<HelpSupportScreenProps> = ({
   const handleWhatsAppSupport = () => {
     triggerHapticFeedback('light');
     // You can replace this with actual WhatsApp number
-    Linking.openURL('https://wa.me/${config.whatsappNumber}');
+    Linking.openURL(`https://wa.me/${config.whatsappNumber}?text=Hello, I need help with SureTopUp`);
   };
 
   const handleTawkToChat = () => {
