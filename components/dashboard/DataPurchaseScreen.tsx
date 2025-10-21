@@ -317,6 +317,11 @@ export const DataPurchaseScreen: React.FC<DataPurchaseScreenProps> = ({ onNaviga
       businessName: 'SureTopUp',
       // Network information
       network: successData.transaction?.network || selectedNetwork,
+      // Data plan information
+      dataPlan: selectedPlan?.data_plan,
+      dataAmount: selectedPlan?.payment_price,
+      // Megabytes information from API response
+      megabytes: successData.megabytes || successData.transaction?.megabytes,
       // Additional transaction details
       transactionId: successData.transaction?.id,
       type: successData.transaction?.type,

@@ -33,7 +33,7 @@ export const HelpSupportScreen: React.FC<HelpSupportScreenProps> = ({
   const handleContactSupport = () => {
     triggerHapticFeedback('light');
     // You can replace this with actual support contact method
-    Linking.openURL('mailto:support@suretopup.com.ng');
+    Linking.openURL('mailto:info@suretopup.com.ng');
   };
 
   const handleWhatsAppSupport = () => {
@@ -60,6 +60,13 @@ export const HelpSupportScreen: React.FC<HelpSupportScreenProps> = ({
       icon: 'chatbubbles',
       action: handleTawkToChat,
       color: '#007AFF',
+    },
+    {
+      title: 'Email Support',
+      subtitle: 'Send us an email for support',
+      icon: 'mail',
+      action: handleContactSupport,
+      color: '#FF6B35',
     },
     {
       title: 'WhatsApp Support',

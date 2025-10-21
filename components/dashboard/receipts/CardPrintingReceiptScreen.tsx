@@ -17,7 +17,7 @@ import { useMobileFeatures } from '@/hooks/useMobileFeatures';
 import { useAuth } from '@/contexts/AuthContext';
 import ViewShot from 'react-native-view-shot';
 import * as MediaLibrary from 'expo-media-library';
-import { shareReceiptAsPDF } from '@/utils/receiptPDFGenerator';
+import { shareCardPrintingReceiptAsPDF } from '@/utils/cardPrintingPDFGenerator';
 
 const { width } = Dimensions.get('window');
 
@@ -101,6 +101,20 @@ export const CardPrintingReceiptScreen: React.FC<CardPrintingReceiptScreenProps>
     return receiptData.epins || [];
   };
 
+  // Get business name from metadata
+  const getBusinessName = (): string => {
+    if (receiptData.metadata) {
+      try {
+        const metadata = JSON.parse(receiptData.metadata);
+        return metadata.business_name || receiptData.businessName || 'SureTopUp';
+      } catch (error) {
+        console.error('Error parsing metadata for business name:', error);
+        return receiptData.businessName || 'SureTopUp';
+      }
+    }
+    return receiptData.businessName || 'SureTopUp';
+  };
+
   const epinsData = getEpinsData();
 
   const formatAmount = (amount: number) => {
@@ -167,7 +181,7 @@ export const CardPrintingReceiptScreen: React.FC<CardPrintingReceiptScreenProps>
       triggerHapticFeedback('light');
       setIsSharing(true);
 
-      await shareReceiptAsPDF(receiptData, 'Card Printing Receipt', viewShotRef);
+      await shareCardPrintingReceiptAsPDF(receiptData, viewShotRef);
     } catch (error) {
       console.error('Error sharing receipt:', error);
       Alert.alert('Error', 'Failed to share receipt. Please try again.');
@@ -185,6 +199,7 @@ export const CardPrintingReceiptScreen: React.FC<CardPrintingReceiptScreenProps>
     triggerHapticFeedback('light');
     setSelectedReceiptType(prev => prev === 'user' ? 'seller' : 'user');
   };
+
 
   const renderWatermarks = () => {
     return (
@@ -382,50 +397,59 @@ export const CardPrintingReceiptScreen: React.FC<CardPrintingReceiptScreenProps>
               {epinsData && epinsData.length > 0 && (
                 <View style={styles.epinsSection}>
                   <View style={styles.dottedLine} />
-                  <Text style={styles.epinsTitle}>Your ePIN(s)</Text>
+                  <Text style={styles.epinsTitle}>Your ePIN(s) - {epinsData.length} cards</Text>
 
-                  {epinsData.map((epin, index) => (
-                    <View key={index} style={styles.epinCard}>
-                      {/* Network Logo and Business Name */}
-                      <View style={styles.epinHeader}>
-                        <View style={styles.epinNetworkInfo}>
-                          <View style={[styles.epinNetworkIconContainer]}>
-                            <Image
-                              source={getNetworkImage(receiptData.network)}
-                              style={styles.epinNetworkIcon}
-                              resizeMode="cover"
-                            />
+                  <View style={styles.epinsContainer}>
+                    {epinsData.map((epin, index) => (
+                      <View key={index} style={styles.epinCard}>
+                        {/* Card Number Badge */}
+                        <View style={styles.epinCardNumber}>
+                          <Text style={styles.epinCardNumberText}>
+                            Card {index + 1}
+                          </Text>
+                        </View>
+
+                        {/* Network Logo and Business Name */}
+                        <View style={styles.epinHeader}>
+                          <View style={styles.epinNetworkInfo}>
+                            <View style={[styles.epinNetworkIconContainer]}>
+                              <Image
+                                source={getNetworkImage(receiptData.network)}
+                                style={styles.epinNetworkIcon}
+                                resizeMode="cover"
+                              />
+                            </View>
+                            <View style={styles.epinNetworkText}>
+                              <Text style={styles.epinNetworkName}>{getBusinessName()}</Text>
+                              <Text style={styles.epinBusinessName}>{receiptData.network?.toUpperCase() || 'N/A'}</Text>
+                            </View>
                           </View>
-                          <View style={styles.epinNetworkText}>
-                            <Text style={styles.epinNetworkName}>{receiptData.business_name || receiptData.businessName || 'SureTopUp'}</Text>
-                            <Text style={styles.epinBusinessName}>{receiptData.network?.toUpperCase() || 'N/A'}</Text>
+                        </View>
+
+                        {/* ePIN Details */}
+                        <View style={styles.epinDetails}>
+                          <View style={styles.epinRow}>
+                            <Text style={styles.epinLabel}>PIN:</Text>
+                            <Text style={styles.epinValue}>{epin.pin}</Text>
                           </View>
+                          <View style={styles.epinRow}>
+                            <Text style={styles.epinLabel}>Amount:</Text>
+                            <Text style={styles.epinValue}>{formatAmount(parseFloat(epin.amount))}</Text>
+                          </View>
+                          <View style={styles.epinRow}>
+                            <Text style={styles.epinLabel}>Serial:</Text>
+                            <Text style={styles.epinValue}>{epin.serial}</Text>
+                          </View>
+                          {epin.instruction && (
+                            <View style={[styles.epinRow, {backgroundColor: 'white', padding: 4, borderRadius: 10}]}>
+                              <Text style={styles.epinLabel}>Instruction:</Text>
+                              <Text style={styles.epinValue}>{epin.instruction}</Text>
+                            </View>
+                          )}
                         </View>
                       </View>
-
-                      {/* ePIN Details */}
-                      <View style={styles.epinDetails}>
-                        <View style={styles.epinRow}>
-                          <Text style={styles.epinLabel}>PIN:</Text>
-                          <Text style={styles.epinValue}>{epin.pin}</Text>
-                        </View>
-                        <View style={styles.epinRow}>
-                          <Text style={styles.epinLabel}>Amount:</Text>
-                          <Text style={styles.epinValue}>{formatAmount(parseFloat(epin.amount))}</Text>
-                        </View>
-                        <View style={styles.epinRow}>
-                          <Text style={styles.epinLabel}>Serial:</Text>
-                          <Text style={styles.epinValue}>{epin.serial}</Text>
-                        </View>
-                        {epin.instruction && (
-                          <View style={[styles.epinRow, {backgroundColor: 'white', padding: 4, borderRadius: 10}]}>
-                            <Text style={styles.epinLabel}>Instruction:</Text>
-                            <Text style={styles.epinValue}>{epin.instruction}</Text>
-                          </View>
-                        )}
-                      </View>
-                    </View>
-                  ))}
+                    ))}
+                  </View>
                 </View>
               )}
             </View>
@@ -435,6 +459,9 @@ export const CardPrintingReceiptScreen: React.FC<CardPrintingReceiptScreenProps>
               <View style={styles.dottedLine} />
               <Text style={styles.footerText}>
                 Thank you for using SureTopUp
+              </Text>
+              <Text style={styles.footerSubtext}>
+                For support, contact us @info@suretopup.com.ng
               </Text>
             </View>
           </View>
@@ -516,8 +543,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 8,
-    minHeight: 300,
-    maxHeight: 1000,
+    minHeight: 400,
+    // Removed maxHeight to allow container to expand naturally
   },
   watermarkContainer: {
     position: 'absolute',
@@ -696,25 +723,54 @@ const styles = StyleSheet.create({
   epinsSection: {
     marginTop: 16,
     zIndex: 2,
+    flex: 1, // Allow section to expand
   },
   epinsTitle: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#00A651',
-    marginBottom: 12,
     textAlign: 'center',
+    marginBottom: 16,
+  },
+  epinsContainer: {
+    marginTop: 8,
+    gap: 8, // Space between ePIN cards
   },
   epinCard: {
     backgroundColor: '#FDF6E3',
-    borderRadius: 8,
-    padding: 8,
-    marginBottom: 5,
+    borderRadius: 10,
+    padding: 12,
     borderWidth: 1,
     borderColor: '#E5E5E5',
     zIndex: 2,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 1,
+    minHeight: 80, // Ensure consistent card height
+    position: 'relative',
+  },
+  epinCardNumber: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: '#00A651',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    zIndex: 3,
+  },
+  epinCardNumberText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   epinHeader: {
-    marginBottom: 8,
+    marginBottom: 6,
   },
   epinNetworkInfo: {
     flexDirection: 'row',
@@ -747,13 +803,13 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   epinDetails: {
-    marginTop: 6,
+    marginTop: 4,
   },
   epinRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   epinLabel: {
     fontSize: 14,

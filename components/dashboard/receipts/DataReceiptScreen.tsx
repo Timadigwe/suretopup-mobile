@@ -39,6 +39,7 @@ interface DataReceiptData {
   // Data-specific fields
   dataPlan?: string;
   dataAmount?: string;
+  megabytes?: string;
 }
 
 interface DataReceiptScreenProps {
@@ -296,9 +297,18 @@ export const DataReceiptScreen: React.FC<DataReceiptScreenProps> = ({
                   resizeMode="cover"
                 />
               </View>
-              <Text style={styles.amountValue}>
-                {formatAmount(receiptData.amount)}
-              </Text>
+              {/* Amount for user receipts, Data amount for seller receipts */}
+              {selectedReceiptType === 'user' ? (
+                <Text style={styles.amountValue}>
+                  {formatAmount(receiptData.amount)}
+                </Text>
+              ) : (
+                receiptData.megabytes && (
+                  <Text style={styles.amountValue}>
+                    {receiptData.megabytes}
+                  </Text>
+                )
+              )}
               <Text style={[styles.amountLabel, {fontSize: 20}]}>Successful Transaction</Text>
               <Text style={[styles.detailValue, {fontWeight: '400'}]}>{formatDate(receiptData.date)}</Text>
             </View>
@@ -323,10 +333,45 @@ export const DataReceiptScreen: React.FC<DataReceiptScreenProps> = ({
                 <Text style={styles.detailValue}>{receiptData.network?.toUpperCase() || 'N/A'}</Text>
               </View>
 
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Amount</Text>
-                <Text style={styles.detailValue}>{formatAmount(receiptData.amount)}</Text>
-              </View>
+              {/* Amount - Only show for user receipts */}
+              {selectedReceiptType === 'user' && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Amount</Text>
+                  <Text style={styles.detailValue}>{formatAmount(receiptData.amount)}</Text>
+                </View>
+              )}
+
+              {/* Data Bundle Information */}
+              {receiptData.dataPlan && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Data Bundle</Text>
+                  <Text style={styles.detailValue}>{receiptData.dataPlan}</Text>
+                </View>
+              )}
+
+              {/* Data Amount - Different display based on receipt type */}
+              {selectedReceiptType === 'user' && receiptData.megabytes && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Data Amount</Text>
+                  <Text style={styles.detailValue}>{receiptData.megabytes}</Text>
+                </View>
+              )}
+
+              {/* Reseller Receipt - Show only Data (MB/GB format) */}
+              {selectedReceiptType === 'seller' && receiptData.megabytes && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Data</Text>
+                  <Text style={styles.detailValue}>{receiptData.megabytes}</Text>
+                </View>
+              )}
+
+              {/* User Receipt - Show data amount if no megabytes */}
+              {selectedReceiptType === 'user' && receiptData.dataAmount && !receiptData.megabytes && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Data Amount</Text>
+                  <Text style={styles.detailValue}>{formatAmount(parseFloat(receiptData.dataAmount))}</Text>
+                </View>
+              )}
 
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Date</Text>
@@ -358,6 +403,9 @@ export const DataReceiptScreen: React.FC<DataReceiptScreenProps> = ({
               <View style={styles.dottedLine} />
               <Text style={styles.footerText}>
                 Thank you for using SureTopUp
+              </Text>
+              <Text style={styles.footerSubtext}>
+                For support, contact us @info@suretopup.com.ng
               </Text>
             </View>
           </View>

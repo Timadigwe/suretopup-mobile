@@ -426,6 +426,9 @@ export const CableReceiptScreen: React.FC<CableReceiptScreenProps> = ({
               <Text style={styles.footerText}>
                 Thank you for using SureTopUp
               </Text>
+              <Text style={styles.footerSubtext}>
+                For support, contact us @info@suretopup.com.ng
+              </Text>
             </View>
           </View>
         </ViewShot>

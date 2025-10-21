@@ -133,6 +133,11 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
       businessName: 'SureTopUp',
       // Network information for airtime/data/card printing
       network: network,
+      // Data plan information (if available)
+      dataPlan: transaction.data_plan || transaction.dataPlan,
+      dataAmount: transaction.data_amount || transaction.dataAmount,
+      // Megabytes information from transaction
+      megabytes: transaction.megabytes,
       // Additional transaction details
       transactionId: transaction.id,
       type: transaction.type,
