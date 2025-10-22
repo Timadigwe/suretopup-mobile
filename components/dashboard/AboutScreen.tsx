@@ -6,12 +6,15 @@ import {
   ScrollView,
   TouchableOpacity,
   Linking,
+  Alert,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useMobileFeatures } from '@/hooks/useMobileFeatures';
 import { configRegExp } from 'expo-router/build/fork/getStateFromPath-forks';
 import { config } from '@/config';
+import Constants from 'expo-constants';
 
 interface AboutScreenProps {
   onNavigate: (page: string, data?: any) => void;
@@ -33,6 +36,35 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({
     Linking.openURL('https://suretopup.com.ng');
   };
 
+  const handleTermsAndConditions = () => {
+    triggerHapticFeedback('light');
+    Alert.alert(
+      'Terms and Conditions',
+      'By using SureTopUp, you agree to our terms of service. For detailed terms, please visit our website at suretopup.com.ng/terms',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Visit Website', onPress: () => Linking.openURL('https://suretopup.com.ng/terms') }
+      ]
+    );
+  };
+
+  const handlePrivacyPolicy = () => {
+    triggerHapticFeedback('light');
+    Alert.alert(
+      'Privacy Policy',
+      'We are committed to protecting your privacy. For our complete privacy policy, please visit our website at suretopup.com.ng/privacy',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Visit Website', onPress: () => Linking.openURL('https://suretopup.com.ng/privacy') }
+      ]
+    );
+  };
+
+  const handleSupport = () => {
+    triggerHapticFeedback('light');
+    Linking.openURL(`mailto:info@suretopup.com.ng?subject=Support Request&body=Hello, I need help with...`);
+  };
+
 
 
   const appInfo = {
@@ -40,6 +72,8 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({
     website: 'suretopup.com.ng',
     phone: config.whatsappNumber,
     address: 'Lagos, Nigeria',
+    version: Constants.expoConfig?.version || '1.0.0',
+    buildNumber: Constants.expoConfig?.ios?.buildNumber || Constants.expoConfig?.android?.versionCode || '1',
   };
 
 
@@ -72,55 +106,115 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({
       >
 
 
-        {/* Company Information */}
-        <View style={[styles.companyCard, { backgroundColor: colors.card }]}>
-          <View style={styles.companyHeader}>
-            <View style={[styles.companyIcon, { backgroundColor: colors.primary + '20' }]}>
-              <Ionicons name="business" size={32} color={colors.primary} />
+        {/* App Information */}
+        <View style={[styles.appCard, { backgroundColor: colors.card }]}>
+          <View style={styles.appHeader}>
+            <View style={styles.appIcon}>
+              <Image 
+                source={require('@/assets/images/logo.png')} 
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
             </View>
-            <Text style={[styles.companyTitle, { color: colors.text }]}>
-              {appInfo.company}
+            <Text style={[styles.appTitle, { color: colors.text }]}>
+              SureTopUp Mobile
+            </Text>
+            <Text style={[styles.appSubtitle, { color: colors.mutedForeground }]}>
+              Version {appInfo.version} (Build {appInfo.buildNumber})
             </Text>
           </View>
           
-          <View style={styles.companyInfo}>
+          <View style={styles.appInfo}>
             <View style={styles.infoRow}>
               <View style={[styles.infoIcon, { backgroundColor: colors.primary + '15' }]}>
-                <Ionicons name="globe" size={18} color={colors.primary} />
-              </View>
-              <TouchableOpacity onPress={handleWebsite} style={styles.infoContent}>
-                <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>Website</Text>
-                <Text style={[styles.infoText, { color: colors.primary }]}>
-                  {appInfo.website}
-                </Text>
-              </TouchableOpacity>
-            </View>
-            
-            
-            <View style={styles.infoRow}>
-              <View style={[styles.infoIcon, { backgroundColor: colors.primary + '15' }]}>
-                <Ionicons name="call" size={18} color={colors.primary} />
+                <Ionicons name="shield-checkmark" size={18} color={colors.primary} />
               </View>
               <View style={styles.infoContent}>
-                <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>Phone</Text>
+                <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>Security</Text>
                 <Text style={[styles.infoText, { color: colors.text }]}>
-                  {appInfo.phone}
-                </Text>
-              </View>
-            </View>
-            
-            <View style={styles.infoRow}>
-              <View style={[styles.infoIcon, { backgroundColor: colors.primary + '15' }]}>
-                <Ionicons name="location" size={18} color={colors.primary} />
-              </View>
-              <View style={styles.infoContent}>
-                <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>Address</Text>
-                <Text style={[styles.infoText, { color: colors.text }]}>
-                  {appInfo.address}
+                  End-to-end encrypted
                 </Text>
               </View>
             </View>
           </View>
+        </View>
+
+
+        {/* Legal Information */}
+        <View style={[styles.legalCard, { backgroundColor: colors.card }]}>
+          <Text style={[styles.legalTitle, { color: colors.text }]}>
+            Legal Information
+          </Text>
+          
+          <TouchableOpacity 
+            style={styles.legalItem}
+            onPress={handleTermsAndConditions}
+            activeOpacity={0.7}
+          >
+            <View style={styles.legalItemContent}>
+              <View style={[styles.legalIcon, { backgroundColor: colors.primary + '15' }]}>
+                <Ionicons name="document-text" size={20} color={colors.primary} />
+              </View>
+              <View style={styles.legalTextContainer}>
+                <Text style={[styles.legalItemTitle, { color: colors.text }]}>
+                  Terms and Conditions
+                </Text>
+                <Text style={[styles.legalItemSubtitle, { color: colors.mutedForeground }]}>
+                  Read our terms of service
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.mutedForeground} />
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.legalItem}
+            onPress={handlePrivacyPolicy}
+            activeOpacity={0.7}
+          >
+            <View style={styles.legalItemContent}>
+              <View style={[styles.legalIcon, { backgroundColor: colors.primary + '15' }]}>
+                <Ionicons name="shield" size={20} color={colors.primary} />
+              </View>
+              <View style={styles.legalTextContainer}>
+                <Text style={[styles.legalItemTitle, { color: colors.text }]}>
+                  Privacy Policy
+                </Text>
+                <Text style={[styles.legalItemSubtitle, { color: colors.mutedForeground }]}>
+                  How we protect your data
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.mutedForeground} />
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* Support Information */}
+        <View style={[styles.supportCard, { backgroundColor: colors.card }]}>
+          <Text style={[styles.supportTitle, { color: colors.text }]}>
+            Support & Contact
+          </Text>
+          
+          <TouchableOpacity 
+            style={styles.supportItem}
+            onPress={handleSupport}
+            activeOpacity={0.7}
+          >
+            <View style={styles.supportItemContent}>
+              <View style={[styles.supportIcon, { backgroundColor: colors.primary + '15' }]}>
+                <Ionicons name="mail" size={20} color={colors.primary} />
+              </View>
+              <View style={styles.supportTextContainer}>
+                <Text style={[styles.supportItemTitle, { color: colors.text }]}>
+                  Email Support
+                </Text>
+                <Text style={[styles.supportItemSubtitle, { color: colors.mutedForeground }]}>
+                  info@suretopup.com.ng
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.mutedForeground} />
+            </View>
+          </TouchableOpacity>
         </View>
 
 
@@ -171,30 +265,116 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 16,
   },
-  companyCard: {
+  appCard: {
     padding: 24,
     borderRadius: 16,
-    marginBottom: 24,
+    marginBottom: 20,
   },
-  companyHeader: {
+  appHeader: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
   },
-  companyIcon: {
+  appIcon: {
     width: 64,
     height: 64,
     borderRadius: 32,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
+    backgroundColor: 'transparent',
   },
-  companyTitle: {
-    fontSize: 24,
+  logoImage: {
+    width: 48,
+    height: 48,
+  },
+  appTitle: {
+    fontSize: 22,
     fontWeight: 'bold',
     textAlign: 'center',
+    marginBottom: 4,
   },
-  companyInfo: {
-    gap: 20,
+  appSubtitle: {
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  appInfo: {
+    gap: 16,
+  },
+  legalCard: {
+    padding: 20,
+    borderRadius: 16,
+    marginBottom: 20,
+  },
+  legalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 16,
+  },
+  legalItem: {
+    marginBottom: 12,
+  },
+  legalItemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+  },
+  legalIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  legalTextContainer: {
+    flex: 1,
+  },
+  legalItemTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  legalItemSubtitle: {
+    fontSize: 14,
+  },
+  supportCard: {
+    padding: 20,
+    borderRadius: 16,
+    marginBottom: 20,
+  },
+  supportTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 16,
+  },
+  supportItem: {
+    marginBottom: 12,
+  },
+  supportItemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+  },
+  supportIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  supportTextContainer: {
+    flex: 1,
+  },
+  supportItemTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  supportItemSubtitle: {
+    fontSize: 14,
   },
   infoRow: {
     flexDirection: 'row',

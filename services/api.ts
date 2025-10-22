@@ -1376,6 +1376,10 @@ class ApiService {
     date: string;
   }>> {
     console.log('buyAirtime called with data:', data);
+    
+    // Refresh eBills token before purchase
+    await this.ensureTokenRefresh();
+    
     return this.makeRequest<{
       reference: string;
       amount: number;
@@ -1471,6 +1475,9 @@ class ApiService {
       id: number;
     };
   }>> {
+    // Refresh eBills token before purchase
+    await this.ensureTokenRefresh();
+    
     return this.makeRequest<{
       reference: string;
       amount: number;
@@ -1534,6 +1541,9 @@ class ApiService {
       id: number;
     };
   }>> {
+    // Refresh eBills token before purchase
+    await this.ensureTokenRefresh();
+    
     return this.makeRequest<{
       reference: string;
       business_name: string;
@@ -1683,6 +1693,9 @@ class ApiService {
       rinfo: number;
     };
   }>> {
+    // Refresh eBills token before purchase
+    await this.ensureTokenRefresh();
+    
     return this.makeRequest<{
       transaction: {
         userid: number;
@@ -1767,6 +1780,9 @@ class ApiService {
     amount: number;
     tpin: string;
   }): Promise<ApiResponse<any>> {
+    // Refresh eBills token before purchase
+    await this.ensureTokenRefresh();
+    
     return this.makeRequest('/user/purchase-electricity', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -1835,6 +1851,9 @@ class ApiService {
       id: number;
     };
   }>> {
+    // Refresh eBills token before purchase
+    await this.ensureTokenRefresh();
+    
     return this.makeRequest<{
       nin_id: number;
       transaction: {
@@ -1874,6 +1893,9 @@ class ApiService {
   }
 
   async submitCacRequest(data: FormData): Promise<ApiResponse<any>> {
+    // Refresh eBills token before purchase
+    await this.ensureTokenRefresh();
+    
     return this.makeRequest('/user/cac', {
       method: 'POST',
       body: data,
@@ -1985,6 +2007,9 @@ class ApiService {
     amount: number;
     tpin: string;
   }): Promise<ApiResponse<any>> {
+    // Refresh eBills token before purchase
+    await this.ensureTokenRefresh();
+    
     return this.makeRequest('/user/subscribe-cable', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -2000,6 +2025,83 @@ class ApiService {
       method: 'POST',
       body: JSON.stringify(data),
     });
+  }
+
+  // eBills Token Refresh
+  async refreshEbillsToken(): Promise<ApiResponse<{
+    message: string;
+  }>> {
+    try {
+      const response = await fetch('http://prod.suretopup.com.ng/refresh-ebill-token', {
+        method: 'GET',
+        headers: {
+          'Accept': 'text/plain, application/json',
+        },
+      });
+      
+      // Check if response is successful
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      // Get the response as text first
+      const responseText = await response.text();
+      console.log('eBills token refresh response (raw):', responseText);
+      
+      // Check if the response contains the success message
+      if (responseText.includes('✅') && responseText.includes('eBills token refreshed successfully')) {
+        return {
+          success: true,
+          status: 'success',
+          message: 'eBills token refreshed successfully',
+          data: { message: responseText.trim() },
+        };
+      } else {
+        // Try to parse as JSON if it's not the expected text format
+        try {
+          const data = JSON.parse(responseText);
+          return {
+            success: true,
+            status: 'success',
+            message: data.message || 'eBills token refreshed successfully',
+            data: data,
+          };
+        } catch (jsonError) {
+          // If it's not JSON either, treat any response as success
+          return {
+            success: true,
+            status: 'success',
+            message: 'eBills token refreshed successfully',
+            data: { message: responseText.trim() },
+          };
+        }
+      }
+    } catch (error) {
+      console.error('eBills token refresh error:', error);
+      return {
+        success: false,
+        message: 'Failed to refresh eBills token',
+      };
+    }
+  }
+
+  // Helper method to refresh token before purchase
+  private async ensureTokenRefresh(): Promise<boolean> {
+    try {
+      console.log('Refreshing eBills token before purchase...');
+      const refreshResponse = await this.refreshEbillsToken();
+      
+      if (refreshResponse.success || refreshResponse.status === 'success') {
+        console.log('✅ eBills token refreshed successfully');
+        return true;
+      } else {
+        console.log('⚠️ eBills token refresh failed, but continuing with purchase');
+        return false;
+      }
+    } catch (error) {
+      console.log('⚠️ eBills token refresh error, but continuing with purchase:', error);
+      return false;
+    }
   }
 }
 

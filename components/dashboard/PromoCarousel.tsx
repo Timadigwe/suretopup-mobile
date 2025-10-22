@@ -13,39 +13,61 @@ import { Ionicons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 
-interface PromoSlide {
+interface FeatureSlide {
   id: number;
   title: string;
   subtitle: string;
   buttonText: string;
   colors: [string, string];
   navigateTo: string;
+  icon: string;
 }
 
-const promoSlides: PromoSlide[] = [
+const featureSlides: FeatureSlide[] = [
   {
     id: 1,
-    title: "Get 5% Bonus",
-    subtitle: "On your first recharge above ₦1,000",
+    title: "Instant Airtime",
+    subtitle: "Recharge any network instantly with secure transactions",
     buttonText: "Recharge Now",
     colors: ['#00A900', '#008800'],
-    navigateTo: 'airtime'
+    navigateTo: 'airtime',
+    icon: 'phone-portrait'
   },
   {
     id: 2,
-    title: "Data Deals",
-    subtitle: "Buy 2GB and get 1GB free for new users",
+    title: "Data Plans",
+    subtitle: "Get the best data deals for all networks with instant activation",
     buttonText: "Buy Data",
     colors: ['#3B82F6', '#2563EB'],
-    navigateTo: 'data'
+    navigateTo: 'data',
+    icon: 'cellular'
   },
   {
     id: 3,
-    title: "Weekend Special",
-    subtitle: "50% off on all betting fund transfers",
+    title: "Betting Funding",
+    subtitle: "Fund your betting accounts securely with multiple providers",
     buttonText: "Fund Now",
-    colors: ['#FFD700', '#F59E0B'],
-    navigateTo: 'betting-funding'
+    colors: ['#F59E0B', '#D97706'],
+    navigateTo: 'betting-funding',
+    icon: 'trophy'
+  },
+  {
+    id: 4,
+    title: "Card Printing",
+    subtitle: "Print ePIN cards for all networks with professional receipts",
+    buttonText: "Print Cards",
+    colors: ['#8B5CF6', '#7C3AED'],
+    navigateTo: 'card-printing',
+    icon: 'card'
+  },
+  {
+    id: 5,
+    title: "Bill Payments",
+    subtitle: "Pay electricity, cable TV, and other bills with ease",
+    buttonText: "Pay Bills",
+    colors: ['#EF4444', '#DC2626'],
+    navigateTo: 'bills',
+    icon: 'receipt'
   }
 ];
 
@@ -57,23 +79,23 @@ export const PromoCarousel: React.FC<PromoCarouselProps> = ({ onNavigate }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const { colors } = useTheme();
 
-  // Auto slide every 5 seconds
+  // Auto slide every 6 seconds (longer for feature showcase)
   useEffect(() => {
     const timer = setInterval(() => {
-      const newIndex = (currentSlide + 1) % promoSlides.length;
+      const newIndex = (currentSlide + 1) % featureSlides.length;
       setCurrentSlide(newIndex);
       scrollToSlide(newIndex);
-    }, 5000);
+    }, 6000);
 
     return () => clearInterval(timer);
   }, [currentSlide]);
 
   const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % promoSlides.length);
+    setCurrentSlide((prev) => (prev + 1) % featureSlides.length);
   };
 
   const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + promoSlides.length) % promoSlides.length);
+    setCurrentSlide((prev) => (prev - 1 + featureSlides.length) % featureSlides.length);
   };
 
   const goToSlide = (index: number) => {
@@ -92,7 +114,7 @@ export const PromoCarousel: React.FC<PromoCarouselProps> = ({ onNavigate }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.title, { color: colors.text }]}>Special Offers</Text>
+      <Text style={[styles.title, { color: colors.text }]}>Features</Text>
       <View style={styles.carouselContainer}>
         {/* Carousel */}
         <ScrollView
@@ -106,7 +128,7 @@ export const PromoCarousel: React.FC<PromoCarouselProps> = ({ onNavigate }) => {
           }}
           contentContainerStyle={styles.scrollContent}
         >
-          {promoSlides.map((slide) => (
+          {featureSlides.map((slide) => (
             <View key={slide.id} style={styles.slide}>
               <LinearGradient
                 colors={slide.colors}
@@ -125,9 +147,9 @@ export const PromoCarousel: React.FC<PromoCarouselProps> = ({ onNavigate }) => {
                     </TouchableOpacity>
                   </View>
                   
-                  {/* Decorative element */}
-                  <View style={styles.decorativeElement}>
-                    <View style={styles.decorativeInner} />
+                  {/* Feature Icon */}
+                  <View style={styles.featureIcon}>
+                    <Ionicons name={slide.icon as any} size={32} color="white" />
                   </View>
                 </View>
               </LinearGradient>
@@ -138,7 +160,7 @@ export const PromoCarousel: React.FC<PromoCarouselProps> = ({ onNavigate }) => {
         {/* Navigation Buttons */}
         <TouchableOpacity
           onPress={() => {
-            const newIndex = (currentSlide - 1 + promoSlides.length) % promoSlides.length;
+            const newIndex = (currentSlide - 1 + featureSlides.length) % featureSlides.length;
             setCurrentSlide(newIndex);
             scrollToSlide(newIndex);
           }}
@@ -149,7 +171,7 @@ export const PromoCarousel: React.FC<PromoCarouselProps> = ({ onNavigate }) => {
 
         <TouchableOpacity
           onPress={() => {
-            const newIndex = (currentSlide + 1) % promoSlides.length;
+            const newIndex = (currentSlide + 1) % featureSlides.length;
             setCurrentSlide(newIndex);
             scrollToSlide(newIndex);
           }}
@@ -160,7 +182,7 @@ export const PromoCarousel: React.FC<PromoCarouselProps> = ({ onNavigate }) => {
 
         {/* Dots Indicator */}
         <View style={styles.dotsContainer}>
-          {promoSlides.map((_, index) => (
+          {featureSlides.map((_, index) => (
             <TouchableOpacity
               key={index}
               onPress={() => {
@@ -240,20 +262,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
-  decorativeElement: {
+  featureIcon: {
     width: 64,
     height: 64,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     borderRadius: 32,
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 16,
-  },
-  decorativeInner: {
-    width: 32,
-    height: 32,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 16,
+    shadowColor: 'rgba(0, 0, 0, 0.2)',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   navButton: {
     position: 'absolute',
