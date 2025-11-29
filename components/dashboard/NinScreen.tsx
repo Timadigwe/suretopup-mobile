@@ -1,17 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  TextInput,
-  Alert,
   ActivityIndicator,
+  Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useMobileFeatures } from '../../hooks/useMobileFeatures';
 import { apiService } from '../../services/api';
@@ -46,6 +47,23 @@ const NinScreen: React.FC<{ onNavigate: (screen: string, data?: any) => void }> 
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [successData, setSuccessData] = useState<any>(null);
+
+  const getSlipTypeImage = (slipType: NinSlipType) => {
+    const key = (slipType.type || slipType.name || '').toLowerCase();
+
+    if (key.includes('premium')) {
+      return require('@/assets/images/premium.png');
+    }
+    if (key.includes('standard')) {
+      return require('@/assets/images/standard.png');
+    }
+    if (key.includes('regular')) {
+      return require('@/assets/images/regular.png');
+    }
+
+    // Fallback
+    return require('@/assets/images/standard.png');
+  };
   
   useEffect(() => {
     fetchSlipTypes();
@@ -207,17 +225,27 @@ const NinScreen: React.FC<{ onNavigate: (screen: string, data?: any) => void }> 
       ) : (
         <View style={styles.slipTypesGrid}>
           {slipTypes.map((slipType) => (
+            // Each card visually represents one NIN slip design (paper, digital, etc.)
             <TouchableOpacity
               key={slipType.id}
               style={[
                 styles.slipTypeCard,
-                { backgroundColor: colors.card }
+                {
+                  backgroundColor: colors.card,
+                  borderColor:
+                    selectedSlipType?.id === slipType.id
+                      ? colors.primary
+                      : 'rgba(0,0,0,0.08)',
+                },
               ]}
               onPress={() => handleSlipTypeSelect(slipType)}
-              activeOpacity={0.8}
+              activeOpacity={0.85}
             >
               <View style={styles.slipTypeIconContainer}>
-                <Ionicons name="card" size={24} color={colors.primary} />
+                <Image
+                  source={getSlipTypeImage(slipType)}
+                  style={styles.slipTypeImage}
+                />
               </View>
               <Text style={[styles.slipTypeName, { color: colors.text }]}>
                 {slipType.name}
@@ -237,7 +265,13 @@ const NinScreen: React.FC<{ onNavigate: (screen: string, data?: any) => void }> 
       <View style={styles.selectedSlipTypeCard}>
         <View style={styles.slipTypeInfo}>
           <View style={styles.slipTypeIconContainer}>
-            <Ionicons name="card" size={24} color={colors.primary} />
+            {selectedSlipType && (
+              <Image
+                source={getSlipTypeImage(selectedSlipType)}
+                style={styles.slipTypeImage}
+                resizeMode="contain"
+              />
+            )}
           </View>
           <View style={styles.slipTypeDetails}>
             <Text style={[styles.slipTypeName, { color: colors.text }]}>
@@ -472,6 +506,7 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+    marginBottom: 80,
   },
   scrollContent: {
     flexGrow: 1,
@@ -557,34 +592,42 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   slipTypesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    gap: 16,
   },
   slipTypeCard: {
-    width: '48%',
-    padding: 16,
+    width: '100%',
+    padding: 14,
     borderRadius: 12,
-    marginBottom: 16,
-    alignItems: 'center',
+    marginBottom: 4,
+    alignItems: 'flex-start',
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.1)',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
   },
   slipTypeIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(59, 130, 246, 0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: '100%',
+    height: 180,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#f3f4f6',
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.2)',
+  },
+  slipTypeImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'contain',
   },
   slipTypeName: {
     fontSize: 16,
     fontWeight: '600',
-    textAlign: 'center',
+    textAlign: 'left',
     marginBottom: 8,
   },
   slipTypePrice: {

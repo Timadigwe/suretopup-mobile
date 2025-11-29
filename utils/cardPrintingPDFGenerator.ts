@@ -1,7 +1,6 @@
-import { Share, Platform } from 'react-native';
-import * as Sharing from 'expo-sharing';
-import * as Print from 'expo-print';
 import * as FileSystem from 'expo-file-system';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 import ViewShot from 'react-native-view-shot';
 
 export interface CardPrintingReceiptData {
@@ -412,7 +411,7 @@ export const generateCardPrintingHTML = (receiptData: CardPrintingReceiptData) =
           <div class="receipt-footer">
             <div class="dotted-line"></div>
             <div class="footer-text">Thank you for using SureTopUp</div>
-            <div class="footer-subtext">For support, contact us @info@suretopup.com.ng</div>
+            <div class="footer-subtext">For support, contact us info@suretopup.com.ng</div>
           </div>
         </div>
       </body>

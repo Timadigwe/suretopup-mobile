@@ -81,11 +81,15 @@ export const AddFundsScreen: React.FC<AddFundsScreenProps> = ({ onNavigate }) =>
       if ((response.success || response.status === 'success') && response.data) {
         setChargeData(response.data);
       } else {
-        console.log('Charge calculation failed:', response.message);
+        if (__DEV__) {
+          console.log('Charge calculation failed:', response.message);
+        }
         setChargeData(null);
       }
     } catch (error) {
-      console.log('Charge calculation error:', error);
+      if (__DEV__) {
+        console.log('Charge calculation error:', error);
+      }
       setChargeData(null);
     } finally {
       setIsCalculatingCharge(false);
@@ -182,7 +186,9 @@ export const AddFundsScreen: React.FC<AddFundsScreenProps> = ({ onNavigate }) =>
   };
 
   const startPaymentStatusCheck = (reference: string) => {
-    console.log('Starting payment status check for reference:', reference);
+    if (__DEV__) {
+      console.log('Starting payment status check for reference:', reference);
+    }
     
     let pollCount = 0;
     const maxPolls = 60; // 5 minutes max (60 * 5 seconds)
@@ -190,7 +196,9 @@ export const AddFundsScreen: React.FC<AddFundsScreenProps> = ({ onNavigate }) =>
     // Check payment status every 3 seconds (more frequent since no URL change)
     paymentCheckInterval.current = setInterval(async () => {
       pollCount++;
-      console.log(`Payment status check #${pollCount} for reference: ${reference}`);
+      if (__DEV__) {
+        console.log(`Payment status check #${pollCount} for reference: ${reference}`);
+      }
       
       try {
         // Check if 50 seconds have passed since last callback
@@ -198,19 +206,27 @@ export const AddFundsScreen: React.FC<AddFundsScreenProps> = ({ onNavigate }) =>
         const timeSinceLastCallback = currentTime - lastCallbackTime.current;
         
         if (timeSinceLastCallback >= 50000) { // 50 seconds = 50000ms
-          console.log(`Making payment callback #${callbackCount.current + 1} for reference: ${reference}`);
+          if (__DEV__) {
+            console.log(`Making payment callback #${callbackCount.current + 1} for reference: ${reference}`);
+          }
           callbackCount.current++;
           lastCallbackTime.current = currentTime;
           
           const response = await apiService.checkPaymentStatus(reference);
-          console.log('Payment status response:', JSON.stringify(response, null, 2));
+          if (__DEV__) {
+            console.log('Payment status response:', JSON.stringify(response, null, 2));
+          }
           
           if ((response.success || response.status === 'success') && response.data) {
             const transaction = response.data.transaction;
-            console.log('Transaction status:', transaction.status);
+            if (__DEV__) {
+              console.log('Transaction status:', transaction.status);
+            }
             
             if (transaction.status === 'Completed') {
-              console.log('Payment completed successfully!');
+              if (__DEV__) {
+                console.log('Payment completed successfully!');
+              }
               setPaymentStatus('success');
               setSuccessData(response.data);
               setShowSuccessModal(true);
@@ -218,33 +234,43 @@ export const AddFundsScreen: React.FC<AddFundsScreenProps> = ({ onNavigate }) =>
               // Close WebView when payment is successful
               setShowWebView(false);
             } else if (transaction.status === 'Failed') {
-              console.log('Payment failed!');
+              if (__DEV__) {
+                console.log('Payment failed!');
+              }
               setPaymentStatus('failed');
               setErrorMessage('Payment failed. Please try again.');
               setShowErrorModal(true);
               stopPaymentStatusCheck();
               // Close WebView when payment fails
               setShowWebView(false);
-            } else {
+            } else if (__DEV__) {
               console.log('Payment still pending, status:', transaction.status);
             }
           } else {
-            console.log('Payment status check failed:', response.message);
+            if (__DEV__) {
+              console.log('Payment status check failed:', response.message);
+            }
           }
         } else {
-          const remainingTime = Math.ceil((50000 - timeSinceLastCallback) / 1000);
-          console.log(`Skipping callback - ${remainingTime}s remaining until next allowed call`);
+          if (__DEV__) {
+            const remainingTime = Math.ceil((50000 - timeSinceLastCallback) / 1000);
+            console.log(`Skipping callback - ${remainingTime}s remaining until next allowed call`);
+          }
         }
         
         // Stop polling after max attempts
         if (pollCount >= maxPolls) {
-          console.log('Max polling attempts reached, stopping...');
+          if (__DEV__) {
+            console.log('Max polling attempts reached, stopping...');
+          }
           stopPaymentStatusCheck();
           setErrorMessage('Payment verification timeout. Please check your wallet balance.');
           setShowErrorModal(true);
         }
       } catch (error) {
-        console.log('Payment status check error:', error);
+        if (__DEV__) {
+          console.log('Payment status check error:', error);
+        }
         // Continue checking even if there's an error
       }
             }, 3000);
@@ -270,14 +296,18 @@ export const AddFundsScreen: React.FC<AddFundsScreenProps> = ({ onNavigate }) =>
 
   const handleWebViewNavigationStateChange = (navState: any) => {
     const url = navState.url;
-    console.log('WebView navigation change:', url);
+    if (__DEV__) {
+      console.log('WebView navigation change:', url);
+    }
     
     // Since Paystack doesn't redirect on success, we'll rely on polling
     // Only detect if user navigates away from Paystack completely
     const isAwayFromPaystack = !url.includes('paystack.com') && !url.includes('checkout');
     
     if (isAwayFromPaystack) {
-      console.log('User navigated away from Paystack, checking payment status...');
+      if (__DEV__) {
+        console.log('User navigated away from Paystack, checking payment status...');
+      }
       
       // Stop the payment check and close WebView
       stopPaymentStatusCheck();
@@ -285,63 +315,83 @@ export const AddFundsScreen: React.FC<AddFundsScreenProps> = ({ onNavigate }) =>
       
       // Always check final payment status
       if (paymentData?.reference) {
-        console.log('Checking final payment status for reference:', paymentData.reference);
+        if (__DEV__) {
+          console.log('Checking final payment status for reference:', paymentData.reference);
+        }
         checkFinalPaymentStatus(paymentData.reference);
       }
     }
   };
 
   const checkFinalPaymentStatus = async (reference: string) => {
-    console.log('Checking final payment status for reference:', reference);
+    if (__DEV__) {
+      console.log('Checking final payment status for reference:', reference);
+    }
     
     // Check if 50 seconds have passed since last callback
     const currentTime = Date.now();
     const timeSinceLastCallback = currentTime - lastCallbackTime.current;
     
     if (timeSinceLastCallback < 50000) { // 50 seconds = 50000ms
-      const remainingTime = Math.ceil((50000 - timeSinceLastCallback) / 1000);
-      console.log(`Skipping final check - ${remainingTime}s remaining until next allowed call`);
+      if (__DEV__) {
+        const remainingTime = Math.ceil((50000 - timeSinceLastCallback) / 1000);
+        console.log(`Skipping final check - ${remainingTime}s remaining until next allowed call`);
+      }
       return;
     }
     
-    console.log(`Making final payment callback #${callbackCount.current + 1} for reference: ${reference}`);
+    if (__DEV__) {
+      console.log(`Making final payment callback #${callbackCount.current + 1} for reference: ${reference}`);
+    }
     callbackCount.current++;
     lastCallbackTime.current = currentTime;
     
     try {
       const response = await apiService.checkPaymentStatus(reference);
-      console.log('Final payment status response:', JSON.stringify(response, null, 2));
+      if (__DEV__) {
+        console.log('Final payment status response:', JSON.stringify(response, null, 2));
+      }
       
       if ((response.success || response.status === 'success') && response.data) {
         const transaction = response.data.transaction;
-        console.log('Final transaction status:', transaction.status);
+        if (__DEV__) {
+          console.log('Final transaction status:', transaction.status);
+        }
         
         if (transaction.status === 'Completed') {
-          console.log('Final check: Payment completed successfully!');
+          if (__DEV__) {
+            console.log('Final check: Payment completed successfully!');
+          }
           setPaymentStatus('success');
           setSuccessData(response.data);
           setShowSuccessModal(true);
           stopPaymentStatusCheck();
           setShowWebView(false);
         } else if (transaction.status === 'Failed') {
-          console.log('Final check: Payment failed, status:', transaction.status);
+          if (__DEV__) {
+            console.log('Final check: Payment failed, status:', transaction.status);
+          }
           setPaymentStatus('failed');
           setErrorMessage('Payment failed. Please try again.');
           setShowErrorModal(true);
           stopPaymentStatusCheck();
           setShowWebView(false);
-        } else {
+        } else if (__DEV__) {
           console.log('Final check: Payment still pending, status:', transaction.status);
           // Don't show error modal for pending payments, let polling continue
           // User can try the button again later
         }
       } else {
-        console.log('Final check failed:', response.message);
+        if (__DEV__) {
+          console.log('Final check failed:', response.message);
+        }
         setErrorMessage('Unable to verify payment status. Please check your wallet balance.');
         setShowErrorModal(true);
       }
     } catch (error) {
-      console.log('Final payment status check error:', error);
+      if (__DEV__) {
+        console.log('Final payment status check error:', error);
+      }
       setErrorMessage('Unable to verify payment status. Please check your wallet balance.');
       setShowErrorModal(true);
     }

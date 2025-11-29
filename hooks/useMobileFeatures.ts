@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
 import * as Haptics from 'expo-haptics';
+import { useEffect } from 'react';
 
 export const useMobileFeatures = () => {
   useEffect(() => {
@@ -24,8 +24,10 @@ export const useMobileFeatures = () => {
           break;
       }
     } catch (error) {
-      // Haptic feedback not available on this device
-      console.log('Haptic feedback not available');
+      // Haptic feedback not available on this device (log only in development)
+      if (__DEV__) {
+        console.log('Haptic feedback not available');
+      }
     }
   };
 
@@ -33,8 +35,10 @@ export const useMobileFeatures = () => {
     try {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
-      // Haptic feedback not available on this device
-      console.log('Haptic feedback not available');
+      // Haptic feedback not available on this device (log only in development)
+      if (__DEV__) {
+        console.log('Haptic feedback not available');
+      }
     }
   };
 

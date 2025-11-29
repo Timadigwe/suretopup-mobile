@@ -116,33 +116,55 @@ class ApiService {
         },
       };
 
-      // Debug logging
-      console.log('API Request:', {
-        url,
-        method: config.method,
-        headers: config.headers,
-        body: config.body
-      });
+      // Debug logging (development only)
+      if (__DEV__) {
+        console.log('API Request:', {
+          url,
+          method: config.method,
+          headers: config.headers,
+          body: config.body,
+        });
+      }
 
       const response = await fetch(url, config);
       const data = await response.json();
 
-      console.log('API Response:', { url, status: response.status, data });
+      if (__DEV__) {
+        console.log('API Response:', { url, status: response.status, data });
+      }
 
-      // Check for token expiration (only when we have a token and specific token-related errors)
-      if (this.token && response.status === 401 && 
-          data.message && (data.message.toLowerCase().includes('token has expired') ||
-           data.message.toLowerCase().includes('token expired') ||
-           data.message.toLowerCase().includes('unauthenticated'))) {
-        console.log('Token expiration detected:', { status: response.status, message: data.message });
-        if (this.onTokenExpired) {
-          this.onTokenExpired();
+      // Check for token expiration/invalid token (only when we have a token and specific auth errors)
+      const message: string | undefined = data?.message;
+      if (
+        this.token &&
+        response.status === 401 &&
+        typeof message === 'string'
+      ) {
+        const msg = message.toLowerCase();
+        const isAuthError =
+          msg.includes('token has expired') ||
+          msg.includes('token expired') ||
+          msg.includes('unauthenticated') ||
+          msg.includes('token is invalid') ||
+          msg.includes('logged out due to inactivity') ||
+          msg.includes('unauthorized');
+
+        if (isAuthError) {
+          if (__DEV__) {
+            console.log('Token auth error detected:', {
+              status: response.status,
+              message,
+            });
+          }
+          if (this.onTokenExpired) {
+            this.onTokenExpired();
+          }
+          return {
+            success: false,
+            message: 'Token expired',
+            isTokenExpired: true,
+          };
         }
-        return {
-          success: false,
-          message: 'Token expired',
-          isTokenExpired: true
-        };
       }
 
       return data;
@@ -1375,8 +1397,10 @@ class ApiService {
     };
     date: string;
   }>> {
-    console.log('buyAirtime called with data:', data);
-    
+    if (__DEV__) {
+      console.log('buyAirtime called with data:', data);
+    }
+
     // Refresh eBills token before purchase
     await this.ensureTokenRefresh();
     
@@ -2046,7 +2070,9 @@ class ApiService {
       
       // Get the response as text first
       const responseText = await response.text();
-      console.log('eBills token refresh response (raw):', responseText);
+      if (__DEV__) {
+        console.log('eBills token refresh response (raw):', responseText);
+      }
       
       // Check if the response contains the success message
       if (responseText.includes('✅') && responseText.includes('eBills token refreshed successfully')) {
@@ -2077,7 +2103,9 @@ class ApiService {
         }
       }
     } catch (error) {
-      console.error('eBills token refresh error:', error);
+      if (__DEV__) {
+        console.error('eBills token refresh error:', error);
+      }
       return {
         success: false,
         message: 'Failed to refresh eBills token',
@@ -2088,18 +2116,26 @@ class ApiService {
   // Helper method to refresh token before purchase
   private async ensureTokenRefresh(): Promise<boolean> {
     try {
-      console.log('Refreshing eBills token before purchase...');
+      if (__DEV__) {
+        console.log('Refreshing eBills token before purchase...');
+      }
       const refreshResponse = await this.refreshEbillsToken();
       
       if (refreshResponse.success || refreshResponse.status === 'success') {
-        console.log('✅ eBills token refreshed successfully');
+        if (__DEV__) {
+          console.log('✅ eBills token refreshed successfully');
+        }
         return true;
       } else {
-        console.log('⚠️ eBills token refresh failed, but continuing with purchase');
+        if (__DEV__) {
+          console.log('⚠️ eBills token refresh failed, but continuing with purchase');
+        }
         return false;
       }
     } catch (error) {
-      console.log('⚠️ eBills token refresh error, but continuing with purchase:', error);
+      if (__DEV__) {
+        console.log('⚠️ eBills token refresh error, but continuing with purchase:', error);
+      }
       return false;
     }
   }
