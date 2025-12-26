@@ -1,23 +1,22 @@
-import React, { useState, useRef } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  Alert,
-  ActivityIndicator,
-  Image,
-  Dimensions,
-  Share,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useMobileFeatures } from '@/hooks/useMobileFeatures';
-import { useAuth } from '@/contexts/AuthContext';
-import ViewShot from 'react-native-view-shot';
-import * as MediaLibrary from 'expo-media-library';
 import { shareReceiptAsPDF } from '@/utils/receiptPDFGenerator';
+import { Ionicons } from '@expo/vector-icons';
+import * as MediaLibrary from 'expo-media-library';
+import React, { useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from 'react-native';
+import ViewShot from 'react-native-view-shot';
 
 const { width } = Dimensions.get('window');
 
@@ -426,7 +425,7 @@ export const ElectricityReceiptScreen: React.FC<ElectricityReceiptScreenProps> =
                 Thank you for using SureTopUp
               </Text>
               <Text style={styles.footerSubtext}>
-                For support, contact us info@suretopup.com.ng
+                For support, contact us at info@suretopup.com.ng
               </Text>
             </View>
           </View>

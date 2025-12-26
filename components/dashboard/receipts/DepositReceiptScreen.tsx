@@ -369,7 +369,7 @@ export const DepositReceiptScreen: React.FC<DepositReceiptScreenProps> = ({
                 Thank you for using SureTopUp
               </Text>
               <Text style={styles.footerSubtext}>
-                For support, contact us info@suretopup.com.ng
+                For support, contact us at info@suretopup.com.ng
               </Text>
             </View>
           </View>

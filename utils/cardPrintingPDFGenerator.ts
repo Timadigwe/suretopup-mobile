@@ -411,7 +411,7 @@ export const generateCardPrintingHTML = (receiptData: CardPrintingReceiptData) =
           <div class="receipt-footer">
             <div class="dotted-line"></div>
             <div class="footer-text">Thank you for using SureTopUp</div>
-            <div class="footer-subtext">For support, contact us info@suretopup.com.ng</div>
+            <div class="footer-subtext">For support, contact us at info@suretopup.com.ng</div>
           </div>
         </div>
       </body>

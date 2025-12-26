@@ -1403,7 +1403,7 @@ class ApiService {
 
     // Refresh eBills token before purchase
     await this.ensureTokenRefresh();
-    
+
     return this.makeRequest<{
       reference: string;
       amount: number;
@@ -1501,7 +1501,7 @@ class ApiService {
   }>> {
     // Refresh eBills token before purchase
     await this.ensureTokenRefresh();
-    
+
     return this.makeRequest<{
       reference: string;
       amount: number;
@@ -1567,7 +1567,7 @@ class ApiService {
   }>> {
     // Refresh eBills token before purchase
     await this.ensureTokenRefresh();
-    
+
     return this.makeRequest<{
       reference: string;
       business_name: string;
@@ -1719,7 +1719,7 @@ class ApiService {
   }>> {
     // Refresh eBills token before purchase
     await this.ensureTokenRefresh();
-    
+
     return this.makeRequest<{
       transaction: {
         userid: number;
@@ -1806,7 +1806,7 @@ class ApiService {
   }): Promise<ApiResponse<any>> {
     // Refresh eBills token before purchase
     await this.ensureTokenRefresh();
-    
+
     return this.makeRequest('/user/purchase-electricity', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -1877,7 +1877,7 @@ class ApiService {
   }>> {
     // Refresh eBills token before purchase
     await this.ensureTokenRefresh();
-    
+
     return this.makeRequest<{
       nin_id: number;
       transaction: {
@@ -1919,7 +1919,7 @@ class ApiService {
   async submitCacRequest(data: FormData): Promise<ApiResponse<any>> {
     // Refresh eBills token before purchase
     await this.ensureTokenRefresh();
-    
+
     return this.makeRequest('/user/cac', {
       method: 'POST',
       body: data,
@@ -2033,7 +2033,7 @@ class ApiService {
   }): Promise<ApiResponse<any>> {
     // Refresh eBills token before purchase
     await this.ensureTokenRefresh();
-    
+
     return this.makeRequest('/user/subscribe-cable', {
       method: 'POST',
       body: JSON.stringify(data),
