@@ -1,23 +1,23 @@
-import React, { useState, useRef, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  TextInput,
-  Alert,
-  ScrollView,
-  ActivityIndicator,
-  Dimensions,
-} from 'react-native';
-import { WebView } from 'react-native-webview';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { CustomModal } from '@/components/ui/CustomModal';
+import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useMobileFeatures } from '@/hooks/useMobileFeatures';
-import { useAuth } from '@/contexts/AuthContext';
 import { apiService } from '@/services/api';
-import { CustomModal } from '@/components/ui/CustomModal';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { WebView } from 'react-native-webview';
 
 interface AddFundsScreenProps {
   onNavigate: (page: string) => void;
@@ -142,7 +142,8 @@ export const AddFundsScreen: React.FC<AddFundsScreenProps> = ({ onNavigate }) =>
     
     try {
       // Use total_to_pay if charge data is available, otherwise use original amount
-      const paymentAmount = chargeData?.total_to_pay || parseFloat(amount);
+      //const paymentAmount = chargeData?.total_to_pay || parseFloat(amount);
+      const paymentAmount = parseFloat(amount);
       const response = await apiService.initializeDeposit(email, paymentAmount, chargeData || undefined);
       
       // Check if the response indicates success (API returns "status": "success")
