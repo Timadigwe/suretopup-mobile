@@ -402,6 +402,42 @@ class ApiService {
     });
   }
 
+  // Admin send email to single user
+  async sendEmailToUser(data: {
+    user_id: number;
+    subject: string;
+    message: string;
+  }): Promise<ApiResponse<{
+    user: {
+      id: number;
+      firstname: string;
+      lastname: string;
+      email: string;
+    };
+    email_details: {
+      subject: string;
+      message_length: number;
+      sent_at: string;
+    };
+  }>> {
+    return this.makeRequest<{
+      user: {
+        id: number;
+        firstname: string;
+        lastname: string;
+        email: string;
+      };
+      email_details: {
+        subject: string;
+        message_length: number;
+        sent_at: string;
+      };
+    }>('/admin/users/send-email', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   // Admin bulk email - send
   async sendBulkEmail(data: {
     subject: string;
@@ -841,6 +877,7 @@ class ApiService {
     search?: string;
     sort_by?: string;
     sort_order?: string;
+    user_id?: number;
   }): Promise<ApiResponse<{
     transactions: Array<{
       id: number;
@@ -893,6 +930,7 @@ class ApiService {
     if (params?.search) queryParams.append('search', params.search);
     if (params?.sort_by) queryParams.append('sort_by', params.sort_by);
     if (params?.sort_order) queryParams.append('sort_order', params.sort_order);
+    if (params?.user_id) queryParams.append('user_id', params.user_id.toString());
 
     const queryString = queryParams.toString();
     const endpoint = queryString ? `/admin/transactions?${queryString}` : '/admin/transactions';
@@ -1194,6 +1232,264 @@ class ApiService {
       };
     }>('/admin/other-services', {
       method: 'GET',
+    });
+  }
+
+  // Admin NIN submissions - get all
+  async getAdminNinSubmissions(): Promise<ApiResponse<{
+    submissions: Array<{
+      id: number;
+      userid: string;
+      slip_type: string;
+      nin_number: string;
+      amount: string;
+      status: string;
+      user: {
+        id: number;
+        firstname: string;
+        lastname: string;
+        email: string;
+        phone: string;
+        balance: string;
+        state: string;
+        status: string;
+        is_banned: boolean;
+      };
+    }>;
+    total: number;
+  }>> {
+    return this.makeRequest<{
+      submissions: Array<{
+        id: number;
+        userid: string;
+        slip_type: string;
+        nin_number: string;
+        amount: string;
+        status: string;
+        user: {
+          id: number;
+          firstname: string;
+          lastname: string;
+          email: string;
+          phone: string;
+          balance: string;
+          state: string;
+          status: string;
+          is_banned: boolean;
+        };
+      }>;
+      total: number;
+    }>('/admin/nins', {
+      method: 'GET',
+    });
+  }
+
+  // Admin NIN submission - get single
+  async getAdminNinSubmission(id: number): Promise<ApiResponse<{
+    id: number;
+    userid: string;
+    slip_type: string;
+    nin_number: string;
+    amount: string;
+    status: string;
+    user: {
+      id: number;
+      firstname: string;
+      lastname: string;
+      email: string;
+      phone: string;
+      balance: string;
+      state: string;
+      status: string;
+      is_banned: boolean;
+    };
+  }>> {
+    return this.makeRequest<{
+      id: number;
+      userid: string;
+      slip_type: string;
+      nin_number: string;
+      amount: string;
+      status: string;
+      user: {
+        id: number;
+        firstname: string;
+        lastname: string;
+        email: string;
+        phone: string;
+        balance: string;
+        state: string;
+        status: string;
+        is_banned: boolean;
+      };
+    }>(`/admin/nins/${id}`, {
+      method: 'GET',
+    });
+  }
+
+  // Admin NIN submission - delete
+  async deleteAdminNinSubmission(id: number): Promise<ApiResponse> {
+    return this.makeRequest(`/admin/nins/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Admin CAC submissions - get all
+  async getAdminCacSubmissions(): Promise<ApiResponse<{
+    submissions: Array<{
+      id: number;
+      userid: string;
+      certificate_type: string;
+      business_name_1: string;
+      business_name_2: string;
+      company_address: string;
+      residential_address: string;
+      nature_of_business: string;
+      share_capital: string;
+      id_card_of_directors: string;
+      passport_photograph: string;
+      phone: string;
+      email: string;
+      fullname: string;
+      dob: string;
+      country: string;
+      state: string;
+      lga: string;
+      city: string;
+      sign: string;
+      status: string;
+      user: {
+        id: number;
+        firstname: string;
+        lastname: string;
+        email: string;
+        phone: string;
+        balance: string;
+        state: string;
+        status: string;
+        is_banned: boolean;
+      };
+    }>;
+    total: number;
+  }>> {
+    return this.makeRequest<{
+      submissions: Array<{
+        id: number;
+        userid: string;
+        certificate_type: string;
+        business_name_1: string;
+        business_name_2: string;
+        company_address: string;
+        residential_address: string;
+        nature_of_business: string;
+        share_capital: string;
+        id_card_of_directors: string;
+        passport_photograph: string;
+        phone: string;
+        email: string;
+        fullname: string;
+        dob: string;
+        country: string;
+        state: string;
+        lga: string;
+        city: string;
+        sign: string;
+        status: string;
+        user: {
+          id: number;
+          firstname: string;
+          lastname: string;
+          email: string;
+          phone: string;
+          balance: string;
+          state: string;
+          status: string;
+          is_banned: boolean;
+        };
+      }>;
+      total: number;
+    }>('/admin/cacs', {
+      method: 'GET',
+    });
+  }
+
+  // Admin CAC submission - get single
+  async getAdminCacSubmission(id: number): Promise<ApiResponse<{
+    id: number;
+    userid: string;
+    certificate_type: string;
+    business_name_1: string;
+    business_name_2: string;
+    company_address: string;
+    residential_address: string;
+    nature_of_business: string;
+    share_capital: string;
+    id_card_of_directors: string;
+    passport_photograph: string;
+    phone: string;
+    email: string;
+    fullname: string;
+    dob: string;
+    country: string;
+    state: string;
+    lga: string;
+    city: string;
+    sign: string;
+    status: string;
+    user: {
+      id: number;
+      firstname: string;
+      lastname: string;
+      email: string;
+      phone: string;
+      balance: string;
+      state: string;
+      status: string;
+      is_banned: boolean;
+    };
+  }>> {
+    return this.makeRequest<{
+      id: number;
+      userid: string;
+      certificate_type: string;
+      business_name_1: string;
+      business_name_2: string;
+      company_address: string;
+      residential_address: string;
+      nature_of_business: string;
+      share_capital: string;
+      id_card_of_directors: string;
+      passport_photograph: string;
+      phone: string;
+      email: string;
+      fullname: string;
+      dob: string;
+      country: string;
+      state: string;
+      lga: string;
+      city: string;
+      sign: string;
+      status: string;
+      user: {
+        id: number;
+        firstname: string;
+        lastname: string;
+        email: string;
+        phone: string;
+        balance: string;
+        state: string;
+        status: string;
+        is_banned: boolean;
+      };
+    }>(`/admin/cacs/${id}`, {
+      method: 'GET',
+    });
+  }
+
+  // Admin CAC submission - delete
+  async deleteAdminCacSubmission(id: number): Promise<ApiResponse> {
+    return this.makeRequest(`/admin/cacs/${id}`, {
+      method: 'DELETE',
     });
   }
 

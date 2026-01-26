@@ -10,6 +10,8 @@ import {
   ActivityIndicator,
   TextInput,
   Modal,
+  FlatList,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -31,7 +33,7 @@ interface User {
   ipaddress: string | null;
   device: string | null;
   status: string;
-  is_banned: boolean;
+  is_banned?: boolean;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
@@ -54,10 +56,19 @@ export const AdminUsersScreen: React.FC<AdminUsersScreenProps> = ({ onBack }) =>
   const [showCreditDebitModal, setShowCreditDebitModal] = useState(false);
   const [showBanModal, setShowBanModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showTransactionsModal, setShowTransactionsModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [actionType, setActionType] = useState<'Credit' | 'Debit'>('Credit');
   const [amount, setAmount] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // Transaction history state
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
+  const [transactionTypeFilter, setTransactionTypeFilter] = useState<string>('All');
+  const [transactionStatusFilter, setTransactionStatusFilter] = useState<string>('All');
+  const [transactionPage, setTransactionPage] = useState(1);
+  const [transactionPagination, setTransactionPagination] = useState<any>(null);
 
   const fetchUsers = async () => {
     try {
@@ -163,6 +174,77 @@ export const AdminUsersScreen: React.FC<AdminUsersScreenProps> = ({ onBack }) =>
     triggerHapticFeedback('light');
   };
 
+  const handleViewTransactions = (user: User) => {
+    setSelectedUser(user);
+    setTransactionTypeFilter('All');
+    setTransactionStatusFilter('All');
+    setTransactionPage(1);
+    setShowTransactionsModal(true);
+    fetchUserTransactions(user.id, 1, 'All', 'All');
+    triggerHapticFeedback('light');
+  };
+
+  const fetchUserTransactions = async (
+    userId: number, 
+    page: number = 1, 
+    type: string = 'All', 
+    status: string = 'All'
+  ) => {
+    setIsLoadingTransactions(true);
+    try {
+      const params: any = {
+        page,
+        per_page: 15,
+        user_id: userId,
+      };
+
+      if (type !== 'All') {
+        params.type = type;
+      }
+      if (status !== 'All') {
+        params.status = status;
+      }
+
+      const response = await apiService.getAdminTransactions(params);
+      
+      if (response.success && response.data) {
+        const data = response.data;
+        if (page === 1) {
+          setTransactions(data.transactions);
+        } else {
+          setTransactions(prev => [...prev, ...data.transactions]);
+        }
+        setTransactionPagination(data.pagination);
+      }
+    } catch (error) {
+      if (__DEV__) {
+        console.error('Error fetching user transactions:', error);
+      }
+      Alert.alert('Error', 'Failed to fetch transactions');
+    } finally {
+      setIsLoadingTransactions(false);
+    }
+  };
+
+  const handleTransactionFilterChange = (type: string, status: string) => {
+    setTransactionTypeFilter(type);
+    setTransactionStatusFilter(status);
+    setTransactionPage(1);
+    if (selectedUser) {
+      fetchUserTransactions(selectedUser.id, 1, type, status);
+    }
+  };
+
+  const handleLoadMoreTransactions = () => {
+    if (transactionPagination && transactionPage < transactionPagination.last_page && !isLoadingTransactions) {
+      const nextPage = transactionPage + 1;
+      setTransactionPage(nextPage);
+      if (selectedUser) {
+        fetchUserTransactions(selectedUser.id, nextPage, transactionTypeFilter, transactionStatusFilter);
+      }
+    }
+  };
+
   const handleProcessBan = async () => {
     if (!selectedUser) return;
 
@@ -239,8 +321,17 @@ export const AdminUsersScreen: React.FC<AdminUsersScreenProps> = ({ onBack }) =>
     return `₦${numAmount.toLocaleString()}`;
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string, includeTime: boolean = false) => {
     const date = new Date(dateString);
+    if (includeTime) {
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    }
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -356,6 +447,17 @@ export const AdminUsersScreen: React.FC<AdminUsersScreenProps> = ({ onBack }) =>
           <Ionicons name="trash" size={16} color={colors.destructive} />
           <Text style={[styles.actionButtonText, { color: colors.destructive }]}>
             Delete
+          </Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          onPress={() => handleViewTransactions(user)}
+          style={[styles.actionButton, { backgroundColor: colors.primary + '15' }]}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="list" size={16} color={colors.primary} />
+          <Text style={[styles.actionButtonText, { color: colors.primary }]}>
+            Transactions
           </Text>
         </TouchableOpacity>
       </View>
@@ -697,6 +799,201 @@ export const AdminUsersScreen: React.FC<AdminUsersScreenProps> = ({ onBack }) =>
           </View>
         </View>
       </Modal>
+
+      {/* User Transactions Modal */}
+      <Modal
+        visible={showTransactionsModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowTransactionsModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.transactionsModalContent, { backgroundColor: colors.card }]}>
+            {/* Header */}
+            <View style={styles.modalHeader}>
+              <View style={styles.modalHeaderContent}>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>
+                  Transaction History
+                </Text>
+                {selectedUser && (
+                  <Text style={[styles.modalSubtitle, { color: colors.mutedForeground }]}>
+                    {selectedUser.firstname} {selectedUser.lastname}
+                  </Text>
+                )}
+              </View>
+              <TouchableOpacity
+                onPress={() => setShowTransactionsModal(false)}
+                style={styles.modalCloseButton}
+              >
+                <Ionicons name="close" size={24} color={colors.mutedForeground} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Filter Chips */}
+            <View style={styles.transactionFiltersContainer}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterChipsRow}>
+                {['All', 'Credit', 'Debit'].map((type) => (
+                  <TouchableOpacity
+                    key={type}
+                    style={[
+                      styles.filterChip,
+                      { 
+                        backgroundColor: transactionTypeFilter === type ? colors.primary : colors.background,
+                        borderColor: colors.border,
+                      }
+                    ]}
+                    onPress={() => handleTransactionFilterChange(type, transactionStatusFilter)}
+                  >
+                    <Text style={[
+                      styles.filterChipText,
+                      { color: transactionTypeFilter === type ? 'white' : colors.text }
+                    ]}>
+                      {type}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterChipsRow}>
+                {['All', 'Completed', 'Pending', 'Failed'].map((status) => (
+                  <TouchableOpacity
+                    key={status}
+                    style={[
+                      styles.filterChip,
+                      { 
+                        backgroundColor: transactionStatusFilter === status ? colors.primary : colors.background,
+                        borderColor: colors.border,
+                      }
+                    ]}
+                    onPress={() => handleTransactionFilterChange(transactionTypeFilter, status)}
+                  >
+                    <Text style={[
+                      styles.filterChipText,
+                      { color: transactionStatusFilter === status ? 'white' : colors.text }
+                    ]}>
+                      {status}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+
+            {/* Transactions List Container */}
+            <View style={[styles.transactionsListContainer, { height: Dimensions.get('window').height * 0.5 }]}>
+              {isLoadingTransactions && transactions.length === 0 ? (
+                <View style={styles.transactionsLoadingContainer}>
+                  <ActivityIndicator size="large" color={colors.primary} />
+                  <Text style={[styles.loadingText, { color: colors.mutedForeground }]}>
+                    Loading transactions...
+                  </Text>
+                </View>
+              ) : transactions.length === 0 ? (
+                <View style={styles.transactionsEmptyContainer}>
+                  <Ionicons name="receipt-outline" size={48} color={colors.mutedForeground} />
+                  <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
+                    No transactions found
+                  </Text>
+                </View>
+              ) : (
+                <FlatList
+                  data={transactions}
+                  keyExtractor={(item) => item.id.toString()}
+                  renderItem={({ item }) => (
+                    <View style={[styles.transactionItem, { backgroundColor: colors.background }]}>
+                      <View style={styles.transactionItemHeader}>
+                        <View style={styles.transactionItemInfo}>
+                          <Text style={[styles.transactionService, { color: colors.text }]}>
+                            {item.service}
+                          </Text>
+                          <Text style={[styles.transactionDate, { color: colors.mutedForeground }]}>
+                            {formatDate(item.created_at, true)}
+                          </Text>
+                        </View>
+                        <View style={styles.transactionItemAmount}>
+                          <Text style={[
+                            styles.transactionAmount,
+                            { 
+                              color: item.type === 'Credit' 
+                                ? colors.success 
+                                : item.status === 'Failed' 
+                                  ? colors.destructive 
+                                  : colors.primary 
+                            }
+                          ]}>
+                            {item.formatted_amount}
+                          </Text>
+                          <View style={[
+                            styles.transactionStatusBadge,
+                            { 
+                              backgroundColor: item.status === 'Completed' 
+                                ? colors.success + '20'
+                                : item.status === 'Pending'
+                                  ? colors.warning + '20'
+                                  : colors.destructive + '20'
+                            }
+                          ]}>
+                            <Text style={[
+                              styles.transactionStatusText,
+                              { 
+                                color: item.status === 'Completed' 
+                                  ? colors.success
+                                  : item.status === 'Pending'
+                                    ? colors.warning
+                                    : colors.destructive
+                              }
+                            ]}>
+                              {item.status}
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                      <View style={styles.transactionItemDetails}>
+                        <Text style={[styles.transactionType, { color: colors.mutedForeground }]}>
+                          Type: {item.type}
+                        </Text>
+                        {item.reference && (
+                          <Text style={[styles.transactionReference, { color: colors.mutedForeground }]}>
+                            Ref: {item.reference}
+                          </Text>
+                        )}
+                      </View>
+                      <View style={styles.transactionBalanceInfo}>
+                        <Text style={[styles.transactionBalanceLabel, { color: colors.mutedForeground }]}>
+                          Balance: {item.formatted_previous_balance || 'N/A'} → {item.formatted_new_balance}
+                        </Text>
+                      </View>
+                    </View>
+                  )}
+                  contentContainerStyle={styles.transactionsListContent}
+                  showsVerticalScrollIndicator={true}
+                  nestedScrollEnabled={true}
+                  onEndReached={handleLoadMoreTransactions}
+                  onEndReachedThreshold={0.1}
+                  ListFooterComponent={() => 
+                    transactionPagination && transactionPage < transactionPagination.last_page ? (
+                      <View style={styles.loadMoreContainer}>
+                        <ActivityIndicator size="small" color={colors.primary} />
+                        <Text style={[styles.loadMoreText, { color: colors.mutedForeground }]}>
+                          Loading more...
+                        </Text>
+                      </View>
+                    ) : null
+                  }
+                />
+              )}
+            </View>
+
+            {/* Pagination Info */}
+            {transactionPagination && (
+              <View style={styles.transactionPaginationInfo}>
+                <Text style={[styles.paginationText, { color: colors.mutedForeground }]}>
+                  Showing {transactionPagination.from}-{transactionPagination.to} of {transactionPagination.total} transactions
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -1025,6 +1322,140 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     marginLeft: 12,
+  },
+  transactionsModalContent: {
+    width: '100%',
+    maxWidth: 500,
+    borderRadius: 16,
+    padding: 24,
+    maxHeight: '90%',
+    flexDirection: 'column',
+  },
+  modalHeaderContent: {
+    flex: 1,
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    marginTop: 4,
+  },
+  transactionFiltersContainer: {
+    marginBottom: 16,
+    gap: 12,
+  },
+  filterChipsRow: {
+    marginBottom: 8,
+  },
+  filterChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginRight: 8,
+    borderWidth: 1,
+  },
+  filterChipText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  transactionsListContainer: {
+    marginVertical: 16,
+  },
+  transactionsList: {
+    flex: 1,
+  },
+  transactionsListContent: {
+    paddingBottom: 16,
+  },
+  transactionItem: {
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.1)',
+  },
+  transactionItemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  transactionItemInfo: {
+    flex: 1,
+  },
+  transactionService: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  transactionDate: {
+    fontSize: 12,
+  },
+  transactionItemAmount: {
+    alignItems: 'flex-end',
+  },
+  transactionAmount: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  transactionStatusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  transactionStatusText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  transactionItemDetails: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.1)',
+  },
+  transactionType: {
+    fontSize: 12,
+  },
+  transactionReference: {
+    fontSize: 12,
+  },
+  transactionBalanceInfo: {
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.1)',
+  },
+  transactionBalanceLabel: {
+    fontSize: 12,
+  },
+  transactionsLoadingContainer: {
+    alignItems: 'center',
+    padding: 40,
+  },
+  transactionsEmptyContainer: {
+    alignItems: 'center',
+    padding: 40,
+  },
+  emptyText: {
+    fontSize: 16,
+    marginTop: 12,
+  },
+  loadMoreContainer: {
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadMoreText: {
+    marginTop: 8,
+    fontSize: 14,
+  },
+  transactionPaginationInfo: {
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.1)',
+    alignItems: 'center',
+  },
+  paginationText: {
+    fontSize: 12,
   },
 });
 

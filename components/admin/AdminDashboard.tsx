@@ -19,7 +19,7 @@ import { adminDashboardCacheUtils } from '@/utils/adminDashboardCache';
 
 interface AdminDashboardProps {
   onLogout: () => void;
-  onNavigate?: (screen: string) => void;
+  onNavigate?: (screen: string, data?: any) => void;
   adminData?: {
     id: number;
     username: string;
@@ -272,6 +272,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onNavi
         triggerHapticFeedback('light');
         if (onNavigate) {
           onNavigate('admin-transactions');
+        }
+      },
+    },
+    {
+      title: 'CAC Submissions',
+      icon: 'business',
+      color: colors.primary,
+      onPress: () => {
+        triggerHapticFeedback('light');
+        if (onNavigate) {
+          onNavigate('admin-other-services', { initialTab: 'cac' });
+        }
+      },
+    },
+    {
+      title: 'NIN Submissions',
+      icon: 'finger-print',
+      color: colors.success,
+      onPress: () => {
+        triggerHapticFeedback('light');
+        if (onNavigate) {
+          onNavigate('admin-other-services', { initialTab: 'nin' });
         }
       },
     },

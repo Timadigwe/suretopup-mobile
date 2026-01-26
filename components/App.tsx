@@ -84,6 +84,7 @@ export const App: React.FC = () => {
   const [registrationData, setRegistrationData] = useState<any>(null);
   const [receiptData, setReceiptData] = useState<any>(null);
   const [receiptSource, setReceiptSource] = useState<string>('home');
+  const [adminOtherServicesTab, setAdminOtherServicesTab] = useState<'nin' | 'cac' | null>(null);
   const [isInAuthFlow, setIsInAuthFlow] = useState(false);
   const [navigationHistory, setNavigationHistory] = useState<AppScreen[]>(['onboarding']);
   const [multiStepInfo, setMultiStepInfo] = useState<{
@@ -262,6 +263,10 @@ export const App: React.FC = () => {
     }
     if (page === 'service-placeholder' && data) {
       setReceiptData(data);
+    }
+    if (page === 'admin-other-services') {
+      const tab = data?.initialTab;
+      setAdminOtherServicesTab(tab === 'cac' || tab === 'nin' ? tab : null);
     }
     
     // Update navigation history
@@ -452,7 +457,7 @@ export const App: React.FC = () => {
         return <HomeScreen onNavigate={handleNavigate} onLogout={handleLogout} />;
         
       case 'admin':
-        return <AdminDashboard onLogout={handleLogout} onNavigate={(screen: string) => setCurrentScreen(screen as AppScreen)} adminData={admin} />;
+        return <AdminDashboard onLogout={handleLogout} onNavigate={handleNavigate} adminData={admin} />;
         
       case 'admin-users':
         return <AdminUsersScreen onBack={() => setCurrentScreen('admin')} />;
@@ -473,7 +478,7 @@ export const App: React.FC = () => {
         return <AdminSlipTypesScreen onBack={() => setCurrentScreen('admin')} />;
         
       case 'admin-other-services':
-        return <AdminOtherServicesScreen onBack={() => setCurrentScreen('admin')} />;
+        return <AdminOtherServicesScreen onBack={() => setCurrentScreen('admin')} initialTab={adminOtherServicesTab ?? undefined} />;
         
       case 'home':
         return <HomeScreen onNavigate={handleNavigate} onLogout={handleLogout} />;
