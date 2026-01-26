@@ -12,6 +12,7 @@ import {
   Platform,
   FlatList,
   RefreshControl,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -36,6 +37,7 @@ interface NinRequest {
   userid: string;
   slip_type: string;
   nin_number: string;
+  slip_type_image_url?: string;
   amount: string;
   status: string;
   user?: RequestUser;
@@ -305,6 +307,15 @@ export const AdminOtherServicesScreen: React.FC<AdminOtherServicesScreenProps> =
         </View>
       </View>
 
+      {item.slip_type_image_url ? (
+        <View style={styles.imagePreviewRow}>
+          <Image
+            source={{ uri: item.slip_type_image_url }}
+            style={styles.ninSlipPreview}
+          />
+        </View>
+      ) : null}
+
       <View style={styles.requestDetails}>
         <View style={styles.detailRow}>
           <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>Slip Type:</Text>
@@ -366,6 +377,27 @@ export const AdminOtherServicesScreen: React.FC<AdminOtherServicesScreenProps> =
             </Text>
           </View>
         </View>
+      </View>
+
+      <View style={styles.imagePreviewRow}>
+        {item.id_card_of_directors ? (
+          <Image
+            source={{ uri: item.id_card_of_directors }}
+            style={styles.cacPreviewImage}
+          />
+        ) : null}
+        {item.passport_photograph ? (
+          <Image
+            source={{ uri: item.passport_photograph }}
+            style={styles.cacPreviewImage}
+          />
+        ) : null}
+        {item.sign ? (
+          <Image
+            source={{ uri: item.sign }}
+            style={styles.cacPreviewImage}
+          />
+        ) : null}
       </View>
 
       <View style={styles.requestDetails}>
@@ -562,6 +594,15 @@ export const AdminOtherServicesScreen: React.FC<AdminOtherServicesScreenProps> =
                   {renderDetailRow('NIN Number', (detailsData as NinRequest).nin_number)}
                   {renderDetailRow('Amount', (detailsData as NinRequest).amount)}
                   {renderDetailRow('Status', (detailsData as NinRequest).status)}
+                  {(detailsData as NinRequest).slip_type_image_url ? (
+                    <View style={styles.detailsImageBlock}>
+                      <Text style={[styles.detailsSectionTitle, { color: colors.text }]}>Slip Image</Text>
+                      <Image
+                        source={{ uri: (detailsData as NinRequest).slip_type_image_url as string }}
+                        style={styles.detailsImage}
+                      />
+                    </View>
+                  ) : null}
                 </>
               ) : (
                 <>
@@ -573,9 +614,29 @@ export const AdminOtherServicesScreen: React.FC<AdminOtherServicesScreenProps> =
                   {renderDetailRow('Residential Address', (detailsData as CacRequest).residential_address)}
                   {renderDetailRow('Nature of Business', (detailsData as CacRequest).nature_of_business)}
                   {renderDetailRow('Share Capital', (detailsData as CacRequest).share_capital)}
-                  {renderDetailRow('ID Card of Directors', (detailsData as CacRequest).id_card_of_directors)}
-                  {renderDetailRow('Passport Photograph', (detailsData as CacRequest).passport_photograph)}
-                  {renderDetailRow('Signature', (detailsData as CacRequest).sign)}
+                  <View style={styles.detailsImageBlock}>
+                    <Text style={[styles.detailsSectionTitle, { color: colors.text }]}>Documents</Text>
+                    <View style={styles.detailsImageRow}>
+                      {(detailsData as CacRequest).id_card_of_directors ? (
+                        <Image
+                          source={{ uri: (detailsData as CacRequest).id_card_of_directors }}
+                          style={styles.detailsImageSmall}
+                        />
+                      ) : null}
+                      {(detailsData as CacRequest).passport_photograph ? (
+                        <Image
+                          source={{ uri: (detailsData as CacRequest).passport_photograph }}
+                          style={styles.detailsImageSmall}
+                        />
+                      ) : null}
+                      {(detailsData as CacRequest).sign ? (
+                        <Image
+                          source={{ uri: (detailsData as CacRequest).sign }}
+                          style={styles.detailsImageSmall}
+                        />
+                      ) : null}
+                    </View>
+                  </View>
                   {renderDetailRow('Phone', (detailsData as CacRequest).phone)}
                   {renderDetailRow('Email', (detailsData as CacRequest).email)}
                   {renderDetailRow('Full Name', (detailsData as CacRequest).fullname)}
@@ -930,6 +991,25 @@ const styles = StyleSheet.create({
   requestDetails: {
     marginBottom: 12,
   },
+  imagePreviewRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  ninSlipPreview: {
+    width: '100%',
+    height: 140,
+    borderRadius: 8,
+    resizeMode: 'contain',
+    backgroundColor: 'rgba(0,0,0,0.04)',
+  },
+  cacPreviewImage: {
+    flex: 1,
+    height: 90,
+    borderRadius: 8,
+    resizeMode: 'cover',
+    backgroundColor: 'rgba(0,0,0,0.04)',
+  },
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -978,6 +1058,28 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     marginBottom: 8,
+  },
+  detailsImageBlock: {
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  detailsImage: {
+    width: '100%',
+    height: 220,
+    borderRadius: 10,
+    resizeMode: 'contain',
+    backgroundColor: 'rgba(0,0,0,0.04)',
+  },
+  detailsImageRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  detailsImageSmall: {
+    flex: 1,
+    height: 120,
+    borderRadius: 8,
+    resizeMode: 'cover',
+    backgroundColor: 'rgba(0,0,0,0.04)',
   },
   modalDescription: {
     fontSize: 14,

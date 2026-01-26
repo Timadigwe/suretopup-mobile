@@ -364,146 +364,118 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onNavi
           }
           contentContainerStyle={[styles.scrollContent, { paddingBottom: safeAreaBottom + 20 }]}
         >
-        {/* Hero Stats Card */}
-        <View style={[styles.heroCard, { backgroundColor: colors.primary }]}>
+        {/* Overview Card */}
+        <View style={[styles.heroCard, { backgroundColor: colors.card }]}>
           {dashboardError ? (
             <View style={styles.errorContainer}>
-              <Ionicons name="alert-circle" size={24} color="rgba(255,255,255,0.8)" />
-              <Text style={styles.errorText}>Unable to load statistics</Text>
+              <Ionicons name="alert-circle" size={24} color={colors.mutedForeground} />
+              <Text style={[styles.errorText, { color: colors.mutedForeground }]}>
+                Unable to load statistics
+              </Text>
               <TouchableOpacity
                 onPress={() => loadData(true)}
-                style={styles.retryButton}
+                style={[styles.retryButton, { backgroundColor: colors.primary + '20' }]}
               >
-                <Text style={styles.retryButtonText}>Retry</Text>
+                <Text style={[styles.retryButtonText, { color: colors.primary }]}>Retry</Text>
               </TouchableOpacity>
             </View>
           ) : (
-            <View style={styles.heroContent}>
-              {/* Top Row - Key Metrics */}
-              <View style={styles.heroStatsRow}>
-                <View style={styles.heroStatCard}>
-                  <View style={styles.heroStatIcon}>
-                    <Ionicons name="people" size={20} color="white" />
+            <View style={styles.overviewContent}>
+              <View style={styles.overviewHeader}>
+                <Text style={[styles.overviewTitle, { color: colors.text }]}>Overview</Text>
+                <Text style={[styles.overviewSubtitle, { color: colors.mutedForeground }]}>
+                  Key metrics at a glance
+                </Text>
+              </View>
+
+              <View style={styles.overviewGrid}>
+                <View style={[styles.overviewItem, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <View style={styles.overviewItemHeader}>
+                    <Text style={[styles.overviewLabel, { color: colors.mutedForeground }]}>Total Users</Text>
+                    <View style={[styles.overviewIcon, { backgroundColor: colors.primary + '10' }]}>
+                      <Ionicons name="people" size={16} color={colors.primary} />
+                    </View>
                   </View>
-                  <Text style={styles.heroStatValue}>{dashboardData?.users || 0}</Text>
-                  <Text style={styles.heroStatLabel}>Total Users</Text>
+                  <Text style={[styles.overviewValue, { color: colors.text }]}>
+                    {dashboardData?.users || 0}
+                  </Text>
                 </View>
-                
-                <View style={styles.heroStatCard}>
-                  <View style={styles.heroStatIcon}>
-                    <Ionicons name="card" size={20} color="white" />
+                <View style={[styles.overviewItem, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <View style={styles.overviewItemHeader}>
+                    <Text style={[styles.overviewLabel, { color: colors.mutedForeground }]}>Transactions</Text>
+                    <View style={[styles.overviewIcon, { backgroundColor: colors.success + '10' }]}>
+                      <Ionicons name="card" size={16} color={colors.success} />
+                    </View>
                   </View>
-                  <Text style={styles.heroStatValue}>{dashboardData?.transactions || 0}</Text>
-                  <Text style={styles.heroStatLabel}>Transactions</Text>
+                  <Text style={[styles.overviewValue, { color: colors.text }]}>
+                    {dashboardData?.transactions || 0}
+                  </Text>
                 </View>
-                
-                <View style={styles.heroStatCard}>
-                  <View style={styles.heroStatIcon}>
-                    <Ionicons name="wallet" size={20} color="white" />
+                <View style={[styles.overviewItem, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <View style={styles.overviewItemHeader}>
+                    <Text style={[styles.overviewLabel, { color: colors.mutedForeground }]}>Wallet</Text>
+                    <View style={[styles.overviewIcon, { backgroundColor: colors.primary + '10' }]}>
+                      <Ionicons name="wallet" size={16} color={colors.primary} />
+                    </View>
                   </View>
-                  <Text style={styles.heroStatValue}>
+                  <Text style={[styles.overviewValue, { color: colors.text }]}>
                     {dashboardData ? formatAmount(dashboardData.ebills_wallet_balance) : '₦0'}
                   </Text>
-                  <Text style={styles.heroStatLabel}>Wallet</Text>
                 </View>
-              </View>
-              
-              {/* Bottom Row - Revenue Metrics */}
-              <View style={styles.heroStatsRow}>
-                <View style={styles.heroStatCard}>
-                  <View style={styles.heroStatIcon}>
-                    <Ionicons name="trending-up" size={20} color="white" />
+                <View style={[styles.overviewItem, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <View style={styles.overviewItemHeader}>
+                    <Text style={[styles.overviewLabel, { color: colors.mutedForeground }]}>Total Revenue</Text>
+                    <View style={[styles.overviewIcon, { backgroundColor: colors.warning + '10' }]}>
+                      <Ionicons name="trending-up" size={16} color={colors.warning} />
+                    </View>
                   </View>
-                  <Text style={styles.heroStatValue}>
+                  <Text style={[styles.overviewValue, { color: colors.text }]}>
                     {dashboardData ? formatAmount(dashboardData.total_transaction_amount) : '₦0'}
                   </Text>
-                  <Text style={styles.heroStatLabel}>Total Revenue</Text>
                 </View>
-                
-                <View style={styles.heroStatCard}>
-                  <View style={styles.heroStatIcon}>
-                    <Ionicons name="people-circle" size={20} color="white" />
+                <View style={[styles.overviewItem, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <View style={styles.overviewItemHeader}>
+                    <Text style={[styles.overviewLabel, { color: colors.mutedForeground }]}>User Balances</Text>
+                    <View style={[styles.overviewIcon, { backgroundColor: colors.primary + '10' }]}>
+                      <Ionicons name="people-circle" size={16} color={colors.primary} />
+                    </View>
                   </View>
-                  <Text style={styles.heroStatValue}>
+                  <Text style={[styles.overviewValue, { color: colors.text }]}>
                     {dashboardData ? formatAmount(dashboardData.total_users_balance) : '₦0'}
                   </Text>
-                  <Text style={styles.heroStatLabel}>User Balances</Text>
                 </View>
-                
-                <View style={styles.heroStatCard}>
-                  <View style={styles.heroStatIcon}>
-                    <Ionicons name="document-text" size={20} color="white" />
+                <View style={[styles.overviewItem, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <View style={styles.overviewItemHeader}>
+                    <Text style={[styles.overviewLabel, { color: colors.mutedForeground }]}>Total Credited</Text>
+                    <View style={[styles.overviewIcon, { backgroundColor: colors.success + '10' }]}>
+                      <Ionicons name="arrow-up-circle" size={16} color={colors.success} />
+                    </View>
                   </View>
-                  <Text style={styles.heroStatValue}>
-                    {(dashboardData?.total_nin || 0) + (dashboardData?.total_cac || 0)}
-                  </Text>
-                  <Text style={styles.heroStatLabel}>Documents</Text>
-                </View>
-              </View>
-              
-              {/* Third Row - Additional Metrics */}
-              <View style={styles.heroStatsRow}>
-                <View style={styles.heroStatCard}>
-                  <View style={styles.heroStatIcon}>
-                    <Ionicons name="arrow-up-circle" size={20} color="white" />
-                  </View>
-                  <Text style={styles.heroStatValue}>
+                  <Text style={[styles.overviewValue, { color: colors.text }]}>
                     {dashboardData ? formatAmount(dashboardData.total_credited_amount) : '₦0'}
                   </Text>
-                  <Text style={styles.heroStatLabel}>Total Credited</Text>
                 </View>
-                
-                <View style={styles.heroStatCard}>
-                  <View style={styles.heroStatIcon}>
-                    <Ionicons name="arrow-down-circle" size={20} color="white" />
+                <View style={[styles.overviewItem, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <View style={styles.overviewItemHeader}>
+                    <Text style={[styles.overviewLabel, { color: colors.mutedForeground }]}>Total Debited</Text>
+                    <View style={[styles.overviewIcon, { backgroundColor: colors.destructive + '10' }]}>
+                      <Ionicons name="arrow-down-circle" size={16} color={colors.destructive} />
+                    </View>
                   </View>
-                  <Text style={styles.heroStatValue}>
+                  <Text style={[styles.overviewValue, { color: colors.text }]}>
                     {dashboardData ? formatAmount(dashboardData.total_debited_amount) : '₦0'}
                   </Text>
-                  <Text style={styles.heroStatLabel}>Total Debited</Text>
                 </View>
-                
-                <View style={styles.heroStatCard}>
-                  <View style={styles.heroStatIcon}>
-                    <Ionicons name="today" size={20} color="white" />
+                <View style={[styles.overviewItem, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <View style={styles.overviewItemHeader}>
+                    <Text style={[styles.overviewLabel, { color: colors.mutedForeground }]}>Documents</Text>
+                    <View style={[styles.overviewIcon, { backgroundColor: colors.mutedForeground + '10' }]}>
+                      <Ionicons name="document-text" size={16} color={colors.mutedForeground} />
+                    </View>
                   </View>
-                  <Text style={styles.heroStatValue}>
-                    {dashboardData ? formatAmount(dashboardData.total_credited_amount_today) : '₦0'}
+                  <Text style={[styles.overviewValue, { color: colors.text }]}>
+                    {(dashboardData?.total_nin || 0) + (dashboardData?.total_cac || 0)}
                   </Text>
-                  <Text style={styles.heroStatLabel}>Today's Credit</Text>
-                </View>
-              </View>
-              
-              {/* Fourth Row - Today's Metrics */}
-              <View style={styles.heroStatsRow}>
-                <View style={styles.heroStatCard}>
-                  <View style={styles.heroStatIcon}>
-                    <Ionicons name="remove-circle" size={20} color="white" />
-                  </View>
-                  <Text style={styles.heroStatValue}>
-                    {dashboardData ? formatAmount(dashboardData.total_debited_amount_today) : '₦0'}
-                  </Text>
-                  <Text style={styles.heroStatLabel}>Today's Debit</Text>
-                </View>
-                
-                <View style={styles.heroStatCard}>
-                  <View style={styles.heroStatIcon}>
-                    <Ionicons name="finger-print" size={20} color="white" />
-                  </View>
-                  <Text style={styles.heroStatValue}>
-                    {dashboardData?.total_nin || 0}
-                  </Text>
-                  <Text style={styles.heroStatLabel}>NIN Verifications</Text>
-                </View>
-                
-                <View style={styles.heroStatCard}>
-                  <View style={styles.heroStatIcon}>
-                    <Ionicons name="business" size={20} color="white" />
-                  </View>
-                  <Text style={styles.heroStatValue}>
-                    {dashboardData?.total_cac || 0}
-                  </Text>
-                  <Text style={styles.heroStatLabel}>CAC Registrations</Text>
                 </View>
               </View>
             </View>
@@ -668,17 +640,60 @@ const styles = StyleSheet.create({
   },
   heroCard: {
     marginBottom: 24,
-    borderRadius: 20,
+    borderRadius: 16,
+    padding: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-    overflow: 'hidden',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
   },
-  heroContent: {
-    paddingTop: 20,
-    paddingHorizontal: 20,
+  overviewContent: {
+    gap: 16,
+  },
+  overviewHeader: {
+    gap: 4,
+  },
+  overviewTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  overviewSubtitle: {
+    fontSize: 12,
+  },
+  overviewGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: 12,
+  },
+  overviewItem: {
+    width: '48%',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.06)',
+  },
+  overviewItemHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  overviewIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  overviewLabel: {
+    fontSize: 12,
+    marginBottom: 0,
+  },
+  overviewValue: {
+    fontSize: 16,
+    fontWeight: '700',
   },
   heroStatsRow: {
     flexDirection: 'row',
