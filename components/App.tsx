@@ -40,6 +40,7 @@ import { CableVariationScreen } from './admin/CableVariationScreen';
 import { AdminTransactionsScreen } from './admin/AdminTransactionsScreen';
 import { AdminSlipTypesScreen } from './admin/AdminSlipTypesScreen';
 import { AdminOtherServicesScreen } from './admin/AdminOtherServicesScreen';
+import { AdminSubmissionDetailsScreen } from './admin/AdminSubmissionDetailsScreen';
 import { useAuth } from '@/contexts/AuthContext';
 import { RememberMeProvider } from '@/contexts/RememberMeContext';
 
@@ -56,6 +57,7 @@ type AppScreen =
   | 'admin-transactions'
   | 'admin-slip-types'
   | 'admin-other-services'
+  | 'admin-submission-details'
   | 'home'
   | 'transactions'
   | 'wallet'
@@ -85,6 +87,10 @@ export const App: React.FC = () => {
   const [receiptData, setReceiptData] = useState<any>(null);
   const [receiptSource, setReceiptSource] = useState<string>('home');
   const [adminOtherServicesTab, setAdminOtherServicesTab] = useState<'nin' | 'cac' | null>(null);
+  const [adminSubmissionDetails, setAdminSubmissionDetails] = useState<{
+    type: 'nin' | 'cac';
+    id: number;
+  } | null>(null);
   const [isInAuthFlow, setIsInAuthFlow] = useState(false);
   const [navigationHistory, setNavigationHistory] = useState<AppScreen[]>(['onboarding']);
   const [multiStepInfo, setMultiStepInfo] = useState<{
@@ -267,6 +273,16 @@ export const App: React.FC = () => {
     if (page === 'admin-other-services') {
       const tab = data?.initialTab;
       setAdminOtherServicesTab(tab === 'cac' || tab === 'nin' ? tab : null);
+    }
+    if (page === 'admin-submission-details') {
+      const type = data?.type;
+      const id = data?.id;
+      if ((type === 'nin' || type === 'cac') && typeof id !== 'undefined') {
+        setAdminSubmissionDetails({
+          type,
+          id: parseInt(String(id), 10),
+        });
+      }
     }
     
     // Update navigation history
@@ -478,7 +494,24 @@ export const App: React.FC = () => {
         return <AdminSlipTypesScreen onBack={() => setCurrentScreen('admin')} />;
         
       case 'admin-other-services':
-        return <AdminOtherServicesScreen onBack={() => setCurrentScreen('admin')} initialTab={adminOtherServicesTab ?? undefined} />;
+        return (
+          <AdminOtherServicesScreen
+            onBack={() => setCurrentScreen('admin')}
+            onNavigate={handleNavigate}
+            initialTab={adminOtherServicesTab ?? undefined}
+          />
+        );
+
+      case 'admin-submission-details':
+        return adminSubmissionDetails ? (
+          <AdminSubmissionDetailsScreen
+            onBack={() => setCurrentScreen('admin-other-services')}
+            submissionType={adminSubmissionDetails.type}
+            submissionId={adminSubmissionDetails.id}
+          />
+        ) : (
+          <AdminOtherServicesScreen onBack={() => setCurrentScreen('admin')} />
+        );
         
       case 'home':
         return <HomeScreen onNavigate={handleNavigate} onLogout={handleLogout} />;

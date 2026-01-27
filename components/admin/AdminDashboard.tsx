@@ -468,6 +468,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onNavi
                 </View>
                 <View style={[styles.overviewItem, { backgroundColor: colors.background, borderColor: colors.border }]}>
                   <View style={styles.overviewItemHeader}>
+                    <Text style={[styles.overviewLabel, { color: colors.mutedForeground }]}>Credited Today</Text>
+                    <View style={[styles.overviewIcon, { backgroundColor: colors.success + '10' }]}>
+                      <Ionicons name="trending-up" size={16} color={colors.success} />
+                    </View>
+                  </View>
+                  <Text style={[styles.overviewValue, { color: colors.text }]}>
+                    {dashboardData ? formatAmount(dashboardData.total_credited_amount_today) : '₦0'}
+                  </Text>
+                </View>
+                <View style={[styles.overviewItem, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <View style={styles.overviewItemHeader}>
+                    <Text style={[styles.overviewLabel, { color: colors.mutedForeground }]}>Debited Today</Text>
+                    <View style={[styles.overviewIcon, { backgroundColor: colors.destructive + '10' }]}>
+                      <Ionicons name="trending-down" size={16} color={colors.destructive} />
+                    </View>
+                  </View>
+                  <Text style={[styles.overviewValue, { color: colors.text }]}>
+                    {dashboardData ? formatAmount(dashboardData.total_debited_amount_today) : '₦0'}
+                  </Text>
+                </View>
+                <View style={[styles.overviewItem, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <View style={styles.overviewItemHeader}>
                     <Text style={[styles.overviewLabel, { color: colors.mutedForeground }]}>Documents</Text>
                     <View style={[styles.overviewIcon, { backgroundColor: colors.mutedForeground + '10' }]}>
                       <Ionicons name="document-text" size={16} color={colors.mutedForeground} />

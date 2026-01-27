@@ -70,10 +70,15 @@ interface CacRequest {
 
 interface AdminOtherServicesScreenProps {
   onBack: () => void;
+  onNavigate?: (screen: string, data?: any) => void;
   initialTab?: 'nin' | 'cac';
 }
 
-export const AdminOtherServicesScreen: React.FC<AdminOtherServicesScreenProps> = ({ onBack, initialTab }) => {
+export const AdminOtherServicesScreen: React.FC<AdminOtherServicesScreenProps> = ({
+  onBack,
+  onNavigate,
+  initialTab,
+}) => {
   const { colors } = useTheme();
   const { triggerHapticFeedback } = useMobileFeatures();
   const { safeAreaTop, safeAreaBottom } = useSafeArea();
@@ -92,10 +97,7 @@ export const AdminOtherServicesScreen: React.FC<AdminOtherServicesScreenProps> =
   // Modal states
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
-  const [detailsData, setDetailsData] = useState<NinRequest | CacRequest | null>(null);
-  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<string>('completed');
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -234,32 +236,13 @@ export const AdminOtherServicesScreen: React.FC<AdminOtherServicesScreenProps> =
     triggerHapticFeedback('light');
   };
 
-  const openDetailsModal = async (request: NinRequest | CacRequest) => {
-    setSelectedRequest(request);
-    setShowDetailsModal(true);
-    setIsLoadingDetails(true);
-    try {
-      const requestId = parseInt(String(request.id), 10);
-      if (selectedTab === 'nin') {
-        const response = await apiService.getAdminNinSubmission(requestId);
-        if (response.success && response.data) {
-          setDetailsData(response.data);
-        } else {
-          setDetailsData(request);
-        }
-      } else {
-        const response = await apiService.getAdminCacSubmission(requestId);
-        if (response.success && response.data) {
-          setDetailsData(response.data);
-        } else {
-          setDetailsData(request);
-        }
-      }
-    } catch (error) {
-      setDetailsData(request);
-    } finally {
-      setIsLoadingDetails(false);
-      triggerHapticFeedback('light');
+  const handleViewDetails = (request: NinRequest | CacRequest) => {
+    triggerHapticFeedback('light');
+    if (onNavigate) {
+      onNavigate('admin-submission-details', {
+        type: selectedTab,
+        id: request.id,
+      });
     }
   };
 
@@ -278,14 +261,6 @@ export const AdminOtherServicesScreen: React.FC<AdminOtherServicesScreenProps> =
     }
   };
 
-  const renderDetailRow = (label: string, value?: string | number | null) => (
-    <View style={styles.detailRow}>
-      <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>{label}:</Text>
-      <Text style={[styles.detailValue, { color: colors.text }]}>
-        {value ?? 'N/A'}
-      </Text>
-    </View>
-  );
 
   const renderNinRequest = ({ item }: { item: NinRequest }) => (
     <View style={[styles.requestCard, { backgroundColor: colors.card }]}>
@@ -334,7 +309,7 @@ export const AdminOtherServicesScreen: React.FC<AdminOtherServicesScreenProps> =
       <View style={styles.requestActions}>
         <TouchableOpacity
           style={[styles.actionButton, { backgroundColor: colors.primary + '20' }]}
-          onPress={() => openDetailsModal(item)}
+          onPress={() => handleViewDetails(item)}
         >
           <Ionicons name="information-circle" size={16} color={colors.primary} />
           <Text style={[styles.actionButtonText, { color: colors.primary }]}>View Details</Text>
@@ -426,7 +401,7 @@ export const AdminOtherServicesScreen: React.FC<AdminOtherServicesScreenProps> =
       <View style={styles.requestActions}>
         <TouchableOpacity
           style={[styles.actionButton, { backgroundColor: colors.primary + '20' }]}
-          onPress={() => openDetailsModal(item)}
+          onPress={() => handleViewDetails(item)}
         >
           <Ionicons name="information-circle" size={16} color={colors.primary} />
           <Text style={[styles.actionButtonText, { color: colors.primary }]}>View Details</Text>
@@ -566,120 +541,6 @@ export const AdminOtherServicesScreen: React.FC<AdminOtherServicesScreenProps> =
     />
   );
 
-  const renderDetailsModal = () => (
-    <CustomModal
-      visible={showDetailsModal}
-      onClose={() => {
-        setShowDetailsModal(false);
-        setSelectedRequest(null);
-        setDetailsData(null);
-      }}
-      title={selectedTab === 'nin' ? 'NIN Submission Details' : 'CAC Submission Details'}
-      message=""
-      customContent={
-        <View style={styles.modalContent}>
-          {isLoadingDetails ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={colors.primary} />
-              <Text style={[styles.loadingText, { color: colors.mutedForeground }]}>
-                Loading details...
-              </Text>
-            </View>
-          ) : detailsData ? (
-            <ScrollView style={styles.detailsScroll} showsVerticalScrollIndicator={false}>
-              {selectedTab === 'nin' ? (
-                <>
-                  {renderDetailRow('ID', detailsData.id)}
-                  {renderDetailRow('Slip Type', (detailsData as NinRequest).slip_type)}
-                  {renderDetailRow('NIN Number', (detailsData as NinRequest).nin_number)}
-                  {renderDetailRow('Amount', (detailsData as NinRequest).amount)}
-                  {renderDetailRow('Status', (detailsData as NinRequest).status)}
-                  {(detailsData as NinRequest).slip_type_image_url ? (
-                    <View style={styles.detailsImageBlock}>
-                      <Text style={[styles.detailsSectionTitle, { color: colors.text }]}>Slip Image</Text>
-                      <Image
-                        source={{ uri: (detailsData as NinRequest).slip_type_image_url as string }}
-                        style={styles.detailsImage}
-                      />
-                    </View>
-                  ) : null}
-                </>
-              ) : (
-                <>
-                  {renderDetailRow('ID', detailsData.id)}
-                  {renderDetailRow('Certificate Type', (detailsData as CacRequest).certificate_type)}
-                  {renderDetailRow('Business Name 1', (detailsData as CacRequest).business_name_1)}
-                  {renderDetailRow('Business Name 2', (detailsData as CacRequest).business_name_2)}
-                  {renderDetailRow('Company Address', (detailsData as CacRequest).company_address)}
-                  {renderDetailRow('Residential Address', (detailsData as CacRequest).residential_address)}
-                  {renderDetailRow('Nature of Business', (detailsData as CacRequest).nature_of_business)}
-                  {renderDetailRow('Share Capital', (detailsData as CacRequest).share_capital)}
-                  <View style={styles.detailsImageBlock}>
-                    <Text style={[styles.detailsSectionTitle, { color: colors.text }]}>Documents</Text>
-                    <View style={styles.detailsImageRow}>
-                      {(detailsData as CacRequest).id_card_of_directors ? (
-                        <Image
-                          source={{ uri: (detailsData as CacRequest).id_card_of_directors }}
-                          style={styles.detailsImageSmall}
-                        />
-                      ) : null}
-                      {(detailsData as CacRequest).passport_photograph ? (
-                        <Image
-                          source={{ uri: (detailsData as CacRequest).passport_photograph }}
-                          style={styles.detailsImageSmall}
-                        />
-                      ) : null}
-                      {(detailsData as CacRequest).sign ? (
-                        <Image
-                          source={{ uri: (detailsData as CacRequest).sign }}
-                          style={styles.detailsImageSmall}
-                        />
-                      ) : null}
-                    </View>
-                  </View>
-                  {renderDetailRow('Phone', (detailsData as CacRequest).phone)}
-                  {renderDetailRow('Email', (detailsData as CacRequest).email)}
-                  {renderDetailRow('Full Name', (detailsData as CacRequest).fullname)}
-                  {renderDetailRow('DOB', (detailsData as CacRequest).dob)}
-                  {renderDetailRow('Country', (detailsData as CacRequest).country)}
-                  {renderDetailRow('State', (detailsData as CacRequest).state)}
-                  {renderDetailRow('LGA', (detailsData as CacRequest).lga)}
-                  {renderDetailRow('City', (detailsData as CacRequest).city)}
-                  {renderDetailRow('Status', (detailsData as CacRequest).status)}
-                </>
-              )}
-
-              {detailsData.user && (
-                <>
-                  <View style={styles.sectionDivider} />
-                  <Text style={[styles.detailsSectionTitle, { color: colors.text }]}>User Details</Text>
-                  {renderDetailRow('User ID', detailsData.user.id)}
-                  {renderDetailRow('Name', `${detailsData.user.firstname} ${detailsData.user.lastname}`)}
-                  {renderDetailRow('Email', detailsData.user.email)}
-                  {renderDetailRow('Phone', detailsData.user.phone)}
-                  {renderDetailRow('State', detailsData.user.state)}
-                  {renderDetailRow('Status', detailsData.user.status)}
-                </>
-              )}
-            </ScrollView>
-          ) : (
-            <View style={styles.emptyContainer}>
-              <Ionicons name="alert-circle" size={48} color={colors.mutedForeground} />
-              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-                No details available
-              </Text>
-            </View>
-          )}
-        </View>
-      }
-      primaryButtonText="Close"
-      onPrimaryPress={() => {
-        setShowDetailsModal(false);
-        setSelectedRequest(null);
-        setDetailsData(null);
-      }}
-    />
-  );
 
   const renderDeleteModal = () => (
     <CustomModal
@@ -785,11 +646,27 @@ export const AdminOtherServicesScreen: React.FC<AdminOtherServicesScreenProps> =
                 Loading requests...
               </Text>
             </View>
+          ) : selectedTab === 'nin' ? (
+            <FlatList
+              data={filteredNinRequests}
+              renderItem={renderNinRequest}
+              keyExtractor={(item) => String(item.id)}
+              showsVerticalScrollIndicator={false}
+              scrollEnabled={false}
+              ListEmptyComponent={() => (
+                <View style={styles.emptyContainer}>
+                  <Ionicons name="document-outline" size={48} color={colors.mutedForeground} />
+                  <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
+                    {searchQuery ? 'No requests found matching your search' : 'No requests available'}
+                  </Text>
+                </View>
+              )}
+            />
           ) : (
             <FlatList
-              data={selectedTab === 'nin' ? filteredNinRequests : filteredCacRequests}
-              renderItem={selectedTab === 'nin' ? renderNinRequest : renderCacRequest}
-              keyExtractor={(item) => item.id}
+              data={filteredCacRequests}
+              renderItem={renderCacRequest}
+              keyExtractor={(item) => String(item.id)}
               showsVerticalScrollIndicator={false}
               scrollEnabled={false}
               ListEmptyComponent={() => (
@@ -807,7 +684,6 @@ export const AdminOtherServicesScreen: React.FC<AdminOtherServicesScreenProps> =
 
       {/* Modals */}
       {renderStatusModal()}
-      {renderDetailsModal()}
       {renderDeleteModal()}
     </KeyboardAvoidingView>
   );
@@ -1045,41 +921,6 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     padding: 16,
-  },
-  detailsScroll: {
-    maxHeight: 420,
-  },
-  sectionDivider: {
-    height: 1,
-    backgroundColor: 'rgba(0,0,0,0.1)',
-    marginVertical: 12,
-  },
-  detailsSectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  detailsImageBlock: {
-    marginTop: 8,
-    marginBottom: 8,
-  },
-  detailsImage: {
-    width: '100%',
-    height: 220,
-    borderRadius: 10,
-    resizeMode: 'contain',
-    backgroundColor: 'rgba(0,0,0,0.04)',
-  },
-  detailsImageRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  detailsImageSmall: {
-    flex: 1,
-    height: 120,
-    borderRadius: 8,
-    resizeMode: 'cover',
-    backgroundColor: 'rgba(0,0,0,0.04)',
   },
   modalDescription: {
     fontSize: 14,
