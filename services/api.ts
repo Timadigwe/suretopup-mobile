@@ -25,6 +25,12 @@ export interface ApiResponse<T = any> {
   isTokenExpired?: boolean;
 }
 
+export interface ServiceAvailabilityItem {
+  service_name: string;
+  is_available: boolean;
+  description?: string;
+}
+
 export interface AuthResponse {
   user: {
     id: number;
@@ -57,6 +63,14 @@ export interface Transaction {
 export interface DashboardData {
   transactions: Transaction[];
   user: DashboardUser;
+  service_availabilities?: Array<{
+    id: number;
+    service_name: string;
+    is_available: boolean;
+    description: string;
+    created_at: string;
+    updated_at: string;
+  }>;
 }
 
 export interface DashboardResponse {
@@ -1535,6 +1549,52 @@ class ApiService {
     }>('/admin/other-services/delete-record', {
       method: 'DELETE',
       body: JSON.stringify(data),
+    });
+  }
+
+  // Admin service availability - get all
+  async getServiceAvailability(): Promise<ApiResponse<ServiceAvailabilityItem[]>> {
+    return this.makeRequest<ServiceAvailabilityItem[]>('/admin/service-availability', {
+      method: 'GET',
+    });
+  }
+
+  // Admin service availability - get single
+  async getServiceAvailabilityByName(
+    serviceName: string
+  ): Promise<ApiResponse<ServiceAvailabilityItem>> {
+    const name = encodeURIComponent(serviceName);
+    return this.makeRequest<ServiceAvailabilityItem>(
+      `/admin/service-availability/show?service_name=${name}`,
+      {
+        method: 'GET',
+      }
+    );
+  }
+
+  // Admin service availability - update
+  async updateServiceAvailability(
+    data: ServiceAvailabilityItem
+  ): Promise<ApiResponse<ServiceAvailabilityItem>> {
+    return this.makeRequest<ServiceAvailabilityItem>('/admin/service-availability/update', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Admin service availability - enable
+  async enableServiceAvailability(serviceName: string): Promise<ApiResponse> {
+    const name = encodeURIComponent(serviceName);
+    return this.makeRequest(`/admin/service-availability/enable?service_name=${name}`, {
+      method: 'POST',
+    });
+  }
+
+  // Admin service availability - disable
+  async disableServiceAvailability(serviceName: string): Promise<ApiResponse> {
+    const name = encodeURIComponent(serviceName);
+    return this.makeRequest(`/admin/service-availability/disable?service_name=${name}`, {
+      method: 'POST',
     });
   }
 

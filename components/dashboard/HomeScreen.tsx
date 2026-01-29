@@ -1,25 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  Dimensions,
-  RefreshControl,
-  Platform,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { BottomTabNavigator } from '@/components/navigation/BottomTabNavigator';
+import { SkeletonLoader } from '@/components/ui/SkeletonLoader';
+import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useMobileFeatures } from '@/hooks/useMobileFeatures';
-import { useAuth } from '@/contexts/AuthContext';
 import { useSafeArea } from '@/hooks/useSafeArea';
 import { dashboardCacheUtils } from '@/utils/dashboardCache';
-import { BottomTabNavigator } from '@/components/navigation/BottomTabNavigator';
-import { WalletBalanceCard } from './WalletBalanceCard';
-import { ServiceGrid } from './ServiceGrid';
+import { Ionicons } from '@expo/vector-icons';
+import React, { useEffect, useState } from 'react';
+import {
+    Dimensions,
+    Platform,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 import { PromoCarousel } from './PromoCarousel';
-import { SkeletonLoader } from '@/components/ui/SkeletonLoader';
+import { ServiceGrid } from './ServiceGrid';
+import { WalletBalanceCard } from './WalletBalanceCard';
 
 import { apiService, DashboardData } from '@/services/api';
 
@@ -56,6 +56,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     triggerHapticFeedback('light');
     onNavigate(serviceId);
   };
+
+  const serviceAvailability = React.useMemo(() => {
+    const items = dashboardData?.service_availabilities ?? [];
+    return items.reduce<Record<string, boolean>>((acc, item) => {
+      acc[item.service_name] = item.is_available;
+      return acc;
+    }, {});
+  }, [dashboardData?.service_availabilities]);
 
 
   // Handle transaction press to navigate to receipt
@@ -305,7 +313,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
         {/* Service Grid */}
         <View style={styles.serviceSection}>
-          <ServiceGrid onServiceClick={handleServiceClick} />
+        <ServiceGrid
+          onServiceClick={handleServiceClick}
+          serviceAvailability={serviceAvailability}
+        />
         </View>
 
         {/* Promotional Carousel */}

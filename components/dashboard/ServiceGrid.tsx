@@ -1,12 +1,12 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-} from 'react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+import {
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 interface Service {
   id: string;
@@ -14,15 +14,19 @@ interface Service {
   icon: keyof typeof Ionicons.glyphMap;
   color: string;
   isComingSoon?: boolean;
-  isDisabled?: boolean;
 }
 
 interface ServiceGridProps {
   onServiceClick: (serviceId: string) => void;
+  serviceAvailability?: Record<string, boolean>;
 }
 
-export const ServiceGrid: React.FC<ServiceGridProps> = ({ onServiceClick }) => {
+export const ServiceGrid: React.FC<ServiceGridProps> = ({ onServiceClick, serviceAvailability }) => {
   const { colors } = useTheme();
+  const serviceNameMap: Record<string, string> = {
+    "betting-funding": "betting",
+    "printing": "card-print",
+  };
 
   const services: Service[] = [
     {
@@ -66,68 +70,77 @@ export const ServiceGrid: React.FC<ServiceGridProps> = ({ onServiceClick }) => {
       name: "NIN\nServices",
       icon: "card",
       color: "#059669",
-      isDisabled: true,
     },
     {
       id: "cac",
       name: "CAC\nServices",
       icon: "business",
       color: "#DC2626",
-      isDisabled: true,
     }
   ];
+
+  const isServiceDisabled = (serviceId: string) => {
+    const serviceKey = serviceNameMap[serviceId] ?? serviceId;
+    if (!serviceAvailability) {
+      return false;
+    }
+    return serviceAvailability[serviceKey] === false;
+  };
 
   return (
     <View style={styles.container}>
       <Text style={[styles.title, { color: colors.text }]}>Quick Services</Text>
       
       <View style={styles.grid}>
-        {services.map((service) => (
-          <TouchableOpacity
-            key={service.id}
-            onPress={() => {
-              if (!service.isDisabled) {
-                onServiceClick(service.id);
-              }
-            }}
-            style={[
-              styles.serviceCard,
-              { 
-                backgroundColor: colors.card,
-                borderColor: colors.border,
-                opacity: service.isDisabled ? 0.5 : 1,
-              },
-            ]}
-            activeOpacity={0.7}
-            disabled={service.isDisabled}
-          >
-            {service.isComingSoon && (
-              <View style={[styles.comingSoonBadge, { backgroundColor: colors.accent }]}>
-                <Text style={[styles.comingSoonText, { color: colors.cardForeground }]}>
-                  Soon
-                </Text>
+        {services.map((service) => {
+          const disabled = isServiceDisabled(service.id);
+          return (
+            <TouchableOpacity
+              key={service.id}
+              onPress={() => {
+                if (!disabled) {
+                  onServiceClick(service.id);
+                }
+              }}
+              style={[
+                styles.serviceCard,
+                { 
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  opacity: disabled ? 0.5 : 1,
+                },
+              ]}
+              activeOpacity={0.7}
+              disabled={disabled}
+            >
+              {service.isComingSoon && (
+                <View style={[styles.comingSoonBadge, { backgroundColor: colors.accent }]}>
+                  <Text style={[styles.comingSoonText, { color: colors.cardForeground }]}>
+                    Soon
+                  </Text>
+                </View>
+              )}
+              {disabled && (
+                <View style={[styles.comingSoonBadge, { backgroundColor: colors.mutedForeground }]}>
+                  <Text style={[styles.comingSoonText, { color: colors.card }]}>
+                    Not Active
+                  </Text>
+                </View>
+              )}
+              
+              <View style={[
+                styles.iconContainer,
+                { backgroundColor: `${service.color}20` }
+              ]}>
+                <Ionicons name={service.icon} size={18} color={service.color} />
               </View>
-            )}
-            {service.isDisabled && (
-              <View style={[styles.comingSoonBadge, { backgroundColor: colors.mutedForeground }]}>
-                <Text style={[styles.comingSoonText, { color: colors.card }]}>
-                  Not Active
-                </Text>
-              </View>
-            )}
-            
-            <View style={[
-              styles.iconContainer,
-              { backgroundColor: `${service.color}20` }
-            ]}>
-              <Ionicons name={service.icon} size={18} color={service.color} />
-            </View>
-            
-            <Text style={[styles.serviceName, { color: colors.text }]} numberOfLines={2}>
-              {service.name}
-            </Text>
-          </TouchableOpacity>
-        ))}
+              
+              <Text style={[styles.serviceName, { color: colors.text }]} numberOfLines={2}>
+                {service.name}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
     </View>
   );

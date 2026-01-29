@@ -1,21 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  RefreshControl,
-  Alert,
-  ActivityIndicator,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useMobileFeatures } from '@/hooks/useMobileFeatures';
-import { useAuth } from '@/contexts/AuthContext';
 import { useSafeArea } from '@/hooks/useSafeArea';
-import { apiService } from '@/services/api';
+import { apiService, ServiceAvailabilityItem } from '@/services/api';
 import { adminDashboardCacheUtils } from '@/utils/adminDashboardCache';
+import { Ionicons } from '@expo/vector-icons';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 interface AdminDashboardProps {
   onLogout: () => void;
@@ -77,6 +78,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onNavi
   const [showUsers, setShowUsers] = useState(false);
   const [dashboardError, setDashboardError] = useState(false);
   const [usersError, setUsersError] = useState(false);
+  const [serviceAvailability, setServiceAvailability] = useState<Record<string, ServiceAvailabilityItem>>({});
+  const [serviceAvailabilityList, setServiceAvailabilityList] = useState<ServiceAvailabilityItem[]>([]);
+  const [isServiceAvailabilityLoading, setIsServiceAvailabilityLoading] = useState(false);
+  const [serviceAvailabilityError, setServiceAvailabilityError] = useState(false);
 
   const handleLogout = async () => {
     triggerHapticFeedback('light');
@@ -156,12 +161,94 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onNavi
     }
   };
 
+  const loadServiceAvailability = async () => {
+    setIsServiceAvailabilityLoading(true);
+    try {
+      const response = await apiService.getServiceAvailability();
+      const isSuccess = response.success || response.status === 'success';
+      if (isSuccess && response.data) {
+        const availabilityMap: Record<string, ServiceAvailabilityItem> = {};
+        response.data.forEach(service => {
+          availabilityMap[service.service_name] = service;
+        });
+        setServiceAvailability(availabilityMap);
+        setServiceAvailabilityList(response.data);
+        setServiceAvailabilityError(false);
+      } else {
+        setServiceAvailabilityError(true);
+      }
+    } catch (error) {
+      console.error('Error loading service availability:', error);
+      setServiceAvailabilityError(true);
+    } finally {
+      setIsServiceAvailabilityLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadData();
+    loadServiceAvailability();
   }, []);
 
   const handleRefresh = async () => {
     await loadData(true);
+    await loadServiceAvailability();
+  };
+
+  const handleServiceToggle = async (serviceName: string, isAvailable: boolean) => {
+    const previous = serviceAvailability[serviceName];
+    setServiceAvailability(prev => ({
+      ...prev,
+      [serviceName]: {
+        service_name: serviceName,
+        is_available: isAvailable,
+        description: previous?.description,
+      },
+    }));
+    setServiceAvailabilityList(prev =>
+      prev.map(service =>
+        service.service_name === serviceName
+          ? { ...service, is_available: isAvailable }
+          : service
+      )
+    );
+
+    try {
+      const response = isAvailable
+        ? await apiService.enableServiceAvailability(serviceName)
+        : await apiService.disableServiceAvailability(serviceName);
+      const isSuccess = response.success || response.status === 'success';
+      if (!isSuccess) {
+        throw new Error(response.message || 'Failed to update service');
+      }
+    } catch (error) {
+      setServiceAvailability(prev => ({
+        ...prev,
+        [serviceName]: previous,
+      }));
+      setServiceAvailabilityList(prev =>
+        prev.map(service =>
+          service.service_name === serviceName && previous
+            ? { ...service, is_available: previous.is_available }
+            : service
+        )
+      );
+      Alert.alert('Error', 'Failed to update service availability');
+    }
+  };
+
+  const formatServiceName = (serviceName: string) => {
+    const labels: Record<string, string> = {
+      'card-print': 'Card Printing',
+      'betting': 'Betting',
+      'airtime': 'Airtime',
+      'data': 'Data',
+      'nin': 'NIN',
+      'cac': 'CAC',
+      'cable': 'Cable TV',
+      'electricity': 'Electricity',
+    };
+    return labels[serviceName] ?? serviceName.replace(/-/g, ' ').toUpperCase();
   };
 
   const formatAmount = (amount: string | number) => {
@@ -504,6 +591,86 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onNavi
           )}
         </View>
 
+        {/* Service Availability */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Service Availability</Text>
+          <View style={[styles.availabilityCard, { backgroundColor: colors.card }]}>
+            {isServiceAvailabilityLoading ? (
+              <View style={styles.availabilityLoading}>
+                <ActivityIndicator size="small" color={colors.primary} />
+                <Text style={[styles.availabilityLoadingText, { color: colors.mutedForeground }]}>
+                  Loading availability...
+                </Text>
+              </View>
+            ) : serviceAvailabilityError ? (
+              <View style={styles.availabilityError}>
+                <Text style={[styles.availabilityErrorText, { color: colors.mutedForeground }]}>
+                  Unable to load service availability
+                </Text>
+                <TouchableOpacity
+                  onPress={loadServiceAvailability}
+                  style={[styles.retryButton, { backgroundColor: colors.primary + '20' }]}
+                >
+                  <Text style={[styles.retryButtonText, { color: colors.primary }]}>Retry</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <>
+                <View style={styles.availabilityHeader}>
+                  <Text style={[styles.availabilityHeaderTitle, { color: colors.text }]}>
+                    Services
+                  </Text>
+                  <Text style={[styles.availabilityHeaderHint, { color: colors.mutedForeground }]}>
+                    Toggle availability
+                  </Text>
+                </View>
+                {serviceAvailabilityList.length === 0 ? (
+                  <Text style={[styles.availabilityEmptyText, { color: colors.mutedForeground }]}>
+                    No services available
+                  </Text>
+                ) : (
+                  <View style={styles.availabilityGrid}>
+                    {serviceAvailabilityList.map((service, index) => (
+                      <View key={service.service_name} style={styles.availabilityRow}>
+                      <View style={styles.availabilityInfo}>
+                        <Text style={[styles.availabilityTitle, { color: colors.text }]}>
+                          {formatServiceName(service.service_name)}
+                        </Text>
+                        <Text style={[styles.availabilitySubtitle, { color: colors.mutedForeground }]}>
+                          {service.description || 'Service'}
+                        </Text>
+                      </View>
+                      <View style={styles.availabilityActions}>
+                        <Text
+                          style={[
+                            styles.availabilityStatus,
+                            { color: service.is_available ? colors.success : colors.mutedForeground },
+                          ]}
+                        >
+                          {service.is_available ? 'On' : 'Off'}
+                        </Text>
+                        <Switch
+                          value={service.is_available}
+                          onValueChange={(value) => handleServiceToggle(service.service_name, value)}
+                          thumbColor={service.is_available ? colors.success : colors.mutedForeground}
+                          trackColor={{
+                            false: colors.border,
+                            true: colors.success + '60',
+                          }}
+                        />
+                      </View>
+                      {index < serviceAvailabilityList.length - 1 ? (
+                        <View style={[styles.availabilityDivider, { backgroundColor: colors.border }]} />
+                      ) : null}
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </>
+            )}
+          </View>
+        </View>
+
         {/* Quick Actions */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Quick Actions</Text>
@@ -780,6 +947,75 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 16,
+  },
+  availabilityCard: {
+    borderRadius: 16,
+    padding: 16,
+    gap: 12,
+  },
+  availabilityHeader: {
+    paddingBottom: 4,
+  },
+  availabilityHeaderTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  availabilityHeaderHint: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  availabilityGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  availabilityRow: {
+    width: '48%',
+    paddingVertical: 10,
+    marginBottom: 6,
+  },
+  availabilityInfo: {
+    flex: 1,
+    marginRight: 16,
+  },
+  availabilityTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  availabilitySubtitle: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  availabilityLoading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  availabilityLoadingText: {
+    fontSize: 12,
+  },
+  availabilityEmptyText: {
+    fontSize: 12,
+  },
+  availabilityError: {
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  availabilityErrorText: {
+    fontSize: 12,
+  },
+  availabilityActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  availabilityStatus: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  availabilityDivider: {
+    height: 1,
+    marginTop: 10,
   },
   actionsGrid: {
     flexDirection: 'row',

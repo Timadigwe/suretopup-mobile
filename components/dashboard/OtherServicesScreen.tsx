@@ -1,12 +1,13 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-} from 'react-native';
+import { apiService } from '@/services/api';
 import { Ionicons } from '@expo/vector-icons';
+import React, { useEffect, useState } from 'react';
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useMobileFeatures } from '../../hooks/useMobileFeatures';
 
@@ -17,6 +18,7 @@ interface OtherServicesScreenProps {
 const OtherServicesScreen: React.FC<OtherServicesScreenProps> = ({ onNavigate }) => {
   const { colors } = useTheme();
   const { triggerHapticFeedback } = useMobileFeatures();
+  const [serviceAvailability, setServiceAvailability] = useState<Record<string, boolean>>({});
 
   const services = [
     {
@@ -34,7 +36,6 @@ const OtherServicesScreen: React.FC<OtherServicesScreenProps> = ({ onNavigate })
       icon: 'card',
       color: '#059669',
       isComingSoon: false,
-      isDisabled: true,
     },
     {
       id: 'cac',
@@ -43,9 +44,32 @@ const OtherServicesScreen: React.FC<OtherServicesScreenProps> = ({ onNavigate })
       icon: 'business',
       color: '#DC2626',
       isComingSoon: false,
-      isDisabled: true,
     },
   ];
+
+  useEffect(() => {
+    const fetchServiceAvailability = async () => {
+      try {
+        const response = await apiService.getServiceAvailability();
+        const isSuccess = response.success || response.status === 'success';
+        if (isSuccess && response.data) {
+          const availabilityMap: Record<string, boolean> = {};
+          response.data.forEach(item => {
+            availabilityMap[item.service_name] = item.is_available;
+          });
+          setServiceAvailability(availabilityMap);
+        }
+      } catch (error) {
+        // Ignore service availability errors here.
+      }
+    };
+
+    fetchServiceAvailability();
+  }, []);
+
+  const isServiceDisabled = (serviceId: string) => {
+    return serviceAvailability[serviceId] === false;
+  };
 
   const handleServicePress = (service: any) => {
     triggerHapticFeedback('light');
@@ -86,21 +110,21 @@ const OtherServicesScreen: React.FC<OtherServicesScreenProps> = ({ onNavigate })
           {/* Services Grid */}
           <View style={styles.servicesGrid}>
             {services.map((service) => (
-                             <TouchableOpacity
+              <TouchableOpacity
                  key={service.id}
                  style={[
                    styles.serviceCard,
                    { 
                      backgroundColor: colors.card,
                      borderColor: colors.border,
-                     opacity: service.isDisabled ? 0.5 : 1,
+                     opacity: isServiceDisabled(service.id) ? 0.5 : 1,
                    }
                  ]}
-                 onPress={() => handleServicePress(service)}
+                 onPress={() => handleServicePress({ ...service, isDisabled: isServiceDisabled(service.id) })}
                  activeOpacity={0.7}
-                 disabled={service.isDisabled}
+                 disabled={isServiceDisabled(service.id)}
                >
-                 {service.isDisabled && (
+                 {isServiceDisabled(service.id) && (
                    <View style={[styles.comingSoonBadge, { backgroundColor: colors.mutedForeground }]}>
                      <Text style={[styles.comingSoonText, { color: colors.card }]}>Not Active</Text>
                    </View>

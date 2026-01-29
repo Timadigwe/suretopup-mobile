@@ -1,21 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-  Alert,
-} from 'react-native';
+import { DashboardSkeleton } from '@/components/ui/SkeletonLoader';
+import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useMobileFeatures } from '@/hooks/useMobileFeatures';
-import { useAuth } from '@/contexts/AuthContext';
-import { Ionicons } from '@expo/vector-icons';
-import { WalletBalanceCard } from './WalletBalanceCard';
-import { ServiceGrid } from './ServiceGrid';
-import { PromoCarousel } from './PromoCarousel';
-import { DashboardSkeleton } from '@/components/ui/SkeletonLoader';
 import { apiService, DashboardData } from '@/services/api';
+import { Ionicons } from '@expo/vector-icons';
+import React, { useEffect, useState } from 'react';
+import {
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { PromoCarousel } from './PromoCarousel';
+import { ServiceGrid } from './ServiceGrid';
+import { WalletBalanceCard } from './WalletBalanceCard';
 
 interface DashboardProps {
   onNavigate: (page: string) => void;
@@ -52,6 +52,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, onLogout }) =>
       setIsLoading(false);
     }
   };
+
+  const serviceAvailability = React.useMemo(() => {
+    const items = dashboardData?.service_availabilities ?? [];
+    return items.reduce<Record<string, boolean>>((acc, item) => {
+      acc[item.service_name] = item.is_available;
+      return acc;
+    }, {});
+  }, [dashboardData?.service_availabilities]);
 
   useEffect(() => {
     fetchDashboardData();
@@ -204,10 +212,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, onLogout }) =>
         />
 
         {/* Services Grid */}
-        <ServiceGrid onServiceClick={handleServiceClick} />
+        <ServiceGrid
+          onServiceClick={handleServiceClick}
+          serviceAvailability={serviceAvailability}
+        />
 
         {/* Promotional Carousel */}
-        <PromoCarousel />
+        <PromoCarousel onNavigate={onNavigate} />
 
         {/* Quick Stats */}
         <View style={styles.statsContainer}>
