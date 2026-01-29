@@ -14,6 +14,7 @@ interface Service {
   icon: keyof typeof Ionicons.glyphMap;
   color: string;
   isComingSoon?: boolean;
+  isDisabled?: boolean;
 }
 
 interface ServiceGridProps {
@@ -65,12 +66,14 @@ export const ServiceGrid: React.FC<ServiceGridProps> = ({ onServiceClick }) => {
       name: "NIN\nServices",
       icon: "card",
       color: "#059669",
+      isDisabled: true,
     },
     {
       id: "cac",
       name: "CAC\nServices",
       icon: "business",
       color: "#DC2626",
+      isDisabled: true,
     }
   ];
 
@@ -82,20 +85,33 @@ export const ServiceGrid: React.FC<ServiceGridProps> = ({ onServiceClick }) => {
         {services.map((service) => (
           <TouchableOpacity
             key={service.id}
-            onPress={() => onServiceClick(service.id)}
+            onPress={() => {
+              if (!service.isDisabled) {
+                onServiceClick(service.id);
+              }
+            }}
             style={[
               styles.serviceCard,
               { 
                 backgroundColor: colors.card,
                 borderColor: colors.border,
-              }
+                opacity: service.isDisabled ? 0.5 : 1,
+              },
             ]}
             activeOpacity={0.7}
+            disabled={service.isDisabled}
           >
             {service.isComingSoon && (
               <View style={[styles.comingSoonBadge, { backgroundColor: colors.accent }]}>
                 <Text style={[styles.comingSoonText, { color: colors.cardForeground }]}>
                   Soon
+                </Text>
+              </View>
+            )}
+            {service.isDisabled && (
+              <View style={[styles.comingSoonBadge, { backgroundColor: colors.mutedForeground }]}>
+                <Text style={[styles.comingSoonText, { color: colors.card }]}>
+                  Not Active
                 </Text>
               </View>
             )}

@@ -34,6 +34,7 @@ const OtherServicesScreen: React.FC<OtherServicesScreenProps> = ({ onNavigate })
       icon: 'card',
       color: '#059669',
       isComingSoon: false,
+      isDisabled: true,
     },
     {
       id: 'cac',
@@ -42,12 +43,15 @@ const OtherServicesScreen: React.FC<OtherServicesScreenProps> = ({ onNavigate })
       icon: 'business',
       color: '#DC2626',
       isComingSoon: false,
+      isDisabled: true,
     },
   ];
 
   const handleServicePress = (service: any) => {
     triggerHapticFeedback('light');
-    onNavigate(service.id);
+    if (!service.isDisabled) {
+      onNavigate(service.id);
+    }
   };
 
   return (
@@ -86,11 +90,21 @@ const OtherServicesScreen: React.FC<OtherServicesScreenProps> = ({ onNavigate })
                  key={service.id}
                  style={[
                    styles.serviceCard,
-                   { backgroundColor: colors.card, borderColor: colors.border }
+                   { 
+                     backgroundColor: colors.card,
+                     borderColor: colors.border,
+                     opacity: service.isDisabled ? 0.5 : 1,
+                   }
                  ]}
                  onPress={() => handleServicePress(service)}
                  activeOpacity={0.7}
+                 disabled={service.isDisabled}
                >
+                 {service.isDisabled && (
+                   <View style={[styles.comingSoonBadge, { backgroundColor: colors.mutedForeground }]}>
+                     <Text style={[styles.comingSoonText, { color: colors.card }]}>Not Active</Text>
+                   </View>
+                 )}
                  <View style={[
                    styles.iconContainer,
                    { backgroundColor: `${service.color}20` }
