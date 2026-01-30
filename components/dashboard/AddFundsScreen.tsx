@@ -60,6 +60,7 @@ export const AddFundsScreen: React.FC<AddFundsScreenProps> = ({ onNavigate }) =>
   const webViewCloseTimeout = useRef<number | null>(null);
   const lastCallbackTime = useRef<number>(0);
   const callbackCount = useRef<number>(0);
+  const chargeDebounceTimeout = useRef<number | null>(null);
 
   // Set user email on component mount
   useEffect(() => {
@@ -101,6 +102,9 @@ export const AddFundsScreen: React.FC<AddFundsScreenProps> = ({ onNavigate }) =>
     return () => {
       if (paymentCheckInterval.current) {
         clearInterval(paymentCheckInterval.current);
+      }
+      if (chargeDebounceTimeout.current) {
+        clearTimeout(chargeDebounceTimeout.current);
       }
     };
   }, []);
@@ -554,8 +558,28 @@ export const AddFundsScreen: React.FC<AddFundsScreenProps> = ({ onNavigate }) =>
                 value={amount}
                 onChangeText={(text) => {
                   setAmount(text);
-                  const amountValue = parseFloat(text);
-                  if (!isNaN(amountValue)) {
+                  if (chargeDebounceTimeout.current) {
+                    clearTimeout(chargeDebounceTimeout.current);
+                  }
+                  if (!text.trim()) {
+                    setChargeData(null);
+                    return;
+                  }
+                  chargeDebounceTimeout.current = setTimeout(() => {
+                    const amountValue = parseFloat(text);
+                    if (!isNaN(amountValue) && amountValue > 0) {
+                      calculateCharge(amountValue);
+                    } else {
+                      setChargeData(null);
+                    }
+                  }, 800);
+                }}
+                onEndEditing={() => {
+                  if (chargeDebounceTimeout.current) {
+                    clearTimeout(chargeDebounceTimeout.current);
+                  }
+                  const amountValue = parseFloat(amount);
+                  if (!isNaN(amountValue) && amountValue > 0) {
                     calculateCharge(amountValue);
                   } else {
                     setChargeData(null);
