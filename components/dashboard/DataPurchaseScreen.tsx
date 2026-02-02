@@ -1,27 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  TextInput,
-  Alert,
-  ScrollView,
-  ActivityIndicator,
-  Dimensions,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { CustomModal } from '@/components/ui/CustomModal';
+import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useMobileFeatures } from '@/hooks/useMobileFeatures';
 import { useSafeArea } from '@/hooks/useSafeArea';
-import { useAuth } from '@/contexts/AuthContext';
 import { apiService } from '@/services/api';
-import { CustomModal } from '@/components/ui/CustomModal';
-import { TransactionReceiptScreen } from './TransactionReceiptScreen';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import React, { useEffect, useState } from 'react';
+import {
+    ActivityIndicator,
+    Dimensions,
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
+} from 'react-native';
 
 interface DataPurchaseScreenProps {
   onNavigate: (page: string, data?: any) => void;
@@ -72,6 +70,7 @@ interface DataPlan {
 }
 
 export const DataPurchaseScreen: React.FC<DataPurchaseScreenProps> = ({ onNavigate }) => {
+  const MIN_DATA_PURCHASE = 100;
   const [phoneNumber, setPhoneNumber] = useState('');
   const [transactionPin, setTransactionPin] = useState('');
   const [detectedNetwork, setDetectedNetwork] = useState<string | null>(null);
@@ -235,6 +234,12 @@ export const DataPurchaseScreen: React.FC<DataPurchaseScreenProps> = ({ onNaviga
     
     if (!selectedPlan) {
       setErrorMessage('Please select a data plan');
+      setShowErrorModal(true);
+      return false;
+    }
+    const planAmount = parseFloat(selectedPlan.payment_price);
+    if (!isNaN(planAmount) && planAmount < MIN_DATA_PURCHASE) {
+      setErrorMessage(`Minimum data purchase is ₦${MIN_DATA_PURCHASE}`);
       setShowErrorModal(true);
       return false;
     }
@@ -618,6 +623,12 @@ export const DataPurchaseScreen: React.FC<DataPurchaseScreenProps> = ({ onNaviga
               <Ionicons name="checkmark-circle" size={16} color={colors.success} />
               <Text style={[styles.infoText, { color: colors.mutedForeground }]}>
                 Best prices guaranteed
+              </Text>
+            </View>
+            <View style={styles.infoItem}>
+              <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+              <Text style={[styles.infoText, { color: colors.mutedForeground }]}>
+                Minimum purchase is ₦{MIN_DATA_PURCHASE}
               </Text>
             </View>
           </View>

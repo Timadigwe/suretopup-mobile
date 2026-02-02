@@ -1,24 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  TextInput,
-  Alert,
-  ScrollView,
-  ActivityIndicator,
-  Dimensions,
-  Image,
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { CustomModal } from '@/components/ui/CustomModal';
+import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useMobileFeatures } from '@/hooks/useMobileFeatures';
 import { useSafeArea } from '@/hooks/useSafeArea';
-import { useAuth } from '@/contexts/AuthContext';
 import { apiService } from '@/services/api';
-import { CustomModal } from '@/components/ui/CustomModal';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import React, { useEffect, useState } from 'react';
+import {
+    ActivityIndicator,
+    Dimensions,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
+} from 'react-native';
 
 interface CardPrintingScreenProps {
   onNavigate: (page: string, data?: any) => void;
@@ -51,6 +50,7 @@ const NETWORK_PROVIDERS = {
 };
 
 export const CardPrintingScreen: React.FC<CardPrintingScreenProps> = ({ onNavigate }) => {
+  const MIN_CARD_PRINT_AMOUNT = 100;
   const [businessName, setBusinessName] = useState('');
   const [selectedNetwork, setSelectedNetwork] = useState<string | null>(null);
   const [showNetworkSelector, setShowNetworkSelector] = useState(false);
@@ -132,6 +132,11 @@ export const CardPrintingScreen: React.FC<CardPrintingScreenProps> = ({ onNaviga
     const denominationValue = parseFloat(amount);
     if (isNaN(denominationValue) || denominationValue <= 0) {
       setErrorMessage('Please select a valid denomination');
+      setShowErrorModal(true);
+      return false;
+    }
+    if (denominationValue < MIN_CARD_PRINT_AMOUNT) {
+      setErrorMessage(`Minimum denomination is ₦${MIN_CARD_PRINT_AMOUNT}`);
       setShowErrorModal(true);
       return false;
     }
@@ -464,6 +469,12 @@ export const CardPrintingScreen: React.FC<CardPrintingScreenProps> = ({ onNaviga
               <Ionicons name="checkmark-circle" size={16} color={colors.success} />
               <Text style={[styles.infoText, { color: colors.mutedForeground }]}>
                 10% service charge included
+              </Text>
+            </View>
+            <View style={styles.infoItem}>
+              <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+              <Text style={[styles.infoText, { color: colors.mutedForeground }]}>
+                Minimum denomination is ₦{MIN_CARD_PRINT_AMOUNT}
               </Text>
             </View>
           </View>

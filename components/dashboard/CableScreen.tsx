@@ -1,17 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  TextInput,
-  Alert,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import React, { useEffect, useState } from 'react';
+import {
+    ActivityIndicator,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useMobileFeatures } from '../../hooks/useMobileFeatures';
 import { apiService } from '../../services/api';
@@ -58,6 +58,7 @@ interface CustomerVerification {
 const CableScreen: React.FC<{ onNavigate: (screen: string, data?: any) => void }> = ({ onNavigate }) => {
   const { colors } = useTheme();
   const { triggerHapticFeedback } = useMobileFeatures();
+  const MIN_CABLE_AMOUNT = 1000;
   
   const [step, setStep] = useState<'company' | 'verify' | 'confirm' | 'subscribe'>('company');
   const [cableCompanies, setCableCompanies] = useState<CableCompany[]>([]);
@@ -192,6 +193,10 @@ const CableScreen: React.FC<{ onNavigate: (screen: string, data?: any) => void }
     const amountValue = parseFloat(amount);
     if (isNaN(amountValue) || amountValue <= 0) {
       Alert.alert('Error', 'Please enter a valid amount');
+      return;
+    }
+    if (amountValue < MIN_CABLE_AMOUNT) {
+      Alert.alert('Error', `Minimum cable amount is ₦${MIN_CABLE_AMOUNT}`);
       return;
     }
 
@@ -579,6 +584,15 @@ const CableScreen: React.FC<{ onNavigate: (screen: string, data?: any) => void }
         />
       </View>
 
+      <View style={[styles.infoSection, { backgroundColor: colors.card }]}>
+        <View style={styles.infoItem}>
+          <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+          <Text style={[styles.infoText, { color: colors.mutedForeground }]}>
+            Minimum cable amount is ₦{MIN_CABLE_AMOUNT}
+          </Text>
+        </View>
+      </View>
+
       <TouchableOpacity
         style={[
           styles.actionButton,
@@ -933,6 +947,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     marginBottom: 8,
+  },
+  infoSection: {
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+  },
+  infoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  infoText: {
+    fontSize: 12,
   },
   selector: {
     flexDirection: 'row',
