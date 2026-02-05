@@ -1,4 +1,4 @@
-package com.timadigwe.SureTopUp
+package com.suretopup.SuretopUp
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

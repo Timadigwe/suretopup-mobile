@@ -87,9 +87,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.timadigwe.SureTopUp'
+    namespace 'com.suretopup.SuretopUp'
     defaultConfig {
-        applicationId 'com.timadigwe.SureTopUp'
+        applicationId 'com.suretopup.SuretopUp'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

@@ -257,7 +257,7 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "com.timadigwe.SureTopUp";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.suretopup.SuretopUp";
 				PRODUCT_NAME = "SureTopUp";
 				SWIFT_OBJC_BRIDGING_HEADER = "SureTopUp/SureTopUp-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -286,7 +286,7 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "com.timadigwe.SureTopUp";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.suretopup.SuretopUp";
 				PRODUCT_NAME = "SureTopUp";
 				SWIFT_OBJC_BRIDGING_HEADER = "SureTopUp/SureTopUp-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;

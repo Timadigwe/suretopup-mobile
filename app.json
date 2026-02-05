@@ -18,14 +18,15 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.timadigwe.SureTopUp"
+      "bundleIdentifier": "com.suretopup.SuretopUp"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.timadigwe.SureTopUp"
+      "package": "com.suretopup.SuretopUp",
+      "versionCode": 3
     },
     "web": {
       "bundler": "metro",

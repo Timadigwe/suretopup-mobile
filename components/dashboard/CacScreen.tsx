@@ -1,20 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  TextInput,
-  Alert,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Image,
-} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
-import * as ImagePicker from 'expo-image-picker';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useMobileFeatures } from '../../hooks/useMobileFeatures';
 import { apiService } from '../../services/api';
@@ -102,24 +101,6 @@ const CacScreen: React.FC<{ onNavigate: (screen: string, data?: any) => void }> 
 
   const pickImage = async (field: keyof CacFormData) => {
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets[0]) {
-        setFormData(prev => ({ ...prev, [field]: result.assets[0] }));
-        triggerHapticFeedback('light');
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Failed to pick image');
-    }
-  };
-
-  const pickDocument = async (field: keyof CacFormData) => {
-    try {
       const result = await DocumentPicker.getDocumentAsync({
         type: 'image/*',
         copyToCacheDirectory: true,
@@ -130,7 +111,7 @@ const CacScreen: React.FC<{ onNavigate: (screen: string, data?: any) => void }> 
         triggerHapticFeedback('light');
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to pick document');
+      Alert.alert('Error', 'Failed to pick image');
     }
   };
 
