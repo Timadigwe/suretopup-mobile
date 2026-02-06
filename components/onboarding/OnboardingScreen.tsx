@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -50,14 +50,21 @@ interface OnboardingScreenProps {
 
 export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const scrollRef = useRef<ScrollView>(null);
   const { colors } = useTheme();
   const { triggerHapticFeedback } = useMobileFeatures();
   const { safeAreaTop, safeAreaBottom } = useSafeArea();
 
+  const goToSlide = (index: number) => {
+    const clampedIndex = Math.max(0, Math.min(index, slides.length - 1));
+    setCurrentSlide(clampedIndex);
+    scrollRef.current?.scrollTo({ x: clampedIndex * width, animated: true });
+  };
+
   const nextSlide = () => {
     triggerHapticFeedback('light');
     if (currentSlide < slides.length - 1) {
-      setCurrentSlide(currentSlide + 1);
+      goToSlide(currentSlide + 1);
     } else {
       onComplete();
     }
@@ -66,7 +73,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
   const prevSlide = () => {
     triggerHapticFeedback('light');
     if (currentSlide > 0) {
-      setCurrentSlide(currentSlide - 1);
+      goToSlide(currentSlide - 1);
     }
   };
 
@@ -93,10 +100,12 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
 
         {/* Main Content */}
         <ScrollView
+          ref={scrollRef}
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
           pagingEnabled
           horizontal
+          scrollEventThrottle={16}
           onMomentumScrollEnd={(event) => {
             const newIndex = Math.round(event.nativeEvent.contentOffset.x / width);
             setCurrentSlide(newIndex);
