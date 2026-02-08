@@ -18,14 +18,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.suretopup.SuretopUp"
+      "bundleIdentifier": "com.suretopup.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.suretopup.SuretopUp",
+      "package": "com.suretopup.app",
       "versionCode": 3
     },
     "web": {

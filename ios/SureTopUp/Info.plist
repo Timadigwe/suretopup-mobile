@@ -28,7 +28,7 @@
         <key>CFBundleURLSchemes</key>
         <array>
           <string>suretopup</string>
-          <string>com.suretopup.SuretopUp</string>
+        <string>com.suretopup.app</string>
         </array>
       </dict>
       <dict>

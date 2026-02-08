@@ -1,4 +1,4 @@
-package com.suretopup.SuretopUp
+package com.suretopup.app
 
 import android.app.Application
 import android.content.res.Configuration
