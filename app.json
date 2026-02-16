@@ -18,7 +18,11 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.suretopup.app"
+      "bundleIdentifier": "com.suretopup.app",
+      "infoPlist": {
+        "STUPhoneNumberUsageDescription": "Phone number is collected to identify the specific account receiving airtime and data, and to verify the user for secure transactions.",
+        "STUStateUsageDescription": "State information is collected to determine regional service availability and comply with local KYC and tax regulations for financial transactions."
+      }
     },
     "android": {
       "adaptiveIcon": {

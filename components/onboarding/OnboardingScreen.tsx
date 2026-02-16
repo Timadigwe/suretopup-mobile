@@ -1,9 +1,8 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
-  ScrollView,
   Dimensions,
   StyleSheet,
   Platform,
@@ -50,21 +49,14 @@ interface OnboardingScreenProps {
 
 export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const scrollRef = useRef<ScrollView>(null);
   const { colors } = useTheme();
   const { triggerHapticFeedback } = useMobileFeatures();
   const { safeAreaTop, safeAreaBottom } = useSafeArea();
 
-  const goToSlide = (index: number) => {
-    const clampedIndex = Math.max(0, Math.min(index, slides.length - 1));
-    setCurrentSlide(clampedIndex);
-    scrollRef.current?.scrollTo({ x: clampedIndex * width, animated: true });
-  };
-
   const nextSlide = () => {
     triggerHapticFeedback('light');
     if (currentSlide < slides.length - 1) {
-      goToSlide(currentSlide + 1);
+      setCurrentSlide(currentSlide + 1);
     } else {
       onComplete();
     }
@@ -73,11 +65,12 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
   const prevSlide = () => {
     triggerHapticFeedback('light');
     if (currentSlide > 0) {
-      goToSlide(currentSlide - 1);
+      setCurrentSlide(currentSlide - 1);
     }
   };
 
   const isLastSlide = currentSlide === slides.length - 1;
+  const activeSlide = slides[currentSlide];
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -98,38 +91,25 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
           </TouchableOpacity>
         </View>
 
-        {/* Main Content */}
-        <ScrollView
-          ref={scrollRef}
-          contentContainerStyle={styles.content}
-          showsVerticalScrollIndicator={false}
-          pagingEnabled
-          horizontal
-          scrollEventThrottle={16}
-          onMomentumScrollEnd={(event) => {
-            const newIndex = Math.round(event.nativeEvent.contentOffset.x / width);
-            setCurrentSlide(newIndex);
-          }}
-        >
-          {slides.map((slide, index) => (
-            <View key={slide.id} style={styles.slide}>
-              {/* Icon */}
-              <View style={[styles.iconContainer, { backgroundColor: `${colors.primary}20` }]}>
-                <Ionicons name={slide.icon} size={80} color={colors.primary} />
-              </View>
-
-              {/* Title and subtitle */}
-              <View style={styles.textContainer}>
-                <Text style={[styles.title, { color: colors.text }]}>
-                  {slide.title}
-                </Text>
-                <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
-                  {slide.subtitle}
-                </Text>
-              </View>
+        {/* Main Content - single slide driven by currentSlide */}
+        <View style={styles.content}>
+          <View style={styles.slide}>
+            {/* Icon */}
+            <View style={[styles.iconContainer, { backgroundColor: `${colors.primary}20` }]}>
+              <Ionicons name={activeSlide.icon} size={80} color={colors.primary} />
             </View>
-          ))}
-        </ScrollView>
+
+            {/* Title and subtitle */}
+            <View style={styles.textContainer}>
+              <Text style={[styles.title, { color: colors.text }]}>
+                {activeSlide.title}
+              </Text>
+              <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
+                {activeSlide.subtitle}
+              </Text>
+            </View>
+          </View>
+        </View>
 
         {/* Dots indicator */}
         <View style={styles.dotsContainer}>
