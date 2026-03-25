@@ -23,6 +23,8 @@ export interface ApiResponse<T = any> {
   message: string;
   data?: T;
   isTokenExpired?: boolean;
+  /** Present when API requires email verification before using the app */
+  redirect?: string;
 }
 
 export interface ServiceAvailabilityItem {
@@ -83,6 +85,7 @@ class ApiService {
   private baseUrl: string;
   private token: string | null = null;
   private onTokenExpired: (() => void) | null = null;
+  private onEmailNotVerified: ((payload: { message: string }) => void) | null = null;
 
   constructor(baseUrl: string = BASE_URL) {
     this.baseUrl = baseUrl;
@@ -98,6 +101,10 @@ class ApiService {
 
   setTokenExpiredCallback(callback: () => void) {
     this.onTokenExpired = callback;
+  }
+
+  setEmailNotVerifiedCallback(callback: ((payload: { message: string }) => void) | null) {
+    this.onEmailNotVerified = callback;
   }
 
   private async makeRequest<T>(
@@ -179,6 +186,20 @@ class ApiService {
             isTokenExpired: true,
           };
         }
+      }
+
+      // Email not verified — keep token so user can complete POST /auth/email-verification
+      if (
+        this.token &&
+        data &&
+        typeof data === 'object' &&
+        (data as ApiResponse).status === 'email_not_verified'
+      ) {
+        const msg =
+          typeof (data as ApiResponse).message === 'string'
+            ? (data as ApiResponse).message
+            : 'Email verification required';
+        this.onEmailNotVerified?.({ message: msg });
       }
 
       return data;

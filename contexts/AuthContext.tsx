@@ -31,6 +31,9 @@ interface AuthContextType {
   storeAuthDataAfterVerification: (authData: AuthResponse) => Promise<void>;
   clearAllStoredData: () => Promise<void>; // Development helper
   onLoginSuccess: () => void; // Callback for when login is successful
+  /** True when API returned email_not_verified; user must verify before using the app */
+  requiresEmailVerification: boolean;
+  clearRequiresEmailVerification: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -60,6 +63,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [requiresEmailVerification, setRequiresEmailVerification] = useState(false);
+  const isAdminRef = React.useRef(isAdmin);
+
+  React.useEffect(() => {
+    isAdminRef.current = isAdmin;
+  }, [isAdmin]);
+
+  const handleEmailNotVerified = React.useCallback((_payload: { message: string }) => {
+    if (!isAdminRef.current) {
+      setRequiresEmailVerification(true);
+    }
+  }, []);
+
+  const clearRequiresEmailVerification = React.useCallback(() => {
+    setRequiresEmailVerification(false);
+  }, []);
 
   // Check for existing auth data on app startup
   React.useEffect(() => {
@@ -92,6 +111,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         // Set up token expiration callback
         apiService.setTokenExpiredCallback(handleTokenExpiration);
+        apiService.setEmailNotVerifiedCallback(handleEmailNotVerified);
       } catch (error) {
         // Error handling without console logs
       } finally {
@@ -155,6 +175,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setAdmin(null);
       setToken(null);
       setIsAdmin(false);
+      setRequiresEmailVerification(false);
       // Clear token from API service
       apiService.clearToken();
     } catch (error) {
@@ -413,6 +434,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await AsyncStorage.clear();
       setUser(null);
       setToken(null);
+      setRequiresEmailVerification(false);
       apiService.clearToken();
     } catch (error) {
       // Error handling without console logs
@@ -452,6 +474,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     storeAuthDataAfterVerification,
     clearAllStoredData,
     onLoginSuccess,
+    requiresEmailVerification,
+    clearRequiresEmailVerification,
   };
 
   return (

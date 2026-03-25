@@ -43,6 +43,7 @@ import { AdminOtherServicesScreen } from './admin/AdminOtherServicesScreen';
 import { AdminSubmissionDetailsScreen } from './admin/AdminSubmissionDetailsScreen';
 import { useAuth } from '@/contexts/AuthContext';
 import { RememberMeProvider } from '@/contexts/RememberMeContext';
+import { dashboardCacheUtils } from '@/utils/dashboardCache';
 
 type AppScreen = 
   | 'onboarding' 
@@ -98,7 +99,16 @@ export const App: React.FC = () => {
     currentStep: string;
     onStepBack: () => void;
   } | null>(null);
-  const { user, admin, token, isInitialized, isAdmin, logout } = useAuth();
+  const {
+    user,
+    admin,
+    token,
+    isInitialized,
+    isAdmin,
+    logout,
+    requiresEmailVerification,
+    clearRequiresEmailVerification,
+  } = useAuth();
   
   // Determine if user is authenticated based on context
   const isAuthenticated = !!(user && token);
@@ -430,6 +440,16 @@ export const App: React.FC = () => {
     setNavigationHistory(['auth']);
   };
 
+  const handleSessionVerificationComplete = () => {
+    clearRequiresEmailVerification();
+    dashboardCacheUtils.reset();
+    setCurrentScreen('dashboard');
+    setNavigationHistory((prev) => {
+      const filtered = prev.filter((s) => s !== 'email-verification');
+      return filtered.length ? filtered : ['dashboard'];
+    });
+  };
+
   const handleBackToAuth = () => {
     setCurrentScreen('auth');
     setNavigationHistory(prev => {
@@ -446,6 +466,24 @@ export const App: React.FC = () => {
 
   // Render different screens based on current state
   const renderScreen = () => {
+    if (
+      isInitialized &&
+      user &&
+      token &&
+      !isAdmin &&
+      requiresEmailVerification
+    ) {
+      return (
+        <EmailVerificationScreen
+          verificationSource="session"
+          onVerificationComplete={handleSessionVerificationComplete}
+          onBack={handleLogout}
+          userEmail={user.email}
+          registrationData={{ token }}
+        />
+      );
+    }
+
     switch (currentScreen) {
       case 'onboarding':
         return <OnboardingScreen onComplete={handleOnboardingComplete} />;
@@ -462,6 +500,7 @@ export const App: React.FC = () => {
       case 'email-verification':
         return (
           <EmailVerificationScreen
+            verificationSource="registration"
             onVerificationComplete={handleVerificationComplete}
             onBack={handleBackToAuth}
             userEmail={userEmail}

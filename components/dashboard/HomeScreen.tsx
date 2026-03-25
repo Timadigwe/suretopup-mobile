@@ -136,6 +136,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         setDashboardData(null);
         setHasFetchedDashboard(false);
         setHasInitialLoad(false);
+      } else if (response.status === 'email_not_verified') {
+        // App shows email verification gate; do not show dashboard error state
+        setHasInitialLoad(false);
       } else {
         setDashboardError(response.message || 'Failed to load dashboard data');
       }

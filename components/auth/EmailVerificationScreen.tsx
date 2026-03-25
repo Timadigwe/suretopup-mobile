@@ -22,11 +22,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'react-native';
 import { CustomModal } from '@/components/ui/CustomModal';
 
+export type EmailVerificationSource = 'registration' | 'session';
+
 interface EmailVerificationScreenProps {
   onVerificationComplete: () => void;
   onBack: () => void;
   userEmail: string;
   registrationData?: any;
+  /** registration: after sign-up, return to login. session: already logged in, continue in app */
+  verificationSource?: EmailVerificationSource;
 }
 
 const { width } = Dimensions.get('window');
@@ -36,6 +40,7 @@ export const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = (
   onBack,
   userEmail,
   registrationData,
+  verificationSource = 'registration',
 }) => {
   const [verificationCode, setVerificationCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -52,7 +57,7 @@ export const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = (
   
   const { colors } = useTheme();
   const { triggerHapticFeedback, triggerNotificationHaptic } = useMobileFeatures();
-  const { verifyEmail, resendVerificationCode, storeAuthDataAfterVerification, user } = useAuth();
+  const { verifyEmail, resendVerificationCode } = useAuth();
   
   // Animation for loading spinner
   const spinValue = useRef(new Animated.Value(0)).current;
@@ -109,7 +114,13 @@ export const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = (
     }
 
     if (!registrationData?.token) {
-      showModal('Error', 'Authentication token is missing. Please try registering again.', 'error');
+      showModal(
+        'Error',
+        verificationSource === 'session'
+          ? 'Session token is missing. Please sign out and sign in again.'
+          : 'Authentication token is missing. Please try registering again.',
+        'error'
+      );
       return;
     }
 
@@ -121,17 +132,17 @@ export const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = (
       
       if (result.success) {
         triggerHapticFeedback('light');
-        
-        // Don't store any auth data - just show success and go back to auth
-        showModal(
-          'Email Verified!',
-          'Your email has been successfully verified. You can now login to your account.',
-          'success',
-          () => {
-            setModalVisible(false);
-            onVerificationComplete();
-          }
-        );
+
+        const successTitle = 'Email Verified!';
+        const successMessage =
+          verificationSource === 'session'
+            ? 'Your email is verified. You can continue using SureTopUp.'
+            : 'Your email has been successfully verified. You can now login to your account.';
+
+        showModal(successTitle, successMessage, 'success', () => {
+          setModalVisible(false);
+          onVerificationComplete();
+        });
       } else {
         triggerHapticFeedback('heavy');
         showModal('Verification Failed', result.message, 'error');

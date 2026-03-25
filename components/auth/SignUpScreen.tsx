@@ -304,7 +304,14 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({
     register(userData).then((result: { success: boolean; message: string; data?: any; userData?: any }) => {
       setIsLoading(false);
       if (result.success) {
-        // Navigate to email verification with the registration data
+        if (!result.data?.token) {
+          showModal(
+            'Registration Error',
+            'Could not start email verification. Please try again or contact support.',
+            'error'
+          );
+          return;
+        }
         onEmailVerification(formData.email, result.data);
       } else {
         // Check if there are specific field validation errors
