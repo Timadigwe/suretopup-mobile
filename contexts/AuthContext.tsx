@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AuthResponse, BASE_URL, apiService } from '@/services/api';
+import { AuthResponse, BASE_URL, apiService, type LoginApiResponse } from '@/services/api';
 import { dashboardCacheUtils } from '@/utils/dashboardCache';
 import { adminDashboardCacheUtils } from '@/utils/adminDashboardCache';
 
@@ -26,7 +26,11 @@ interface AuthContextType {
   forgotPassword: (email: string) => Promise<{ success: boolean; message: string }>;
   verifyForgotPasswordOtp: (email: string, otp: string) => Promise<{ success: boolean; message: string }>;
   resetPassword: (email: string, otp: string, password: string, password_confirmation: string) => Promise<{ success: boolean; message: string }>;
-  verifyEmail: (verificationCode: string, bearerToken: string) => Promise<{ success: boolean; message: string }>;
+  verifyEmail: (
+    email: string,
+    verificationCode: string,
+    bearerToken: string
+  ) => Promise<{ success: boolean; message: string }>;
   resendVerificationCode: (email: string) => Promise<{ success: boolean; message: string }>;
   storeAuthDataAfterVerification: (authData: AuthResponse) => Promise<void>;
   clearAllStoredData: () => Promise<void>; // Development helper
@@ -162,6 +166,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  /** Map login API user to persisted AuthResponse user (state may be omitted on login). */
+  const normalizeUserForAuthStore = (u: {
+    id: number;
+    firstname: string;
+    lastname: string;
+    email: string;
+    phone: string;
+    state?: string;
+  }): AuthResponse['user'] => ({
+    id: u.id,
+    firstname: u.firstname,
+    lastname: u.lastname,
+    email: u.email,
+    phone: u.phone,
+    state: typeof u.state === 'string' ? u.state : '',
+  });
+
   const clearAuthData = async () => {
     try {
       await AsyncStorage.removeItem('user');
@@ -186,14 +207,46 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const response = await apiService.login({ email, password });
+      const response: LoginApiResponse = await apiService.login({ email, password });
+      const data = response.data;
 
-      if (response.success && response.data) {
-        await storeAuthData(response.data);
-        return { success: true, message: 'Login successful' };
-      } else {
-        return { success: false, message: response.message || 'Login failed' };
+      // Logged in but email not verified: API returns success:false + data.token/user
+      if (
+        !response.success &&
+        response.status === 'email_not_verified' &&
+        data?.token &&
+        data?.user &&
+        typeof data.user === 'object' &&
+        'id' in data.user &&
+        'email' in data.user
+      ) {
+        await storeAuthData({
+          user: normalizeUserForAuthStore(
+            data.user as {
+              id: number;
+              firstname: string;
+              lastname: string;
+              email: string;
+              phone: string;
+              state?: string;
+            }
+          ),
+          token: data.token,
+        });
+        setRequiresEmailVerification(true);
+        return {
+          success: true,
+          message: response.message || 'Email verification required',
+        };
       }
+
+      if (response.success && data) {
+        await storeAuthData(data);
+        setRequiresEmailVerification(false);
+        return { success: true, message: 'Login successful' };
+      }
+
+      return { success: false, message: response.message || 'Login failed' };
     } catch (error) {
       // Error handling without console logs
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -367,7 +420,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const verifyEmail = async (verificationCode: string, bearerToken: string) => {
+  const verifyEmail = async (email: string, verificationCode: string, bearerToken: string) => {
     setIsLoading(true);
     try {
       const response = await fetch(`${BASE_URL}/auth/email-verification`, {
@@ -377,7 +430,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           'Accept': 'application/json',
           'Authorization': `Bearer ${bearerToken}`,
         },
-        body: JSON.stringify({ verification_code: verificationCode }),
+        body: JSON.stringify({
+          email: email.trim(),
+          verification_code: verificationCode,
+        }),
       });
 
       const data = await response.json();

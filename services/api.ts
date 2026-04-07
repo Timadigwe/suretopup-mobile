@@ -45,6 +45,12 @@ export interface AuthResponse {
   token: string;
 }
 
+/**
+ * POST /auth/login may return success:false with status email_not_verified while still
+ * including user + token so the client can verify email with the same Bearer token.
+ */
+export type LoginApiResponse = ApiResponse<AuthResponse>;
+
 export interface DashboardUser {
   id: number;
   fullname: string;
@@ -218,7 +224,8 @@ class ApiService {
     });
   }
 
-  async login(credentials: LoginRequest): Promise<ApiResponse<AuthResponse>> {
+  /** @returns On unverified accounts, may be { success: false, status: 'email_not_verified', data: AuthResponse } */
+  async login(credentials: LoginRequest): Promise<LoginApiResponse> {
     return this.makeRequest<AuthResponse>('/auth/login', {
       method: 'POST',
       body: JSON.stringify(credentials),

@@ -128,7 +128,11 @@ export const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = (
     triggerNotificationHaptic();
 
     try {
-      const result = await verifyEmail(verificationCode, registrationData?.token || '');
+      const result = await verifyEmail(
+        userEmail.trim(),
+        verificationCode,
+        registrationData?.token || ''
+      );
       
       if (result.success) {
         triggerHapticFeedback('light');
