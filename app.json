@@ -2,7 +2,7 @@
   "expo": {
     "name": "SureTopUp",
     "slug": "suretopup",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "suretopup",
@@ -19,7 +19,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.suretopup.app",
-      "buildNumber": "21",
+      "buildNumber": "22",
       "infoPlist": {
         "STUPhoneNumberUsageDescription": "Phone number is collected to identify the specific account receiving airtime and data, and to verify the user for secure transactions.",
         "STUStateUsageDescription": "State information is collected to determine regional service availability and comply with local KYC and tax regulations for financial transactions.",
@@ -32,7 +32,7 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.suretopup.app",
-      "versionCode": 20,
+      "versionCode": 21,
       "permissions": [
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
