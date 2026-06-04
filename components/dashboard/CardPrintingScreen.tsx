@@ -6,17 +6,17 @@ import { useSafeArea } from '@/hooks/useSafeArea';
 import { apiService } from '@/services/api';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-    ActivityIndicator,
-    Dimensions,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Dimensions,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 interface CardPrintingScreenProps {
@@ -66,14 +66,17 @@ export const CardPrintingScreen: React.FC<CardPrintingScreenProps> = ({ onNaviga
 
   const [errorMessage, setErrorMessage] = useState('');
   const [successData, setSuccessData] = useState<any>(null);
-  
+
   const { colors } = useTheme();
   const { triggerHapticFeedback } = useMobileFeatures();
   const { safeAreaTop, safeAreaBottom } = useSafeArea();
   const { user } = useAuth();
 
   // Calculate discount when denomination, quantity, or network changes
+  const discountRequestId = useRef(0);
+
   const calculateDiscount = async () => {
+    const currentId = ++discountRequestId.current;
     if (!selectedNetwork || !amount || !quantity) {
       setDiscountData(null);
       setAmountp('0');
@@ -89,25 +92,36 @@ export const CardPrintingScreen: React.FC<CardPrintingScreenProps> = ({ onNaviga
       });
 
       if ((response.success || response.status === 'success') && response.data) {
-        setDiscountData(response.data);
-        setAmountp(response.data.amountp.toString());
+        if (currentId === discountRequestId.current) {
+          setDiscountData(response.data);
+          setAmountp(response.data.amountp.toString());
+        }
       } else {
         console.log('Discount calculation failed:', response.message);
-        setDiscountData(null);
-        setAmountp('0');
+        if (currentId === discountRequestId.current) {
+          setDiscountData(null);
+          setAmountp('0');
+        }
       }
     } catch (error) {
       console.log('Discount calculation error:', error);
-      setDiscountData(null);
-      setAmountp('0');
+      if (currentId === discountRequestId.current) {
+        setDiscountData(null);
+        setAmountp('0');
+      }
     } finally {
-      setIsCalculatingDiscount(false);
+      if (currentId === discountRequestId.current) {
+        setIsCalculatingDiscount(false);
+      }
     }
   };
 
-  // Calculate discount when denomination, quantity, or network changes
+  // Debounce discount calculation to avoid rapid backend calls
   useEffect(() => {
-    calculateDiscount();
+    const handler = setTimeout(() => {
+      calculateDiscount();
+    }, 300);
+    return () => clearTimeout(handler);
   }, [amount, quantity, selectedNetwork]);
 
   const validateForm = () => {
@@ -116,19 +130,19 @@ export const CardPrintingScreen: React.FC<CardPrintingScreenProps> = ({ onNaviga
       setShowErrorModal(true);
       return false;
     }
-    
+
     if (!selectedNetwork) {
       setErrorMessage('Please select a network provider');
       setShowErrorModal(true);
       return false;
     }
-    
+
     if (!amount.trim()) {
       setErrorMessage('Please select a denomination');
       setShowErrorModal(true);
       return false;
     }
-    
+
     const denominationValue = parseFloat(amount);
     if (isNaN(denominationValue) || denominationValue <= 0) {
       setErrorMessage('Please select a valid denomination');
@@ -140,47 +154,47 @@ export const CardPrintingScreen: React.FC<CardPrintingScreenProps> = ({ onNaviga
       setShowErrorModal(true);
       return false;
     }
-    
+
     if (!quantity.trim()) {
       setErrorMessage('Please enter the quantity');
       setShowErrorModal(true);
       return false;
     }
-    
+
     const quantityValue = parseInt(quantity);
     if (isNaN(quantityValue) || quantityValue <= 0) {
       setErrorMessage('Please enter a valid quantity greater than 0');
       setShowErrorModal(true);
       return false;
     }
-    
+
     if (quantityValue > 10) {
       setErrorMessage('Maximum quantity allowed is 10');
       setShowErrorModal(true);
       return false;
     }
-    
+
     if (!transactionPin.trim()) {
       setErrorMessage('Please enter your transaction PIN');
       setShowErrorModal(true);
       return false;
     }
-    
+
     if (transactionPin.length !== 4) {
       setErrorMessage('Transaction PIN must be 4 digits');
       setShowErrorModal(true);
       return false;
     }
-    
+
     return true;
   };
 
   const handlePurchase = async () => {
     if (!validateForm()) return;
-    
+
     setIsLoading(true);
     triggerHapticFeedback('light');
-    
+
     try {
       const requestData = {
         businessname: businessName,
@@ -190,13 +204,13 @@ export const CardPrintingScreen: React.FC<CardPrintingScreenProps> = ({ onNaviga
         amountp: amountp,
         tpin: transactionPin,
       };
-      
+
       console.log('Sending card printing request:', requestData);
-      
+
       const response = await apiService.buyRechargePins(requestData);
-      
+
       console.log('Card printing response:', response);
-      
+
       if ((response.success || response.status === 'success') && response.data) {
         setSuccessData(response.data);
         setShowSuccessModal(true);
@@ -274,7 +288,7 @@ export const CardPrintingScreen: React.FC<CardPrintingScreenProps> = ({ onNaviga
       </LinearGradient>
 
       {/* Main Content */}
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: safeAreaBottom + 20 }]}
@@ -328,7 +342,7 @@ export const CardPrintingScreen: React.FC<CardPrintingScreenProps> = ({ onNaviga
           >
             {selectedNetwork ? (
               <View style={styles.selectedNetwork}>
-                <Image 
+                <Image
                   source={getNetworkInfo(selectedNetwork).logo}
                   style={styles.networkLogo}
                   resizeMode="cover"
@@ -461,9 +475,9 @@ export const CardPrintingScreen: React.FC<CardPrintingScreenProps> = ({ onNaviga
             </View>
             <View style={styles.infoItem}>
               <Ionicons name="checkmark-circle" size={16} color={colors.success} />
-                              <Text style={[styles.infoText, { color: colors.mutedForeground }]}>
-                  Max 10 pins per transaction
-                </Text>
+              <Text style={[styles.infoText, { color: colors.mutedForeground }]}>
+                Max 10 pins per transaction
+              </Text>
             </View>
             <View style={styles.infoItem}>
               <Ionicons name="checkmark-circle" size={16} color={colors.success} />
@@ -484,13 +498,13 @@ export const CardPrintingScreen: React.FC<CardPrintingScreenProps> = ({ onNaviga
         <TouchableOpacity
           style={[
             styles.submitButton,
-            { 
+            {
               backgroundColor: isLoading ? colors.mutedForeground : '#F59E0B',
-              opacity: isLoading ? 0.7 : 1 
+              opacity: isLoading ? 0.7 : 1
             },
           ]}
           onPress={handlePurchase}
-          disabled={isLoading}
+          disabled={isLoading || isCalculatingDiscount}
           activeOpacity={0.8}
         >
           {isLoading ? (
@@ -529,7 +543,7 @@ export const CardPrintingScreen: React.FC<CardPrintingScreenProps> = ({ onNaviga
                 <View style={[
                   styles.networkOptionIcon,
                 ]}>
-                  <Image 
+                  <Image
                     source={data.logo}
                     style={styles.networkLogoModal}
                     resizeMode="cover"
