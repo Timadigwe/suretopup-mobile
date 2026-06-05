@@ -137,7 +137,7 @@ export const AirtimeReceiptScreen: React.FC<AirtimeReceiptScreenProps> = ({
         const uri = await viewShot.capture();
         
         // Request permission to save to media library
-        const { status } = await MediaLibrary.requestPermissionsAsync();
+        const { status } = await MediaLibrary.requestPermissionsAsync(true);
         if (status !== 'granted') {
           Alert.alert('Permission Required', 'Please grant permission to save the receipt.');
           return;

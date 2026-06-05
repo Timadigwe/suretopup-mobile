@@ -111,7 +111,7 @@ export const ElectricityReceiptScreen: React.FC<ElectricityReceiptScreenProps> =
         const uri = await viewShot.capture();
         
         // Request permission to save to media library
-        const { status } = await MediaLibrary.requestPermissionsAsync();
+        const { status } = await MediaLibrary.requestPermissionsAsync(true);
         if (status === 'granted') {
           await MediaLibrary.saveToLibraryAsync(uri);
           Alert.alert('Success', 'Receipt saved to your photo library');

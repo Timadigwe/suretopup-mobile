@@ -103,7 +103,7 @@ export const EPinsModal: React.FC<EPinsModalProps> = ({
       triggerHapticFeedback('medium');
       
       // Request media library permissions
-      const { status } = await MediaLibrary.requestPermissionsAsync();
+      const { status } = await MediaLibrary.requestPermissionsAsync(true);
       if (status !== 'granted') {
         Alert.alert(
           'Permission Required',

@@ -230,13 +230,13 @@ export const AdminSubmissionDetailsScreen: React.FC<AdminSubmissionDetailsScreen
         }, 10000);
       });
 
-      const currentPermissions = await MediaLibrary.getPermissionsAsync();
+      const currentPermissions = await MediaLibrary.getPermissionsAsync(true);
       let permissionStatus = currentPermissions.status;
 
       if (permissionStatus !== 'granted') {
         setStatus(key, 'Waiting for permission prompt...');
         const permissionResult = await Promise.race([
-          MediaLibrary.requestPermissionsAsync(),
+          MediaLibrary.requestPermissionsAsync(true),
           permissionTimeout,
         ]);
         permissionStatus = permissionResult.status;

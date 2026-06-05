@@ -159,7 +159,7 @@ export const TransactionReceiptScreen: React.FC<TransactionReceiptScreenProps> =
     triggerHapticFeedback('light');
     
     try {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
+      const { status } = await MediaLibrary.requestPermissionsAsync(true);
       
       if (status !== 'granted') {
         Alert.alert('Permission Required', 'Please grant permission to save to gallery');
