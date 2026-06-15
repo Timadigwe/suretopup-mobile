@@ -445,6 +445,7 @@ export const AirtimeRechargeScreen: React.FC<AirtimeRechargeScreenProps> = ({ on
                 key={network}
                 style={[
                   styles.networkOption,
+                  { backgroundColor: colors.card, borderColor: colors.border },
                   selectedNetwork === network && styles.networkOptionSelected
                 ]}
                 onPress={() => {

@@ -9,12 +9,14 @@ interface AuthContainerProps {
   onLogin: () => void;
   onBack: () => void;
   onEmailVerification: (email: string, registrationData?: any) => void;
+  hasSeenOnboarding?: boolean;
 }
 
 export const AuthContainer: React.FC<AuthContainerProps> = ({
   onLogin,
   onBack,
   onEmailVerification,
+  hasSeenOnboarding,
 }) => {
   const [currentScreen, setCurrentScreen] = useState<AuthScreen>('signin');
 
@@ -49,6 +51,7 @@ export const AuthContainer: React.FC<AuthContainerProps> = ({
             onBack={onBack}
             onSwitchToSignUp={handleSwitchToSignUp}
             onForgotPassword={handleForgotPassword}
+            hideBackButton={hasSeenOnboarding}
           />
         );
       case 'signup':
@@ -74,6 +77,7 @@ export const AuthContainer: React.FC<AuthContainerProps> = ({
             onBack={onBack}
             onSwitchToSignUp={handleSwitchToSignUp}
             onForgotPassword={handleForgotPassword}
+            hideBackButton={hasSeenOnboarding}
           />
         );
     }

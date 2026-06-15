@@ -518,6 +518,7 @@ export const DataPurchaseScreen: React.FC<DataPurchaseScreenProps> = ({ onNaviga
                     key={plan.id}
                     style={[
                       styles.dataPlanCard,
+                      { backgroundColor: colors.card, borderColor: colors.border },
                       selectedPlan?.id === plan.id && styles.dataPlanCardSelected
                     ]}
                     onPress={() => {
@@ -676,6 +677,7 @@ export const DataPurchaseScreen: React.FC<DataPurchaseScreenProps> = ({ onNaviga
                 key={network}
                 style={[
                   styles.networkOption,
+                  { backgroundColor: colors.card, borderColor: colors.border },
                   selectedNetwork === network && styles.networkOptionSelected
                 ]}
                 onPress={() => {

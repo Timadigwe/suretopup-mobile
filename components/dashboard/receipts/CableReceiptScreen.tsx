@@ -48,6 +48,7 @@ interface CableReceiptData {
   discount?: string;
   initialBalance?: string;
   finalBalance?: string;
+  metadata?: string;
 }
 
 interface CableReceiptScreenProps {
@@ -78,9 +79,35 @@ const getCableCompanyColor = (companyName: string) => {
 };
 
 export const CableReceiptScreen: React.FC<CableReceiptScreenProps> = ({
-  receiptData,
+  receiptData: initialReceiptData,
   onClose,
 }) => {
+  let receiptData = { ...initialReceiptData };
+  if (receiptData.metadata && typeof receiptData.metadata === 'string') {
+    try {
+      const parsed = JSON.parse(receiptData.metadata);
+      if (parsed.ebills_response?.data) {
+        const ebillsData = parsed.ebills_response.data;
+        receiptData = {
+          ...receiptData,
+          serviceName: receiptData.serviceName || ebillsData.service_name,
+          customerId: receiptData.customerId || ebillsData.customer_id,
+          customerName: receiptData.customerName || ebillsData.customer_name,
+          customerAddress: receiptData.customerAddress || ebillsData.customer_address,
+          smartCardNumber: receiptData.smartCardNumber || ebillsData.customer_id,
+          packageName: receiptData.packageName || ebillsData.product_name || ebillsData.service_name,
+          subscriptionType: receiptData.subscriptionType || ebillsData.product_name,
+          orderId: receiptData.orderId || ebillsData.order_id,
+          amountCharged: receiptData.amountCharged || ebillsData.amount_charged,
+          discount: receiptData.discount || ebillsData.discount,
+          initialBalance: receiptData.initialBalance || ebillsData.initial_balance,
+          finalBalance: receiptData.finalBalance || ebillsData.final_balance,
+        };
+      }
+    } catch (e) {
+      console.warn('Failed to parse metadata in CableReceiptScreen', e);
+    }
+  }
   const { colors } = useTheme();
   const { triggerHapticFeedback } = useMobileFeatures();
   const { user } = useAuth();
@@ -509,7 +536,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 8,
-    minHeight: 600,
+    minHeight: 400,
+    // Removed maxHeight to allow container to expand naturally
   },
   watermarkContainer: {
     position: 'absolute',

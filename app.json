@@ -32,7 +32,7 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.suretopup.app",
-      "versionCode": 23,
+      "versionCode": 24,
       "permissions": [
         "android.permission.WRITE_EXTERNAL_STORAGE"
       ],

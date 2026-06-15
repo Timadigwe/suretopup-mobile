@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { BackHandler, Alert, Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { OnboardingScreen } from './onboarding/OnboardingScreen';
 import { AuthContainer } from './auth/AuthContainer';
 import { EmailVerificationScreen } from './auth/EmailVerificationScreen';
@@ -116,7 +117,22 @@ export const App: React.FC = () => {
   
   // Initialize wasAuthenticated based on current auth state
   const [wasAuthenticated, setWasAuthenticated] = useState(false);
+  const [hasSeenOnboarding, setHasSeenOnboarding] = useState<boolean | null>(null);
   
+  // Check onboarding status on mount
+  useEffect(() => {
+    const checkOnboarding = async () => {
+      try {
+        const value = await AsyncStorage.getItem('@has_seen_onboarding');
+        setHasSeenOnboarding(value === 'true');
+      } catch (error) {
+        console.error('Error checking onboarding status:', error);
+        setHasSeenOnboarding(false);
+      }
+    };
+    checkOnboarding();
+  }, []);
+
   // Track authentication state changes to set wasAuthenticated
   useEffect(() => {
     if (isAuthenticated) {
@@ -126,7 +142,7 @@ export const App: React.FC = () => {
   
   // Set initial screen based on authentication state
   useEffect(() => {
-    if (isInitialized && !isInAuthFlow) {
+    if (isInitialized && !isInAuthFlow && hasSeenOnboarding !== null) {
       if (isAdminAuthenticated) {
         setCurrentScreen('admin');
         setNavigationHistory(['admin']);
@@ -134,9 +150,9 @@ export const App: React.FC = () => {
         setCurrentScreen('dashboard');
         setNavigationHistory(['dashboard']);
       } else {
-        // If user was previously authenticated, redirect to login (token expired)
+        // If user was previously authenticated, or has seen onboarding, redirect to login
         // Otherwise, redirect to onboarding (first time user)
-        if (wasAuthenticated) {
+        if (wasAuthenticated || hasSeenOnboarding) {
           setCurrentScreen('auth');
           setIsInAuthFlow(true);
           setNavigationHistory(['auth']);
@@ -146,7 +162,7 @@ export const App: React.FC = () => {
         }
       }
     }
-  }, [isAuthenticated, isAdminAuthenticated, isInitialized, isInAuthFlow, wasAuthenticated]);
+  }, [isAuthenticated, isAdminAuthenticated, isInitialized, isInAuthFlow, wasAuthenticated, hasSeenOnboarding]);
 
   // Handle Android back button
   useEffect(() => {
@@ -241,7 +257,13 @@ export const App: React.FC = () => {
   // Remove the problematic useEffect that was causing unwanted redirects
   // The authentication flow will be handled manually through the handlers
 
-  const handleOnboardingComplete = () => {
+  const handleOnboardingComplete = async () => {
+    try {
+      await AsyncStorage.setItem('@has_seen_onboarding', 'true');
+      setHasSeenOnboarding(true);
+    } catch (error) {
+      console.error('Error saving onboarding status:', error);
+    }
     setIsInAuthFlow(true);
     setCurrentScreen('auth');
     setNavigationHistory(['onboarding', 'auth']);
@@ -494,6 +516,7 @@ export const App: React.FC = () => {
             onLogin={handleLogin}
             onBack={handleBackToOnboarding}
             onEmailVerification={handleEmailVerification}
+            hasSeenOnboarding={hasSeenOnboarding ?? false}
           />
         );
         

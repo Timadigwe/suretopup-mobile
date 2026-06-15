@@ -131,13 +131,14 @@ export const AdminTransactionsScreen: React.FC<AdminTransactionsScreenProps> = (
       const response = await apiService.getAdminTransactions(params);
       
       if (response.success && response.data) {
+        const responseData = response.data;
         if (refresh || page === 1) {
-          setTransactions(response.data.transactions);
+          setTransactions(responseData.transactions);
         } else {
-          setTransactions(prev => [...prev, ...response.data.transactions]);
+          setTransactions(prev => [...prev, ...responseData.transactions]);
         }
-        setPagination(response.data.pagination);
-        setSummary(response.data.summary);
+        setPagination(responseData.pagination);
+        setSummary(responseData.summary);
       }
     } catch (error) {
       Alert.alert('Error', 'Failed to fetch transactions');

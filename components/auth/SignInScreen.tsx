@@ -28,6 +28,7 @@ interface SignInScreenProps {
   onBack: () => void;
   onSwitchToSignUp: () => void;
   onForgotPassword: () => void;
+  hideBackButton?: boolean;
 }
 
 const { width } = Dimensions.get('window');
@@ -36,7 +37,8 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
   onLogin, 
   onBack, 
   onSwitchToSignUp, 
-  onForgotPassword 
+  onForgotPassword,
+  hideBackButton
 }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -72,14 +74,14 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
     onPrimaryPress: () => {},
   });
   
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { triggerHapticFeedback, triggerNotificationHaptic } = useMobileFeatures();
   const { login, adminLogin, isLoading: authLoading } = useAuth();
   const scrollViewRef = useRef<ScrollView>(null);
-  
+
   // Animation for loading spinner
   const spinValue = React.useRef(new Animated.Value(0)).current;
-  
+
   // Load saved credentials on component mount
   useEffect(() => {
     const loadSavedCredentials = async () => {
@@ -311,7 +313,10 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
 
   const renderLogo = () => (
     <View style={styles.logoContainer}>
-      <Image source={require('@/assets/images/logo.png')} style={styles.logo} />
+      <Image 
+        source={isDark ? require('@/assets/images/splash-icon.png') : require('@/assets/images/logo.png')} 
+        style={styles.logo} 
+      />
     </View>
   );
 
@@ -404,12 +409,16 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
     >
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.card + 'E6' }]}>
-        <TouchableOpacity 
-          onPress={onBack} 
-          style={styles.backButton}
-        >
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
+        {!hideBackButton ? (
+          <TouchableOpacity 
+            onPress={onBack} 
+            style={styles.backButton}
+          >
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.headerSpacer} />
+        )}
         <View style={styles.headerSpacer} />
       </View>
 

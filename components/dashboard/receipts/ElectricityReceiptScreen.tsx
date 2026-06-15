@@ -50,6 +50,7 @@ interface ElectricityReceiptData {
   discount?: string;
   initialBalance?: string;
   finalBalance?: string;
+  metadata?: string;
 }
 
 interface ElectricityReceiptScreenProps {
@@ -71,9 +72,38 @@ const getPowerCompanyColor = (companyName: string) => {
 };
 
 export const ElectricityReceiptScreen: React.FC<ElectricityReceiptScreenProps> = ({
-  receiptData,
+  receiptData: initialReceiptData,
   onClose,
 }) => {
+  let receiptData = { ...initialReceiptData };
+  if (receiptData.metadata && typeof receiptData.metadata === 'string') {
+    try {
+      const parsed = JSON.parse(receiptData.metadata);
+      if (parsed.ebills_response?.data) {
+        const ebillsData = parsed.ebills_response.data;
+        receiptData = {
+          ...receiptData,
+          serviceName: receiptData.serviceName || ebillsData.service_name,
+          customerId: receiptData.customerId || ebillsData.customer_id,
+          token: receiptData.token || ebillsData.token,
+          customerName: receiptData.customerName || ebillsData.customer_name,
+          customerAddress: receiptData.customerAddress || ebillsData.customer_address,
+          meterNumber: receiptData.meterNumber || ebillsData.meter_number,
+          accountNumber: receiptData.accountNumber || ebillsData.account_number,
+          district: receiptData.district || ebillsData.district,
+          orderId: receiptData.orderId || ebillsData.order_id,
+          units: receiptData.units || ebillsData.units,
+          band: receiptData.band || ebillsData.band,
+          amountCharged: receiptData.amountCharged || ebillsData.amount_charged,
+          discount: receiptData.discount || ebillsData.discount,
+          initialBalance: receiptData.initialBalance || ebillsData.initial_balance,
+          finalBalance: receiptData.finalBalance || ebillsData.final_balance,
+        };
+      }
+    } catch (e) {
+      console.warn('Failed to parse metadata in ElectricityReceiptScreen', e);
+    }
+  }
   const { colors } = useTheme();
   const { triggerHapticFeedback } = useMobileFeatures();
   const { user } = useAuth();
@@ -508,7 +538,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
     minHeight: 400,
-    maxHeight: 800,
+    // Removed maxHeight to allow container to expand naturally
   },
   watermarkContainer: {
     position: 'absolute',
