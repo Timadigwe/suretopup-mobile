@@ -279,6 +279,42 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     }
   };
 
+  const handleDeleteAccount = () => {
+    triggerHapticFeedback('light');
+    Alert.alert(
+      'Delete Account',
+      'Are you sure you want to permanently delete your account? This action cannot be undone.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setIsUpdating(true);
+            try {
+              const response = await apiService.deleteAccount();
+              if (response.success) {
+                Alert.alert('Success', 'Your account has been deleted.');
+                await onLogout();
+              } else {
+                Alert.alert('Error', response.message || 'Failed to delete account');
+                triggerHapticFeedback('heavy');
+              }
+            } catch (error: any) {
+              Alert.alert('Error', error.message || 'Failed to delete account');
+              triggerHapticFeedback('heavy');
+            } finally {
+              setIsUpdating(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const profileMenuItems = [
     {
       id: 'edit-profile',
@@ -315,6 +351,13 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       subtitle: 'App version and legal information',
       icon: 'information-circle',
       action: () => onNavigate('about'),
+    },
+    {
+      id: 'delete-account',
+      title: 'Delete Account',
+      subtitle: 'Permanently remove your account',
+      icon: 'trash',
+      action: () => handleDeleteAccount(),
     },
   ];
 

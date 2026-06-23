@@ -2391,6 +2391,12 @@ class ApiService {
     });
   }
 
+  async deleteAccount(): Promise<ApiResponse<any>> {
+    return this.makeRequest('/user/delete-account', {
+      method: 'DELETE',
+    });
+  }
+
   async getCableVariations(): Promise<ApiResponse<any>> {
     return this.makeRequest('/user/cable-variations', {
       method: 'GET',
